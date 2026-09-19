@@ -1928,22 +1928,25 @@ function updateMissedBusButtonUI() {
     if (!button) return;
 
     if (activeAlternativeAllotment?.active) {
-        button.disabled = false;
-        button.className = "py-2.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 font-semibold text-xs rounded-xl transition flex items-center justify-center gap-2";
-        button.innerHTML = `<i class="fa-solid fa-bus-simple text-emerald-600"></i><span>Alternative Bus Active</span>`;
+        button.classList.add("hidden");
         if (subtitle) {
             const eta = Number(activeAlternativeAllotment.eta_minutes);
             subtitle.textContent = Number.isFinite(eta)
-                ? `Bus ${activeAlternativeAllotment.alternative_bus_number || "—"} • ~${eta} min`
-                : `Bus ${activeAlternativeAllotment.alternative_bus_number || "—"} assigned`;
+                ? `Bus ${activeAlternativeAllotment.alternative_bus_number || "—"} • ${activeAlternativeAllotment.stop_name || "your stop"} • ~${eta} min`
+                : `Bus ${activeAlternativeAllotment.alternative_bus_number || "—"} assigned at ${activeAlternativeAllotment.stop_name || "your stop"}`;
+            subtitle.classList.remove("hidden");
         }
         return;
     }
 
+    button.classList.remove("hidden");
     button.disabled = false;
     button.className = "py-2.5 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-800 font-semibold text-xs rounded-xl transition flex items-center justify-center gap-2";
     button.innerHTML = `<i class="fa-solid fa-bus-slash text-rose-600"></i><span>Missed Bus</span>`;
-    if (subtitle) subtitle.textContent = "Find the best available bus automatically";
+    if (subtitle) {
+        subtitle.textContent = "Find the best available bus automatically";
+        subtitle.classList.remove("hidden");
+    }
 }
 
 function openMissedBusModal() {
@@ -1961,15 +1964,21 @@ function closeMissedBusModal() {
 window.closeMissedBusModal = closeMissedBusModal;
 
 async function getOptionalStudentCoordinates() {
-    if (!navigator.geolocation) return { latitude: null, longitude: null };
+    if (!navigator.geolocation) return {};
 
     return await new Promise(resolve => {
         navigator.geolocation.getCurrentPosition(
-            position => resolve({
-                latitude: Number(position.coords.latitude),
-                longitude: Number(position.coords.longitude)
-            }),
-            () => resolve({ latitude: null, longitude: null }),
+            position => {
+                const latitude = Number(position.coords.latitude);
+                const longitude = Number(position.coords.longitude);
+                resolve(
+                    Number.isFinite(latitude) && Number.isFinite(longitude) &&
+                    latitude >= -90 && latitude <= 90 && longitude >= -180 && longitude <= 180
+                        ? { latitude, longitude }
+                        : {}
+                );
+            },
+            () => resolve({}),
             { enableHighAccuracy: true, timeout: 3500, maximumAge: 15000 }
         );
     });
@@ -2009,7 +2018,12 @@ async function requestAlternativeBus() {
         });
 
         const data = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(data.detail || "No suitable alternative bus is available right now.");
+        if (!response.ok) {
+            const detail = Array.isArray(data.detail)
+                ? data.detail.map(item => item?.msg || String(item)).join(" ")
+                : data.detail;
+            throw new Error(detail || "No suitable alternative bus is available right now.");
+        }
 
         activeAlternativeAllotment = {
             active: true,
