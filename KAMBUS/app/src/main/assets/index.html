@@ -176,6 +176,50 @@
     z-index: 1;
 }
 
+/* ---- Premium polish (login) ---- */
+body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+
+.login-card { animation: card-in 520ms cubic-bezier(.2, .8, .2, 1) both; }
+@keyframes card-in { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+
+/* The real KAMBUS logo, shown as a soft app-icon tile */
+.brand-mark {
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 28px;
+    box-shadow: 0 12px 30px rgba(23, 37, 84, 0.12), 0 0 0 6px rgba(244, 185, 66, 0.10);
+}
+
+/* Comfortable touch targets and readable type on phones */
+[role="tablist"] .role-pill-btn { min-height: 44px; font-size: 13px; }
+.input-group { min-height: 52px; border-radius: 14px; }
+.input-group input { font-size: 16px; min-height: 50px; }
+.input-group button { right: 2px; min-width: 44px; min-height: 44px; display: grid; place-items: center; font-size: 14px; }
+#btnSubmit { min-height: 54px; font-size: 15px; letter-spacing: .01em; }
+#btnSubmit:disabled { cursor: progress; }
+#loginForm label { font-size: 13px; }
+#password { padding-right: 48px; }
+
+/* Wrong-credentials feedback */
+.input-group.has-error { border-color: #D23D56 !important; box-shadow: 0 0 0 4px rgba(210, 61, 86, 0.12); }
+.input-group.shake { animation: field-shake 380ms cubic-bezier(.36, .07, .19, .97); }
+@keyframes field-shake {
+    10%, 90% { transform: translateX(-1px); }
+    20%, 80% { transform: translateX(2px); }
+    30%, 50%, 70% { transform: translateX(-4px); }
+    40%, 60% { transform: translateX(4px); }
+}
+
+/* Keyboard focus, for hardware keyboards and accessibility tools */
+.role-pill-btn:focus-visible, #btnSubmit:focus-visible, .input-group button:focus-visible {
+    outline: 3px solid rgba(244, 185, 66, 0.55);
+    outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .login-card, .input-group.shake { animation: none; }
+}
+
     </style>
 </head>
 
@@ -218,7 +262,7 @@
                     <span id="identityIcon" class="pl-3.5 text-slate-400 text-xs">
                         <i class="fa-solid fa-id-card"></i>
                     </span>
-                <input type="text" id="username" name="username" required autocomplete="username" placeholder="Enter your roll number"
+                <input type="text" id="username" name="username" required autocomplete="username" placeholder="Enter your roll number" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="next"
                        class="w-full pl-3 pr-3.5 py-2.5 bg-transparent text-xs sm:text-sm font-semibold focus:outline-none placeholder-slate-400" style="color:#172554;">
             </div>
         </div>
@@ -230,9 +274,9 @@
                     <span class="pl-3.5 text-slate-400 text-xs">
                         <i class="fa-solid fa-lock"></i>
                     </span>
-                <input type="password" id="password" name="password" required autocomplete="current-password" placeholder="Enter your password"
+                <input type="password" id="password" name="password" required autocomplete="current-password" placeholder="Enter your password" enterkeyhint="go"
                        class="w-full pl-3 pr-10 py-2.5 bg-transparent text-xs sm:text-sm font-semibold focus:outline-none placeholder-slate-400" style="color:#172554;">
-                <button type="button" onclick="togglePasswordVisibility('password', 'passwordToggleIcon')" aria-label="Toggle password visibility" class="absolute right-3 text-slate-400 hover:text-slate-600 p-1 text-xs focus:outline-none">
+                <button type="button" onclick="togglePasswordVisibility('password', 'passwordToggleIcon')" aria-label="Show or hide password" aria-pressed="false" class="absolute right-3 text-slate-400 hover:text-slate-600 p-1 text-xs focus:outline-none">
                     <i id="passwordToggleIcon" class="fa-solid fa-eye"></i>
                 </button>
             </div>
@@ -341,6 +385,8 @@
             passwordInput.type = 'password';
             toggleIcon.className = 'fa-solid fa-eye';
         }
+        const toggleButton = toggleIcon.closest('button');
+        if (toggleButton) toggleButton.setAttribute('aria-pressed', String(passwordInput.type === 'text'));
     }
 
     // ========================================
@@ -441,6 +487,7 @@
             }
 
             notifyUser("error", displayTitle, displayMsg);
+            flagLoginError();
 
             button.disabled = false;
             button.innerHTML = originalButtonContent;
@@ -448,6 +495,20 @@
     }
 
 
+
+    function flagLoginError() {
+        document.querySelectorAll('.input-group').forEach(group => {
+            group.classList.remove('shake');
+            void group.offsetWidth; // restart the animation on repeated failures
+            group.classList.add('shake', 'has-error');
+        });
+    }
+
+    document.addEventListener('input', event => {
+        if (event.target.closest && event.target.closest('.input-group')) {
+            document.querySelectorAll('.input-group').forEach(group => group.classList.remove('has-error'));
+        }
+    });
 
     function notifyUser(type, title, message) {
         if (typeof KambusNotify !== "undefined" && KambusNotify.notify) {
