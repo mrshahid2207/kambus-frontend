@@ -5,6 +5,26 @@
 const API_BASE = "https://kambus-backend.onrender.com";
 const WS_BASE = API_BASE.replace(/^http/, "ws");
 
+// Sign out and return to the login screen when the server rejects the saved token
+(function () {
+    const nativeFetch = window.fetch.bind(window);
+    window.fetch = async function (...args) {
+        const response = await nativeFetch(...args);
+        try {
+            const input = args[0];
+            const url = typeof input === "string" ? input : (input && (input.url || input.href)) || "";
+            if (response.status === 401 && url.startsWith(API_BASE) && !window.__kambusSigningOut) {
+                window.__kambusSigningOut = true;
+                localStorage.removeItem("kambus_token");
+                localStorage.removeItem("kambus_role");
+                localStorage.removeItem("kambus_user_id");
+                window.location.replace("index.html");
+            }
+        } catch (e) { /* never break the original request */ }
+        return response;
+    };
+})();
+
 // Authoritative College Coordinates (fallback default)
 const COLLEGE_LOCATION = {
     latitude: 18.054145359568437,

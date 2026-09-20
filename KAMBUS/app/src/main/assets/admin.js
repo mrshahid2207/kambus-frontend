@@ -79,6 +79,12 @@
         })[c]);
     }
 
+    // Safe way to pass a text value into an inline onclick="..." attribute:
+    // JSON-quote it (so quotes and backslashes cannot end the string), then HTML-escape it.
+    function jsArg(value) {
+        return escapeHtml(JSON.stringify(String(value ?? "")));
+    }
+
     function formatDateTime(isoString) {
         if (!isoString) return "-";
         try {
@@ -514,7 +520,7 @@
                     <span class="text-slate-500 font-bold">
                         👥 <strong>${bus.student_count}</strong> students (${bus.travelling_today_count} today)
                     </span>
-                    <button type="button" onclick="event.stopPropagation(); window.KambusAdmin.deleteBus(${bus.bus_id}, '${escapeHtml(bus.bus_number)}')" class="text-slate-300 hover:text-rose-600 p-1 transition" title="Delete Bus">
+                    <button type="button" onclick="event.stopPropagation(); window.KambusAdmin.deleteBus(${bus.bus_id}, ${jsArg(bus.bus_number)})" class="text-slate-300 hover:text-rose-600 p-1 transition" title="Delete Bus">
                         <i class="fa-solid fa-trash-can text-sm"></i>
                     </button>
                 </div>
@@ -744,7 +750,7 @@
                         <button type="button" onclick="event.stopPropagation(); window.KambusAdmin.openEditDriverModal(${d.driver_id})" class="text-slate-400 hover:text-brand p-1 transition" title="Edit Driver">
                             <i class="fa-solid fa-pen-to-square text-sm"></i>
                         </button>
-                        <button type="button" onclick="event.stopPropagation(); window.KambusAdmin.deleteDriver(${d.driver_id}, '${escapeHtml(d.name || d.driver_code)}')" class="text-slate-300 hover:text-rose-600 p-1 transition" title="Delete Driver">
+                        <button type="button" onclick="event.stopPropagation(); window.KambusAdmin.deleteDriver(${d.driver_id}, ${jsArg(d.name || d.driver_code)})" class="text-slate-300 hover:text-rose-600 p-1 transition" title="Delete Driver">
                             <i class="fa-solid fa-trash-can text-sm"></i>
                         </button>
                     </div>
@@ -963,10 +969,10 @@
                                             <button type="button" onclick="window.KambusAdmin.openEditStudentModal(${Number(s.student_id)})" class="px-2.5 py-1 bg-slate-100 hover:bg-brand hover:text-white rounded-lg text-[11px] font-bold text-slate-700 transition">
                                                 Edit
                                             </button>
-                                            <button type="button" onclick="window.KambusAdmin.openAssignStudentModal(${s.student_id}, '${escapeHtml(s.name)}', ${s.bus_id || 'null'}, ${s.stop_id || 'null'})" class="px-2.5 py-1 bg-slate-100 hover:bg-brand hover:text-white rounded-lg text-[11px] font-bold text-slate-700 transition">
+                                            <button type="button" onclick="window.KambusAdmin.openAssignStudentModal(${s.student_id}, ${jsArg(s.name)}, ${s.bus_id || 'null'}, ${s.stop_id || 'null'})" class="px-2.5 py-1 bg-slate-100 hover:bg-brand hover:text-white rounded-lg text-[11px] font-bold text-slate-700 transition">
                                                 Assign
                                             </button>
-                                            <button type="button" onclick="window.KambusAdmin.deleteStudent(${s.student_id}, '${escapeHtml(s.roll_number)}')" class="p-1 text-slate-300 hover:text-rose-600 transition" title="Delete Student">
+                                            <button type="button" onclick="window.KambusAdmin.deleteStudent(${s.student_id}, ${jsArg(s.roll_number)})" class="p-1 text-slate-300 hover:text-rose-600 transition" title="Delete Student">
                                                 <i class="fa-solid fa-trash-can"></i>
                                             </button>
                                         </td>
@@ -1157,7 +1163,7 @@
                         <button type="button" onclick="window.KambusAdmin.openEditStopModal(${s.stop_id})" class="text-slate-400 hover:text-brand p-2 transition" title="Edit Stop">
                             <i class="fa-solid fa-pen-to-square text-sm"></i>
                         </button>
-                        <button type="button" onclick="window.KambusAdmin.deleteStop(${s.stop_id}, '${escapeHtml(s.name)}')" class="text-slate-300 hover:text-rose-600 p-2 transition" title="Delete Stop">
+                        <button type="button" onclick="window.KambusAdmin.deleteStop(${s.stop_id}, ${jsArg(s.name)})" class="text-slate-300 hover:text-rose-600 p-2 transition" title="Delete Stop">
                             <i class="fa-solid fa-trash-can text-sm"></i>
                         </button>
                     </div>
@@ -1415,7 +1421,7 @@
                             <button type="button" onclick="window.KambusAdmin.previewRouteRoadMap(${r.route_id})" class="px-3 py-1.5 bg-brand hover:bg-brandDark text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-2xs">
                                 <i class="fa-solid fa-map-location-dot"></i> View Road Map
                             </button>
-                            <button type="button" onclick="window.KambusAdmin.deleteRoute(${r.route_id}, '${escapeHtml(r.name)}')" class="text-slate-300 hover:text-rose-600 p-1.5 transition" title="Delete Route">
+                            <button type="button" onclick="window.KambusAdmin.deleteRoute(${r.route_id}, ${jsArg(r.name)})" class="text-slate-300 hover:text-rose-600 p-1.5 transition" title="Delete Route">
                                 <i class="fa-solid fa-trash-can text-sm"></i>
                             </button>
                         </div>
@@ -2406,7 +2412,7 @@
 
             if (data.students && data.students.length > 0) {
                 html += `<div class="mb-3"><h5 class="text-[11px] font-black text-slate-400 uppercase">Students</h5>` +
-                    data.students.map(s => `<div onclick="window.KambusAdmin.openAssignStudentModal(${s.student_id}, '${escapeHtml(s.name)}', ${s.bus_id || 'null'}, ${s.stop_id || 'null'})" class="p-2 hover:bg-slate-50 rounded cursor-pointer text-xs font-bold text-slate-900">👨‍🎓 ${escapeHtml(s.name)} - ${escapeHtml(s.roll_number)} (${escapeHtml(s.bus_number ? 'Bus ' + s.bus_number : 'No bus')}) &rarr;</div>`).join("") + `</div>`;
+                    data.students.map(s => `<div onclick="window.KambusAdmin.openAssignStudentModal(${s.student_id}, ${jsArg(s.name)}, ${s.bus_id || 'null'}, ${s.stop_id || 'null'})" class="p-2 hover:bg-slate-50 rounded cursor-pointer text-xs font-bold text-slate-900">👨‍🎓 ${escapeHtml(s.name)} - ${escapeHtml(s.roll_number)} (${escapeHtml(s.bus_number ? 'Bus ' + s.bus_number : 'No bus')}) &rarr;</div>`).join("") + `</div>`;
             }
 
             if (data.routes && data.routes.length > 0) {
