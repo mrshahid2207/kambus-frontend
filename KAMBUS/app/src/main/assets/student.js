@@ -927,7 +927,15 @@ function setMyStopState(name, route, bus, driver, showRetry = false) {
     fields.forEach(([id, value]) => {
         const element = document.getElementById(id);
         if (element) {
-            element.textContent = value;
+            if (typeof value === "string" && value.startsWith("Loading")) {
+                // Shimmer placeholder; it disappears when real text replaces it.
+                const placeholder = document.createElement("span");
+                placeholder.className = "k-skel";
+                placeholder.textContent = value;
+                element.replaceChildren(placeholder);
+            } else {
+                element.textContent = value;
+            }
         }
     });
 

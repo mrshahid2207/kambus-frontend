@@ -20,6 +20,7 @@
 
     <!-- Notifications -->
     <link rel="stylesheet" href="notifications.css">
+    <link rel="stylesheet" href="premium-student.css">
 
     <script>
         tailwind.config = {
@@ -395,89 +396,41 @@ a:active {
 <!-- MY STOP + DRIVER ISSUE (SIDE-BY-SIDE) -->
 <!-- ================================================= -->
 
-<div class="grid grid-cols-2 gap-2.5 mx-4 mt-2 items-stretch">
+<section id="myStopCard" aria-live="polite">
+    <div class="k-stop-icon" aria-hidden="true"><i class="fa-solid fa-location-dot"></i></div>
 
-    <!-- My Stop -->
-    <section
-            id="myStopCard"
-            class="rounded-xl border border-indigo-100 bg-indigo-50/70 p-2.5 shadow-sm flex flex-col justify-between min-w-0"
-            aria-live="polite"
-    >
-        <div class="min-w-0">
-            <p class="text-[9px] font-bold tracking-wider text-indigo-600">
-                📍 MY STOP
-            </p>
-            <h2 id="myStopName" class="mt-0.5 text-xs font-bold text-slate-900 truncate">
-                Loading assigned stop…
-            </h2>
-            <p id="myStopRoute" class="mt-0.5 text-[10px] text-slate-500 truncate">
-                Loading route details…
-            </p>
-        </div>
+    <div class="k-stop-body">
+        <p class="tracking-wider">📍 MY STOP</p>
+        <h2 id="myStopName"><span class="k-skel">Loading assigned stop…</span></h2>
+        <p id="myStopRoute"><span class="k-skel">Loading route details…</span></p>
+    </div>
 
-        <button
-                id="viewStopOnMap"
-                type="button"
-                class="mt-1.5 h-7 w-full shrink-0 rounded-lg border border-indigo-200 bg-white px-2 text-[10px] font-semibold text-indigo-700 hover:bg-indigo-50 transition"
-        >
-            View Map
-        </button>
+    <button id="viewStopOnMap" type="button" aria-label="Show my stop on the map">
+        <i class="fa-solid fa-map-location-dot" aria-hidden="true"></i>
+        <span>Map</span>
+    </button>
 
-        <div id="myStopRetryRow" class="mt-1.5 hidden">
-            <button
-                    id="retryMyStop"
-                    type="button"
-                    class="h-7 w-full rounded-lg bg-indigo-600 px-2 text-[10px] font-semibold text-white"
-            >
-                Retry
-            </button>
-        </div>
-    </section>
-
-    <!-- Driver Issue -->
-    <section
-            class="rounded-xl border border-rose-100 bg-rose-50/70 p-2.5 shadow-sm flex flex-col justify-between min-w-0"
-    >
-        <div class="min-w-0">
-            <p class="text-[9px] font-bold tracking-wider text-rose-600 flex items-center gap-1">
-                <i class="fa-solid fa-triangle-exclamation"></i> DRIVER ISSUE
-            </p>
-            <h2 class="mt-0.5 text-xs font-bold text-slate-900 truncate">
-                Report Problem
-            </h2>
-            <p class="mt-0.5 text-[10px] text-slate-500 truncate">
-                Feedback / Complaint
-            </p>
-        </div>
-
-        <button
-                id="driverComplaintButton"
-                type="button"
-                onclick="openDriverComplaintModal()"
-                class="mt-1.5 h-7 w-full shrink-0 rounded-lg bg-rose-600 px-2 text-[10px] font-bold text-white hover:bg-rose-700 transition"
-        >
-            Report
-        </button>
-    </section>
-
-</div>
+    <div id="myStopRetryRow" class="hidden">
+        <button id="retryMyStop" type="button">Retry</button>
+    </div>
+</section>
 
 <!-- ================================================= -->
 <!-- ETA BANNER -->
 <!-- ================================================= -->
 
-<div class="bg-slate-50 border-b border-slate-200 p-2.5 px-4 flex items-center justify-between text-xs">
-    <div class="flex items-center gap-2 min-w-0">
+<div id="etaBar">
+    <div class="flex items-center gap-2.5 min-w-0">
         <span id="etaDot" class="relative flex h-2.5 w-2.5 shrink-0">
             <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-slate-400"></span>
         </span>
-        <span id="etaStatus" class="font-semibold text-slate-700 truncate">
+        <span id="etaStatus" class="truncate">
             Location unavailable
         </span>
     </div>
 
-    <div class="text-right shrink-0 ml-2">
-        <span class="text-slate-500 font-medium">ETA:</span>
+    <div id="etaChip">
+        <span>ETA</span>
         <strong id="etaValue" class="text-slate-500 font-bold ml-1 text-xs">
             ETA unavailable
         </strong>
@@ -510,75 +463,55 @@ a:active {
 <footer class="bg-white border-t border-slate-200 p-4 space-y-3 z-40">
 
     <!-- DRIVER CARD -->
-    <div class="flex items-center justify-between bg-slate-50/90 p-3 rounded-2xl border border-slate-200/80 shadow-xs">
-        <div class="flex items-center gap-3 min-w-0">
-            <div class="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-brand border border-slate-200/80 shadow-xs shrink-0">
-                <i class="fa-solid fa-user-gear text-sm"></i>
-            </div>
-            <div class="min-w-0">
-                <h2 id="driverName" class="text-xs font-bold text-slate-900 truncate">
-                    Driver unavailable
-                </h2>
-                <p id="driverDetails" class="text-[11px] text-slate-500 truncate">
-                    Loading assignment…
-                </p>
-            </div>
+    <div id="driverRow">
+        <div class="k-avatar" aria-hidden="true">
+            <i class="fa-solid fa-user-gear"></i>
+        </div>
+        <div class="k-driver-text">
+            <h2 id="driverName"><span class="k-skel">Driver unavailable</span></h2>
+            <p id="driverDetails"><span class="k-skel">Loading assignment…</span></p>
         </div>
 
-        <a
-                id="driverPhoneLink"
-                href="#"
-                class="px-3.5 py-2 bg-white hover:bg-emerald-50 text-slate-700 hover:text-emerald-700 rounded-xl text-xs font-bold border border-slate-200 shadow-xs flex items-center gap-1.5 shrink-0 transition"
+        <button
+                id="driverComplaintButton"
+                type="button"
+                onclick="openDriverComplaintModal()"
+                aria-label="Report a problem with the driver"
+                title="Report a problem"
         >
-            <i class="fa-solid fa-phone text-emerald-600 text-xs"></i>
-            Call
+            <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+        </button>
+
+        <a id="driverPhoneLink" href="#" aria-label="Call driver">
+            <i class="fa-solid fa-phone" aria-hidden="true"></i>
+            <span>Call</span>
         </a>
     </div>
 
-    <!-- ACTION BUTTONS GRID -->
-    <div class="grid grid-cols-2 gap-2.5">
+    <!-- ACTION TILES -->
+    <div id="actionGrid">
         <!-- 1. REQUEST WAIT -->
-        <button
-                id="btnWaitRequest"
-                type="button"
-                onclick="openWaitModal()"
-                class="w-full py-2.5 bg-amber-50 hover:bg-amber-100/90 border border-amber-200/90 text-amber-900 font-bold text-xs rounded-xl shadow-xs active:scale-[0.98] transition-all flex items-center justify-center gap-2 px-3"
-        >
-            <i id="waitIcon" class="fa-solid fa-hourglass-start text-amber-600 text-sm shrink-0"></i>
-            <span id="waitBtnText" class="truncate">Request Wait</span>
+        <button id="btnWaitRequest" type="button" onclick="openWaitModal()">
+            <i id="waitIcon" class="fa-solid fa-hourglass-start text-amber-600"></i>
+            <span id="waitBtnText">Request Wait</span>
         </button>
 
         <!-- 2. NOT TRAVELLING -->
-        <button
-                id="btnNotTravelling"
-                type="button"
-                onclick="openNotTravellingModal()"
-                class="w-full py-2.5 bg-slate-100/90 hover:bg-slate-200/90 border border-slate-200/90 text-slate-700 font-bold text-xs rounded-xl shadow-xs active:scale-[0.98] transition-all flex items-center justify-center gap-2 px-3"
-        >
-            <i id="btnIcon" class="fa-solid fa-user-slash text-slate-500 text-sm shrink-0"></i>
-            <span id="btnText" class="truncate">Not Travelling</span>
+        <button id="btnNotTravelling" type="button" onclick="openNotTravellingModal()">
+            <i id="btnIcon" class="fa-solid fa-user-slash text-slate-500"></i>
+            <span id="btnText">Not Travelling</span>
         </button>
 
         <!-- 3. MISSED BUS -->
-        <button
-                id="btnMissedBus"
-                type="button"
-                onclick="openMissedBusModal()"
-                class="w-full py-2.5 bg-rose-50 hover:bg-rose-100/90 border border-rose-200/90 text-rose-800 font-bold text-xs rounded-xl shadow-xs active:scale-[0.98] transition-all flex items-center justify-center gap-2 px-3"
-        >
-            <i class="fa-solid fa-bus-slash text-rose-600 text-sm shrink-0"></i>
-            <span class="truncate">Missed Bus</span>
+        <button id="btnMissedBus" type="button" onclick="openMissedBusModal()">
+            <i class="fa-solid fa-bus-slash text-rose-600"></i>
+            <span>Missed Bus</span>
         </button>
 
         <!-- 4. TEMPORARY STOP -->
-        <button
-                id="btnTemporaryStop"
-                type="button"
-                onclick="openTemporaryStopModal()"
-                class="w-full py-2.5 bg-indigo-50 hover:bg-indigo-100/90 border border-indigo-200/90 text-indigo-800 font-bold text-xs rounded-xl shadow-xs active:scale-[0.98] transition-all flex items-center justify-center gap-2 px-3"
-        >
-            <i class="fa-solid fa-location-dot text-indigo-600 text-sm shrink-0"></i>
-            <span class="truncate">Temporary Stop</span>
+        <button id="btnTemporaryStop" type="button" onclick="openTemporaryStopModal()">
+            <i class="fa-solid fa-location-dot text-[#172554]"></i>
+            <span>Temporary Stop</span>
         </button>
     </div>
 
