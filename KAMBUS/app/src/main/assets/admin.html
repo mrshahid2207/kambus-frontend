@@ -610,7 +610,7 @@ body::after {
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
                         <h2 class="text-xl font-black text-slate-900 tracking-tight">Temporary Stop Changes</h2>
-                        <p class="text-xs text-slate-500">Read-only audit log of student auto-applied temporary stop selections & alternative bus allotments.</p>
+                        <p class="text-xs text-slate-500">Log of student temporary stop selections & alternative bus allotments. Use the bin icon to delete a change.</p>
                     </div>
                     <div class="flex items-center gap-2">
                         <select id="tempStopFilterStatus" onchange="window.KambusAdmin.filterTempStopLogs()" class="p-2 border border-slate-200 rounded-xl text-xs font-bold bg-white text-slate-700">
@@ -637,10 +637,11 @@ body::after {
                                 <th class="px-4 py-3">Effective Dates</th>
                                 <th class="px-4 py-3">Match Detail</th>
                                 <th class="px-4 py-3">Status</th>
+                                <th class="px-4 py-3 text-right">Action</th>
                             </tr>
                         </thead>
                         <tbody id="tempStopLogsList">
-                            <tr><td colspan="7" class="p-8 text-center text-xs text-slate-400">Loading temporary stop logs...</td></tr>
+                            <tr><td colspan="8" class="p-8 text-center text-xs text-slate-400">Loading temporary stop logs...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -825,6 +826,22 @@ body::after {
 
                 <div id="activityLogsList" class="space-y-2.5">
                     <div class="p-8 text-center text-xs text-slate-400">Loading activity logs...</div>
+                </div>
+            </section>
+
+            <!-- SECTION 9: ADMIN ACCOUNTS (super-admin only) -->
+            <section id="section-admins" class="admin-section space-y-5">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                        <h2 class="text-xl font-black text-slate-900 tracking-tight">Admin Accounts</h2>
+                        <p class="text-xs text-slate-500">Create admins, reset their passwords, or disable access. Admins sign in on the Admin tab with their Admin ID.</p>
+                    </div>
+                    <button type="button" onclick="window.KambusAdmin.openAddAdminModal()" class="px-4 py-2 bg-brand hover:bg-brandDark text-white text-xs font-bold rounded-xl shadow-xs flex items-center gap-2 self-start sm:self-auto">
+                        <i class="fa-solid fa-user-shield"></i> <span>Add Admin</span>
+                    </button>
+                </div>
+                <div id="adminsList">
+                    <div class="p-8 text-center text-xs text-slate-400">Loading admins...</div>
                 </div>
             </section>
 
@@ -1112,6 +1129,100 @@ body::after {
                 <div class="pt-3 flex gap-2">
                     <button type="button" onclick="document.getElementById('addStudentModal').classList.add('hidden')" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl">Cancel</button>
                     <button type="submit" class="flex-1 py-2.5 bg-brand hover:bg-brandDark text-white font-bold rounded-xl shadow">Create Student</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- EDIT STUDENT MODAL -->
+    <div id="editStudentModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-base font-black text-slate-900">Edit Student</h3>
+                <button type="button" onclick="document.getElementById('editStudentModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <form onsubmit="window.KambusAdmin.submitEditStudent(event)" class="space-y-3 text-xs">
+                <input type="hidden" name="student_id" id="editStudentId">
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">Full Name</label>
+                    <input type="text" name="name" id="editStudentName" class="w-full p-2.5 border border-slate-300 rounded-xl font-semibold" required>
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">Roll Number</label>
+                    <input type="text" name="roll_number" id="editStudentRoll" class="w-full p-2.5 border border-slate-300 rounded-xl uppercase font-mono" required>
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">Department</label>
+                    <input type="text" name="department" id="editStudentDepartment" placeholder="e.g. CSE / ECE" class="w-full p-2.5 border border-slate-300 rounded-xl">
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">Phone Number</label>
+                    <input type="tel" name="phone" id="editStudentPhone" class="w-full p-2.5 border border-slate-300 rounded-xl" required>
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">New Password <span class="text-slate-400 font-normal">(Leave blank to keep unchanged)</span></label>
+                    <input type="password" name="password" id="editStudentPassword" placeholder="••••••••" class="w-full p-2.5 border border-slate-300 rounded-xl">
+                </div>
+                <p class="text-[11px] text-slate-400">Bus and stop are changed with the Assign button.</p>
+                <div class="pt-3 flex gap-2">
+                    <button type="button" onclick="document.getElementById('editStudentModal').classList.add('hidden')" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl">Cancel</button>
+                    <button type="submit" class="flex-1 py-2.5 bg-brand hover:bg-brandDark text-white font-bold rounded-xl shadow">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ADD ADMIN MODAL (super-admin only) -->
+    <div id="addAdminModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-base font-black text-slate-900">Add Admin</h3>
+                <button type="button" onclick="document.getElementById('addAdminModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <form onsubmit="window.KambusAdmin.submitAddAdmin(event)" class="space-y-3 text-xs">
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">Full Name</label>
+                    <input type="text" name="name" class="w-full p-2.5 border border-slate-300 rounded-xl font-semibold" required>
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">Phone Number</label>
+                    <input type="tel" name="phone" class="w-full p-2.5 border border-slate-300 rounded-xl" required>
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">Password <span class="text-slate-400 font-normal">(at least 10 characters)</span></label>
+                    <input type="password" name="password" minlength="10" class="w-full p-2.5 border border-slate-300 rounded-xl" required>
+                </div>
+                <div class="pt-3 flex gap-2">
+                    <button type="button" onclick="document.getElementById('addAdminModal').classList.add('hidden')" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl">Cancel</button>
+                    <button type="submit" class="flex-1 py-2.5 bg-brand hover:bg-brandDark text-white font-bold rounded-xl shadow">Create Admin</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- RESET ADMIN PASSWORD MODAL (super-admin only) -->
+    <div id="resetAdminPasswordModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-base font-black text-slate-900">Reset Admin Password</h3>
+                <button type="button" onclick="document.getElementById('resetAdminPasswordModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <form onsubmit="window.KambusAdmin.submitResetAdminPassword(event)" class="space-y-3 text-xs">
+                <input type="hidden" name="admin_id" id="resetAdminId">
+                <p id="resetAdminName" class="font-bold text-slate-700"></p>
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">New Password <span class="text-slate-400 font-normal">(at least 10 characters)</span></label>
+                    <input type="password" name="password" minlength="10" class="w-full p-2.5 border border-slate-300 rounded-xl" required>
+                </div>
+                <div class="pt-3 flex gap-2">
+                    <button type="button" onclick="document.getElementById('resetAdminPasswordModal').classList.add('hidden')" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl">Cancel</button>
+                    <button type="submit" class="flex-1 py-2.5 bg-brand hover:bg-brandDark text-white font-bold rounded-xl shadow">Reset Password</button>
                 </div>
             </form>
         </div>

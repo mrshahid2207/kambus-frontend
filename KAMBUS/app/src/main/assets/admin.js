@@ -26,6 +26,8 @@
     let adminWsTimer = null;
     let cachedBuses = [];
     let cachedDrivers = [];
+    let cachedStudents = [];
+    let cachedAdmins = [];
     let cachedRoutes = [];
     let cachedStops = [];
     let cachedComplaints = [];
@@ -236,6 +238,9 @@
                 break;
             case "activity-logs":
                 loadActivityLogs();
+                break;
+            case "admins":
+                loadAdmins();
                 break;
             case "search":
                 document.getElementById("globalSearchInput")?.focus();
@@ -912,6 +917,7 @@
         try {
             const data = await apiRequest(query);
             const students = data.students || [];
+            cachedStudents = students;
 
             if (students.length === 0) {
                 container.innerHTML = `<div class="p-8 text-center text-xs text-slate-400 bg-white border border-slate-200/90 rounded-2xl">No students matching criteria.</div>`;
@@ -954,6 +960,9 @@
                                             </span>
                                         </td>
                                         <td class="p-3.5 text-right space-x-1">
+                                            <button type="button" onclick="window.KambusAdmin.openEditStudentModal(${Number(s.student_id)})" class="px-2.5 py-1 bg-slate-100 hover:bg-brand hover:text-white rounded-lg text-[11px] font-bold text-slate-700 transition">
+                                                Edit
+                                            </button>
                                             <button type="button" onclick="window.KambusAdmin.openAssignStudentModal(${s.student_id}, '${escapeHtml(s.name)}', ${s.bus_id || 'null'}, ${s.stop_id || 'null'})" class="px-2.5 py-1 bg-slate-100 hover:bg-brand hover:text-white rounded-lg text-[11px] font-bold text-slate-700 transition">
                                                 Assign
                                             </button>
@@ -1012,6 +1021,52 @@
             loadStudents();
         } catch (e) {
             showToast("error", "Assignment Failed", e.message);
+        }
+    }
+
+    function openEditStudentModal(studentId) {
+        const student = cachedStudents.find(s => s.student_id === studentId);
+        if (!student) {
+            showToast("error", "Error", "Student not found. Refresh the list and try again.");
+            return;
+        }
+
+        document.getElementById("editStudentId").value = student.student_id;
+        document.getElementById("editStudentName").value = student.name || "";
+        document.getElementById("editStudentRoll").value = student.roll_number || "";
+        document.getElementById("editStudentDepartment").value = student.department || "";
+        document.getElementById("editStudentPhone").value = student.phone || "";
+        document.getElementById("editStudentPassword").value = "";
+
+        document.getElementById("editStudentModal")?.classList.remove("hidden");
+    }
+
+    async function submitEditStudent(event) {
+        event.preventDefault();
+        const form = event.target;
+        const studentId = form.elements.student_id.value;
+        const name = form.elements.name.value.trim();
+        const rollNumber = form.elements.roll_number.value.trim().toUpperCase();
+        const department = form.elements.department.value.trim();
+        const phone = form.elements.phone.value.trim();
+        const password = form.elements.password.value;
+
+        const body = { name, roll_number: rollNumber, department, phone };
+        if (password) {
+            body.password = password;
+        }
+
+        try {
+            await apiRequest(`/admin/students/${studentId}`, {
+                method: "PATCH",
+                body
+            });
+            showToast("success", "Student Updated", `Student ${rollNumber} updated.`);
+            document.getElementById("editStudentModal")?.classList.add("hidden");
+            form.reset();
+            loadStudents();
+        } catch (e) {
+            showToast("error", "Update Failed", e.message);
         }
     }
 
@@ -1749,14 +1804,14 @@
         const container = document.getElementById("tempStopLogsList");
         if (!container) return;
 
-        container.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-xs text-slate-400">Loading temporary stop logs...</td></tr>`;
+        container.innerHTML = `<tr><td colspan="8" class="p-8 text-center text-xs text-slate-400">Loading temporary stop logs...</td></tr>`;
 
         try {
             const data = await apiRequest("/admin/temporary-stop-requests");
             cachedTempStopLogs = Array.isArray(data) ? data : [];
             filterTempStopLogs();
         } catch (e) {
-            container.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-xs text-rose-500">Failed to load temporary stop logs: ${escapeHtml(e.message)}</td></tr>`;
+            container.innerHTML = `<tr><td colspan="8" class="p-8 text-center text-xs text-rose-500">Failed to load temporary stop logs: ${escapeHtml(e.message)}</td></tr>`;
         }
     }
 
@@ -1772,7 +1827,7 @@
         }
 
         if (logs.length === 0) {
-            container.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-xs text-slate-400">No temporary stop change logs found.</td></tr>`;
+            container.innerHTML = `<tr><td colspan="8" class="p-8 text-center text-xs text-slate-400">No temporary stop change logs found.</td></tr>`;
             return;
         }
 
@@ -1798,9 +1853,34 @@
                     <td class="px-4 py-3 font-mono text-[11px] text-slate-500">${escapeHtml(l.start_date)} &rarr; ${escapeHtml(l.end_date)}</td>
                     <td class="px-4 py-3">${matchDetail}</td>
                     <td class="px-4 py-3">${statusBadge}</td>
+                    <td class="px-4 py-3 text-right">
+                        <button type="button" onclick="window.KambusAdmin.deleteTemporaryStopChange(${Number(l.request_id)})" class="p-1 text-slate-300 hover:text-rose-600 transition" title="Delete this temporary stop change">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </td>
                 </tr>
             `;
         }).join("");
+    }
+
+    async function deleteTemporaryStopChange(requestId) {
+        const change = cachedTempStopLogs.find(l => l.request_id === requestId);
+        const who = change
+            ? `${change.student_name} (${change.student_roll_number || "no roll number"})`
+            : `request #${requestId}`;
+        const isLive = change && ["active", "scheduled", "pending_admin_approval"].includes(change.status);
+        const question = isLive
+            ? `Delete the temporary stop change for ${who}?\n\nIt stops applying now and the student is told they are back on their regular stop and bus. This cannot be undone.`
+            : `Delete this temporary stop change for ${who}? This cannot be undone.`;
+        if (!confirm(question)) return;
+
+        try {
+            await apiRequest(`/admin/temporary-stop-requests/${requestId}`, { method: "DELETE" });
+            showToast("success", "Deleted", "Temporary stop change deleted.");
+            loadTemporaryStopLogs();
+        } catch (e) {
+            showToast("error", "Delete Failed", e.message);
+        }
     }
 
     // =========================================================================
@@ -2424,12 +2504,157 @@
     }
 
     // =========================================================================
+    // 9. ADMIN ACCOUNTS (super-admin only)
+    // =========================================================================
+
+    function setupSuperAdminNav() {
+        if (!isSuperAdmin() || document.querySelector('[data-section="admins"]')) return;
+        const activityBtn = document.querySelector('[data-section="activity-logs"]');
+        if (!activityBtn) return;
+
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "admin-nav-btn";
+        btn.setAttribute("data-section", "admins");
+        btn.innerHTML = '<i class="fa-solid fa-user-shield w-4 text-center"></i> <span>Admin Accounts</span>';
+        btn.addEventListener("click", () => showSection("admins"));
+        activityBtn.insertAdjacentElement("afterend", btn);
+    }
+
+    async function loadAdmins() {
+        const container = document.getElementById("adminsList");
+        if (!container) return;
+
+        try {
+            const data = await apiRequest("/admin/admins");
+            cachedAdmins = Array.isArray(data) ? data : [];
+
+            if (cachedAdmins.length === 0) {
+                container.innerHTML = `<div class="p-8 text-center text-xs text-slate-400 bg-white border border-slate-200/90 rounded-2xl">No admins yet. Use Add Admin to create one.</div>`;
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-xs">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs border-collapse">
+                            <thead class="bg-slate-50 border-b border-slate-200/80 text-[11px] font-black text-slate-500 uppercase tracking-wider">
+                                <tr>
+                                    <th class="p-3.5">Admin</th>
+                                    <th class="p-3.5">Admin ID (for sign-in)</th>
+                                    <th class="p-3.5">Status</th>
+                                    <th class="p-3.5">Created</th>
+                                    <th class="p-3.5 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                ${cachedAdmins.map(a => `
+                                    <tr class="hover:bg-slate-50/80 transition">
+                                        <td class="p-3.5">
+                                            <span class="font-bold text-slate-900">${escapeHtml(a.name)}</span>
+                                            <p class="text-[11px] text-slate-400 font-mono">${escapeHtml(a.phone)}</p>
+                                        </td>
+                                        <td class="p-3.5 font-mono font-bold text-brand">${escapeHtml(a.admin_id)}</td>
+                                        <td class="p-3.5">
+                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-black ${a.status === "active" ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"}">${a.status === "active" ? "ACTIVE" : "DISABLED"}</span>
+                                        </td>
+                                        <td class="p-3.5 text-slate-500">${formatDateTime(a.created_at)}</td>
+                                        <td class="p-3.5 text-right space-x-1">
+                                            <button type="button" onclick="window.KambusAdmin.openResetAdminPasswordModal(${Number(a.admin_id)})" class="px-2.5 py-1 bg-slate-100 hover:bg-brand hover:text-white rounded-lg text-[11px] font-bold text-slate-700 transition">Reset password</button>
+                                            <button type="button" onclick="window.KambusAdmin.toggleAdminStatus(${Number(a.admin_id)})" class="px-2.5 py-1 bg-slate-100 hover:bg-rose-600 hover:text-white rounded-lg text-[11px] font-bold text-slate-700 transition">${a.status === "active" ? "Disable" : "Enable"}</button>
+                                        </td>
+                                    </tr>
+                                `).join("")}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        } catch (e) {
+            container.innerHTML = `<div class="p-8 text-center text-xs text-red-500">Failed to load admins: ${escapeHtml(e.message)}</div>`;
+        }
+    }
+
+    function openAddAdminModal() {
+        document.getElementById("addAdminModal")?.classList.remove("hidden");
+    }
+
+    async function submitAddAdmin(event) {
+        event.preventDefault();
+        const form = event.target;
+        const name = form.elements.name.value.trim();
+        const phone = form.elements.phone.value.trim();
+        const password = form.elements.password.value;
+
+        try {
+            const created = await apiRequest("/admin/create", {
+                method: "POST",
+                body: { name, phone, password }
+            });
+            showToast("success", "Admin Created", `${created.name} can sign in on the Admin tab with Admin ID ${created.admin_id}.`);
+            document.getElementById("addAdminModal")?.classList.add("hidden");
+            form.reset();
+            loadAdmins();
+        } catch (e) {
+            showToast("error", "Failed to Add Admin", e.message);
+        }
+    }
+
+    async function toggleAdminStatus(adminId) {
+        const admin = cachedAdmins.find(a => a.admin_id === adminId);
+        if (!admin) return;
+        const disabling = admin.status === "active";
+        const question = disabling
+            ? `Disable ${admin.name}? They will not be able to sign in. An admin who is signed in now keeps access for up to an hour.`
+            : `Enable ${admin.name}? They will be able to sign in again.`;
+        if (!confirm(question)) return;
+
+        try {
+            await apiRequest(`/admin/admins/${adminId}/${disabling ? "disable" : "enable"}`, { method: "POST" });
+            showToast("success", disabling ? "Admin Disabled" : "Admin Enabled", `${admin.name} is now ${disabling ? "disabled" : "active"}.`);
+            loadAdmins();
+        } catch (e) {
+            showToast("error", "Update Failed", e.message);
+        }
+    }
+
+    function openResetAdminPasswordModal(adminId) {
+        const admin = cachedAdmins.find(a => a.admin_id === adminId);
+        if (!admin) return;
+        document.getElementById("resetAdminId").value = admin.admin_id;
+        document.getElementById("resetAdminName").textContent = `Admin: ${admin.name} (ID ${admin.admin_id})`;
+        const passwordInput = document.querySelector("#resetAdminPasswordModal input[name='password']");
+        if (passwordInput) passwordInput.value = "";
+        document.getElementById("resetAdminPasswordModal")?.classList.remove("hidden");
+    }
+
+    async function submitResetAdminPassword(event) {
+        event.preventDefault();
+        const form = event.target;
+        const adminId = form.elements.admin_id.value;
+        const password = form.elements.password.value;
+
+        try {
+            await apiRequest(`/admin/admins/${adminId}/reset-password`, {
+                method: "POST",
+                body: { password }
+            });
+            showToast("success", "Password Reset", "The admin can sign in with the new password.");
+            document.getElementById("resetAdminPasswordModal")?.classList.add("hidden");
+            form.reset();
+        } catch (e) {
+            showToast("error", "Reset Failed", e.message);
+        }
+    }
+
+    // =========================================================================
     // INITIALIZATION ON DOM READY
     // =========================================================================
 
     document.addEventListener("DOMContentLoaded", () => {
         if (!checkAuth()) return;
 
+        setupSuperAdminNav();
         initAdminWebSocket();
         showSection("dashboard");
 
@@ -2469,6 +2694,8 @@
         openAddStudentModal,
         openAssignStudentModal,
         submitAssignStudent,
+        openEditStudentModal,
+        submitEditStudent,
         deleteStudent,
         submitAddStudent,
         loadStops,
@@ -2483,6 +2710,12 @@
         loadGeofenceLogs,
         loadTemporaryStopLogs,
         filterTempStopLogs,
+        deleteTemporaryStopChange,
+        openAddAdminModal,
+        submitAddAdmin,
+        toggleAdminStatus,
+        openResetAdminPasswordModal,
+        submitResetAdminPassword,
         submitAddRoute,
         deleteRoute,
         reorderRouteStop,
