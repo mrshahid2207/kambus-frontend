@@ -14,6 +14,17 @@
             })[c]
         );
 
+    function timeAgo(value) {
+        const then = new Date(value).getTime();
+        if (!Number.isFinite(then)) return "";
+        const seconds = Math.max(0, Math.round((Date.now() - then) / 1000));
+        if (seconds < 45) return "Just now";
+        if (seconds < 3600) return Math.round(seconds / 60) + " min ago";
+        if (seconds < 86400) return Math.round(seconds / 3600) + " h ago";
+        if (seconds < 604800) return Math.round(seconds / 86400) + " d ago";
+        return new Date(then).toLocaleDateString();
+    }
+
     async function request(path, options = {}) {
 
         const token = localStorage.getItem("kambus_token");
@@ -64,8 +75,10 @@
                     </button>
                 </header>
 
-                <div id="kambusNotificationList">
-                    Loading…
+                <div id="kambusNotificationList" aria-busy="true">
+                    <div class="kambus-skeleton-row"><i></i><i></i></div>
+                    <div class="kambus-skeleton-row"><i></i><i></i></div>
+                    <div class="kambus-skeleton-row"><i></i><i></i></div>
                 </div>
 
             </section>
@@ -175,6 +188,8 @@
             }
 
 
+            list.removeAttribute("aria-busy");
+
             if (data.notifications.length) {
 
                 list.innerHTML =
@@ -196,9 +211,7 @@
                                 </span>
 
                                 <small>
-                                    ${new Date(
-                                        n.created_at
-                                    ).toLocaleString()}
+                                    ${timeAgo(n.created_at)}
                                 </small>
 
                             </button>
@@ -208,7 +221,7 @@
             } else {
 
                 list.innerHTML =
-                    '<p class="kambus-notification-empty">No notifications yet.</p>';
+                    '<div class="kambus-notification-empty"><div class="kambus-notification-empty__icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg></div><strong>You\'re all caught up</strong><span>New alerts will appear here.</span></div>';
 
             }
 
@@ -260,7 +273,11 @@
                 );
 
             if (list) {
-                list.textContent = error.message;
+                list.removeAttribute("aria-busy");
+                const note = document.createElement("p");
+                note.className = "kambus-notification-empty";
+                note.textContent = error.message;
+                list.replaceChildren(note);
             }
 
         }

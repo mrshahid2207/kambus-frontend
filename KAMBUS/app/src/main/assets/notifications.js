@@ -1,11 +1,18 @@
 (function () {
     "use strict";
 
+    const SVG = (d) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+    const ICONS = {
+        success: SVG('<path d="M5 12.5l4.5 4.5L19 7.5"/>'),
+        error: SVG('<circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5"/><path d="M12 16.6v.01"/>'),
+        warning: SVG('<path d="M12 4l9 16H3z"/><path d="M12 10v4.5"/><path d="M12 17.6v.01"/>'),
+        info: SVG('<circle cx="12" cy="12" r="9"/><path d="M12 11v5.5"/><path d="M12 7.6v.01"/>')
+    };
     const TYPES = {
-        success: { icon: "✓", title: "Success", duration: 3600 },
-        error: { icon: "!", title: "Something went wrong", duration: 5600 },
-        warning: { icon: "!", title: "Attention needed", duration: 4400 },
-        info: { icon: "i", title: "KAMBUS update", duration: 3600 }
+        success: { icon: ICONS.success, title: "Success", duration: 3600 },
+        error: { icon: ICONS.error, title: "Something went wrong", duration: 5600 },
+        warning: { icon: ICONS.warning, title: "Attention needed", duration: 4400 },
+        info: { icon: ICONS.info, title: "KAMBUS update", duration: 3600 }
     };
 
     function region() {
@@ -26,7 +33,9 @@
         const toast = document.createElement("article");
         toast.className = `kambus-toast kambus-toast--${config.type || "info"}`;
         toast.setAttribute("role", config.type === "error" ? "alert" : "status");
-        toast.innerHTML = `<div class="kambus-toast__icon" aria-hidden="true">${config.icon}</div><div class="kambus-toast__content"><strong class="kambus-toast__title"></strong><p class="kambus-toast__message"></p></div><button class="kambus-toast__dismiss" type="button" aria-label="Dismiss notification">×</button>`;
+        toast.innerHTML = `<div class="kambus-toast__icon" aria-hidden="true">${config.icon}</div><div class="kambus-toast__content"><strong class="kambus-toast__title"></strong><p class="kambus-toast__message"></p></div><button class="kambus-toast__dismiss" type="button" aria-label="Dismiss notification">×</button><span class="kambus-toast__progress" aria-hidden="true"></span>`;
+        if (config.duration !== 0) toast.style.setProperty("--k-duration", config.duration + "ms");
+        else toast.querySelector(".kambus-toast__progress").remove();
         toast.querySelector(".kambus-toast__title").textContent = config.title;
         toast.querySelector(".kambus-toast__message").textContent = config.message || "";
         const dismiss = () => {
