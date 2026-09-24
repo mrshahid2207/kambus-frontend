@@ -277,6 +277,463 @@
             background: #fde68a !important;
         }
 
+        /* ========================================================
+           LIVE ETA INDICATOR (green = live, amber blink = updating, grey = idle)
+           ======================================================== */
+        .eta-pill {
+            --dot: #94a3b8;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            flex-shrink: 0;
+            padding: 3px 10px;
+            border-radius: 9999px;
+            border: 1px solid transparent;
+            line-height: 1;
+            transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease;
+        }
+        .eta-pill-label {
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            line-height: 1;
+        }
+        .eta-dot {
+            position: relative;
+            display: block;
+            flex: 0 0 8px;
+            width: 8px;
+            height: 8px;
+            border-radius: 9999px;
+            background: var(--dot);
+        }
+        .eta-dot::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: 9999px;
+            background: var(--dot);
+            opacity: 0;
+            pointer-events: none;
+        }
+        .eta-pill[data-state="live"] {
+            --dot: #34d399;
+            color: #6ee7b7;
+            background: rgba(16, 185, 129, 0.22);
+            border-color: rgba(52, 211, 153, 0.45);
+        }
+        .eta-pill[data-state="live"] .eta-dot::after {
+            animation: etaPing 1.6s cubic-bezier(0, 0, 0.2, 1) infinite;
+        }
+        .eta-pill[data-state="updating"] {
+            --dot: #fbbf24;
+            color: #fcd34d;
+            background: rgba(245, 158, 11, 0.18);
+            border-color: rgba(251, 191, 36, 0.4);
+        }
+        .eta-pill[data-state="updating"] .eta-dot {
+            animation: etaBlink 1.2s ease-in-out infinite;
+        }
+        .eta-pill[data-state="idle"] {
+            --dot: #94a3b8;
+            color: #cbd5e1;
+            background: rgba(148, 163, 184, 0.16);
+            border-color: rgba(148, 163, 184, 0.35);
+        }
+        @keyframes etaPing {
+            0%   { transform: scale(1);   opacity: 0.7; }
+            75%, 100% { transform: scale(2.6); opacity: 0; }
+        }
+        @keyframes etaBlink {
+            0%, 100% { opacity: 1; }
+            50%      { opacity: 0.25; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .eta-dot,
+            .eta-dot::after {
+                animation: none !important;
+            }
+        }
+
+        /* ========================================================
+           NOTIFICATION BELL DOT (theme accent; change --notif-dot to recolour)
+           ======================================================== */
+        :root {
+            --notif-dot: #f59e0b;
+        }
+        #notificationBadge {
+            position: absolute;
+            top: 3px;
+            right: 3px;
+            width: 12px;
+            height: 12px;
+            border-radius: 9999px;
+            background: var(--notif-dot) !important;
+            border: 2px solid #ffffff !important;
+            pointer-events: none;
+        }
+
+        /* ========================================================
+           BOTTOM BAR: lift the four buttons off the screen edge
+           ======================================================== */
+        #actionFooter {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 12px 14px calc(16px + env(safe-area-inset-bottom, 0px)) !important;
+            background: #ffffff !important;
+            border-top: 1px solid #e2e8f0 !important;
+        }
+        #actionFooter > * { margin: 0 !important; }
+
+        /* Driver card */
+        #driverRow {
+            min-height: 56px;
+            padding: 8px 12px !important;
+            gap: 10px !important;
+            background: #f8fafc !important;
+            border: 1.5px solid #e2e8f0 !important;
+            border-radius: 16px !important;
+        }
+        #driverRow > div:first-child { flex: 1 1 auto; }
+
+        /* Four action buttons: even 2x2 grid */
+        #actionGrid {
+            gap: 10px !important;
+        }
+        #actionGrid > button,
+        #actionGrid > a,
+        #actionGrid .action-btn {
+            height: 48px !important;
+            min-height: 48px !important;
+            max-height: 48px !important;
+            border-radius: 14px !important;
+        }
+
+        /* Report (hazard) button now sits right after the driver's name */
+        #driverComplaintButton {
+            flex: 0 0 auto;
+        }
+
+        /* ========================================================
+           MODAL DESIGN SYSTEM  (Report driver, Wait, Missed bus, Temporary stop)
+           One structure, colour-coded per action.
+           ======================================================== */
+        .kx-sheet {
+            --grad-a: #f59e0b; --grad-b: #d97706; --on-accent: #3b2405;
+            --accent: #f59e0b; --accent-deep: #b45309;
+            --accent-soft: #fffbeb; --accent-line: #fde68a; --accent-ink: #92400e;
+            position: relative;
+            width: 100%;
+            max-width: 380px;
+            max-height: calc(100dvh - 32px);
+            display: flex;
+            flex-direction: column;
+            background: #ffffff;
+            border-radius: 24px;
+            box-shadow: 0 24px 60px rgba(15, 36, 45, 0.38), 0 0 0 1px rgba(15, 36, 45, 0.06);
+            overflow: hidden;
+            color: #0f172a;
+        }
+        .kx-sheet--wide { max-width: 440px; }
+        .kx-sheet--rose {
+            --grad-a: #f43f5e; --grad-b: #e11d48; --on-accent: #ffffff;
+            --accent: #f43f5e; --accent-deep: #be123c;
+            --accent-soft: #fff1f2; --accent-line: #fecdd3; --accent-ink: #be123c;
+        }
+        .kx-sheet--sky {
+            --grad-a: #0284c7; --grad-b: #0369a1; --on-accent: #ffffff;
+            --accent: #0ea5e9; --accent-deep: #0369a1;
+            --accent-soft: #f0f9ff; --accent-line: #bae6fd; --accent-ink: #0369a1;
+        }
+
+        .kx-head {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 18px 18px 14px;
+            background: linear-gradient(180deg, var(--accent-soft) 0%, #ffffff 100%);
+        }
+        .kx-head-icon {
+            width: 44px; height: 44px; flex: 0 0 44px;
+            display: grid; place-items: center;
+            border-radius: 14px;
+            background: #ffffff;
+            color: var(--accent-ink);
+            border: 1.5px solid var(--accent-line);
+            box-shadow: 0 2px 8px rgba(15, 36, 45, 0.06);
+        }
+        .kx-head-icon svg { width: 22px; height: 22px; }
+        .kx-head-text { flex: 1 1 auto; min-width: 0; }
+        .kx-title { margin: 0; font-size: 17px; font-weight: 800; letter-spacing: -0.01em; line-height: 1.2; color: #0f172a; }
+        .kx-sub { margin: 3px 0 0; font-size: 12px; line-height: 1.35; color: #64748b; font-weight: 500; }
+        .kx-close {
+            width: 34px; height: 34px; flex: 0 0 34px;
+            display: grid; place-items: center;
+            border: 0; border-radius: 12px;
+            background: rgba(15, 23, 42, 0.06);
+            color: #475569;
+            cursor: pointer; padding: 0;
+            transition: transform 0.1s ease, background-color 0.15s ease;
+        }
+        .kx-close:hover { background: rgba(15, 23, 42, 0.1); }
+        .kx-close:active { transform: scale(0.92); }
+        .kx-close svg { width: 18px; height: 18px; }
+
+        .kx-body {
+            display: flex; flex-direction: column; gap: 12px;
+            padding: 4px 18px 18px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        .kx-body.kx-center { text-align: center; align-items: stretch; }
+        .kx-foot {
+            display: flex; gap: 10px;
+            padding: 12px 18px 16px;
+            border-top: 1px solid #eef2f6;
+            background: #ffffff;
+        }
+        .kx-foot > .kx-btn { flex: 1 1 0; min-width: 0; }
+
+        /* Buttons */
+        .kx-btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            width: 100%; min-height: 48px; padding: 0 16px;
+            border-radius: 14px; border: 1.5px solid transparent;
+            font-family: inherit; font-size: 14px; font-weight: 800; line-height: 1;
+            cursor: pointer; user-select: none; text-decoration: none;
+            transition: transform 0.1s ease, filter 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+        }
+        .kx-btn svg { width: 18px; height: 18px; flex: 0 0 auto; }
+        .kx-btn:active:not(:disabled) { transform: scale(0.98); }
+        .kx-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .kx-btn--primary {
+            background: linear-gradient(180deg, var(--grad-a), var(--grad-b));
+            color: var(--on-accent);
+            box-shadow: 0 8px 18px -8px var(--grad-b);
+        }
+        .kx-btn--primary:hover:not(:disabled) { filter: brightness(1.05); }
+        .kx-btn--soft {
+            background: var(--accent-soft); color: var(--accent-ink); border-color: var(--accent-line);
+        }
+        .kx-btn--soft:hover:not(:disabled) { filter: brightness(0.98); }
+        .kx-btn--ghost { background: #f8fafc; color: #334155; border-color: #e2e8f0; }
+        .kx-btn--ghost:hover:not(:disabled) { background: #f1f5f9; }
+        .kx-btn--quiet { background: transparent; color: #64748b; min-height: 40px; font-weight: 700; }
+        .kx-btn--quiet:hover { color: #0f172a; }
+        .kx-btn--sm { min-height: 42px; font-size: 13px; }
+
+        /* Option rows (report driver) */
+        .kx-list { display: flex; flex-direction: column; gap: 8px; }
+        .kx-option {
+            display: flex; align-items: center; gap: 12px;
+            width: 100%; padding: 11px 12px;
+            border-radius: 16px; border: 1.5px solid #e2e8f0; background: #ffffff;
+            font-family: inherit; text-align: left; cursor: pointer;
+            transition: transform 0.1s ease, border-color 0.15s ease, background-color 0.15s ease;
+        }
+        .kx-option:hover { background: #f8fafc; }
+        .kx-option:active:not(:disabled) { transform: scale(0.985); border-color: var(--accent); }
+        .kx-option:disabled { opacity: 0.55; cursor: not-allowed; }
+        .kx-option-icon {
+            width: 40px; height: 40px; flex: 0 0 40px;
+            display: grid; place-items: center; border-radius: 12px;
+        }
+        .kx-option-icon svg { width: 20px; height: 20px; }
+        .kx-option-icon--amber  { background: #fffbeb; color: #b45309; }
+        .kx-option-icon--rose   { background: #fff1f2; color: #be123c; }
+        .kx-option-icon--violet { background: #f5f3ff; color: #6d28d9; }
+        .kx-option-icon--sky    { background: #f0f9ff; color: #0369a1; }
+        .kx-option-icon--slate  { background: #f1f5f9; color: #475569; }
+        .kx-option-text { flex: 1 1 auto; min-width: 0; }
+        .kx-option-title { display: block; font-size: 14px; font-weight: 700; line-height: 1.25; color: #0f172a; }
+        .kx-option-desc { display: block; margin-top: 2px; font-size: 12px; line-height: 1.3; color: #64748b; font-weight: 500; }
+        .kx-chevron { flex: 0 0 auto; width: 18px; height: 18px; color: #94a3b8; }
+
+        /* Callouts, info card, notices */
+        .kx-callout {
+            padding: 10px 12px; border-radius: 14px;
+            background: var(--accent-soft); border: 1px solid var(--accent-line); color: var(--accent-ink);
+            text-align: left;
+        }
+        .kx-callout-label { margin: 0; font-size: 11px; font-weight: 700; opacity: 0.8; }
+        .kx-callout-text { margin: 2px 0 0; font-size: 13px; font-weight: 700; line-height: 1.35; }
+        .kx-info {
+            display: flex; align-items: center; justify-content: space-between; gap: 12px;
+            padding: 12px 14px; border-radius: 16px;
+            background: #f8fafc; border: 1.5px solid #e2e8f0; text-align: left;
+        }
+        .kx-info-label { font-size: 12px; font-weight: 600; color: #64748b; }
+        .kx-info-value {
+            font-size: 20px; font-weight: 800; letter-spacing: -0.01em; color: #0f172a;
+            padding: 2px 12px; border-radius: 10px; background: #ffffff; border: 1.5px solid #e2e8f0;
+        }
+        .kx-note { margin: 0; font-size: 13px; line-height: 1.5; color: #475569; font-weight: 500; text-align: left; }
+        .kx-notice {
+            padding: 10px 12px; border-radius: 12px; border: 1px solid;
+            font-size: 12.5px; font-weight: 600; line-height: 1.4; text-align: left;
+        }
+        .kx-notice--row { display: flex; align-items: center; gap: 8px; }
+        .kx-notice svg { width: 16px; height: 16px; flex: 0 0 auto; }
+        .kx-notice--ok     { background: #ecfdf5; border-color: #a7f3d0; color: #047857; }
+        .kx-notice--danger { background: #fff1f2; border-color: #fecdd3; color: #be123c; }
+        .kx-notice--warn   { background: #fffbeb; border-color: #fde68a; color: #92400e; }
+        .kx-status-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-weight: 800; }
+        .kx-status-dates { font-size: 11px; font-weight: 700; opacity: 0.85; white-space: nowrap; }
+        .kx-status-name { margin-top: 2px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+        /* Wait tiles */
+        .kx-wait-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .kx-wait-tile {
+            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+            min-height: 78px; padding: 8px;
+            border-radius: 16px; border: 1.5px solid var(--accent-line);
+            background: var(--accent-soft); color: var(--accent-ink);
+            font-family: inherit; cursor: pointer;
+            transition: transform 0.1s ease, background-color 0.15s ease, border-color 0.15s ease;
+        }
+        .kx-wait-tile:hover:not(:disabled) { background: #fef3c7; }
+        .kx-wait-tile:active:not(:disabled) { transform: scale(0.96); border-color: var(--accent); }
+        .kx-wait-tile:disabled { opacity: 0.5; cursor: not-allowed; }
+        .kx-wait-num { font-size: 28px; font-weight: 800; line-height: 1; letter-spacing: -0.02em; }
+        .kx-wait-unit { font-size: 11px; font-weight: 700; opacity: 0.85; }
+
+        /* Form controls */
+        .kx-stack { display: flex; flex-direction: column; gap: 8px; }
+        .kx-stack:empty { display: none; }
+        .kx-label { display: block; margin: 0 0 5px; font-size: 12px; font-weight: 700; color: #334155; }
+        .kx-input {
+            width: 100%; min-height: 44px; padding: 0 12px;
+            border-radius: 12px; border: 1.5px solid #e2e8f0; background: #ffffff;
+            font-family: inherit; font-size: 14px; font-weight: 600; color: #0f172a;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+        .kx-input:focus, .kx-textarea:focus {
+            outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft);
+        }
+        select.kx-input {
+            -webkit-appearance: none; appearance: none; padding-right: 36px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+            background-repeat: no-repeat; background-position: right 12px center;
+        }
+        .kx-textarea {
+            width: 100%; padding: 12px; border-radius: 14px; border: 1.5px solid #e2e8f0; background: #f8fafc;
+            font-family: inherit; font-size: 14px; font-weight: 500; color: #0f172a; resize: none; line-height: 1.45;
+        }
+        .kx-textarea::placeholder { color: #94a3b8; }
+        .kx-error { margin: 0; font-size: 12px; font-weight: 700; color: #be123c; text-align: left; }
+        .kx-row { display: flex; gap: 10px; }
+        .kx-row > .kx-btn:first-child { flex: 1 1 0; }
+        .kx-row > .kx-btn:last-child { flex: 2 1 0; }
+        .kx-dates { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+        /* Temporary stop pieces */
+        .kx-route {
+            padding: 10px 12px; border-radius: 12px;
+            background: #f8fafc; border: 1px solid #e2e8f0; border-left: 3px solid var(--accent);
+            font-size: 12px; font-weight: 500; line-height: 1.5; color: #475569;
+        }
+        .kx-map {
+            position: relative; isolation: isolate;
+            height: 176px; border-radius: 16px; overflow: hidden; border: 1.5px solid #e2e8f0;
+        }
+        .kx-map > #tempStopPickerMap { width: 100%; height: 100%; }
+        .kx-seg {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 4px;
+            padding: 4px; border-radius: 14px; background: #f1f5f9;
+        }
+        .kx-seg-btn {
+            min-height: 38px; border: 0; border-radius: 10px; background: transparent;
+            font-family: inherit; font-size: 13px; font-weight: 700; color: #475569; cursor: pointer;
+            transition: background-color 0.15s ease, color 0.15s ease;
+        }
+        .kx-seg-btn.is-active { background: var(--navy); color: #ffffff; box-shadow: 0 2px 8px rgba(15, 36, 45, 0.25); }
+        .kx-details {
+            border-radius: 12px; border: 1px solid #e2e8f0; background: #f8fafc; padding: 10px 12px;
+        }
+        .kx-details summary { cursor: pointer; font-size: 12.5px; font-weight: 700; color: #475569; user-select: none; }
+        .kx-coords { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+        .kx-pickup { padding: 10px 12px; border-radius: 12px; background: var(--accent-soft); border: 1px solid var(--accent-line); }
+        .kx-pickup-label { font-size: 11px; font-weight: 700; color: var(--accent-ink); opacity: 0.85; }
+        .kx-pickup-address { margin-top: 2px; font-size: 13px; font-weight: 700; color: #0f172a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .kx-bus-option {
+            display: flex; align-items: flex-start; gap: 10px;
+            padding: 10px 12px; border-radius: 14px; border: 1.5px solid #e2e8f0; background: #ffffff;
+            font-size: 12px; line-height: 1.4; color: #475569; cursor: pointer; text-align: left;
+        }
+        .kx-bus-option:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+        .kx-bus-option input { flex: 0 0 auto; margin-top: 3px; accent-color: var(--accent-deep); }
+        .kx-bus-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+        .kx-bus-title { font-size: 13px; font-weight: 800; color: #0f172a; }
+        .kx-tag { margin-left: 6px; font-size: 11px; font-weight: 700; }
+        .kx-tag--ok { color: #059669; }
+        .kx-tag--brand { color: #0369a1; }
+        .kx-muted { color: #64748b; }
+
+        /* ========================================================
+           ALERT BANNERS (driver SOS / route detour)
+           ======================================================== */
+        .kx-alert {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 10px 12px;
+            border-bottom: 1px solid;
+            font-size: 13px;
+            line-height: 1.35;
+        }
+        .kx-alert--sos {
+            background: linear-gradient(90deg, #dc2626, #e11d48);
+            border-color: #b91c1c;
+            color: #ffffff;
+        }
+        .kx-alert--detour {
+            background: #fffbeb;
+            border-color: #fde68a;
+            color: #78350f;
+        }
+        .kx-alert-icon {
+            flex: 0 0 auto;
+            width: 30px; height: 30px;
+            display: grid; place-items: center;
+            border-radius: 10px;
+        }
+        .kx-alert-icon svg { width: 18px; height: 18px; }
+        .kx-alert--sos .kx-alert-icon { background: rgba(255, 255, 255, 0.2); }
+        .kx-alert--detour .kx-alert-icon { background: #fef3c7; color: #b45309; }
+        .kx-alert-body { flex: 1 1 auto; min-width: 0; }
+        .kx-alert-title { display: block; font-size: 13px; font-weight: 800; letter-spacing: -0.005em; }
+        .kx-alert-text {
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            margin-top: 1px;
+            font-size: 12.5px;
+            font-weight: 500;
+            opacity: 0.95;
+        }
+        .kx-alert-call {
+            display: inline-flex; align-items: center; gap: 6px;
+            margin-top: 8px; height: 32px; padding: 0 14px;
+            border-radius: 9999px;
+            background: #ffffff; color: #b91c1c;
+            font-size: 12px; font-weight: 800; text-decoration: none;
+            box-shadow: 0 2px 8px rgba(127, 29, 29, 0.25);
+        }
+        .kx-alert-call svg { width: 14px; height: 14px; }
+        .kx-alert-close {
+            flex: 0 0 auto;
+            width: 30px; height: 30px;
+            display: grid; place-items: center;
+            border: 0; border-radius: 10px; padding: 0;
+            background: rgba(255, 255, 255, 0.18);
+            color: inherit; cursor: pointer;
+        }
+        .kx-alert--detour .kx-alert-close { background: rgba(120, 53, 15, 0.08); }
+        .kx-alert-close svg { width: 16px; height: 16px; }
+
         /* Modals Backdrop & Window */
         .hidden,
         .kambus-modal-backdrop.hidden,
@@ -465,824 +922,800 @@
 </head>
 <body class="bg-bg text-navy min-h-screen flex flex-col font-sans">
 
-    <!-- TOP HEADER -->
-    <header class="bg-white border-b border-slate-200 px-3.5 py-2.5 sticky top-0 z-50 flex items-center justify-between shadow-xs">
-        <!-- Logo & Title -->
-        <div class="flex items-center gap-2.5 min-w-0">
-            <div class="w-8 h-8 rounded-lg bg-navy flex items-center justify-center shrink-0 shadow-xs">
-                <img src="brand/mark-white.svg" alt="KAMBUS" class="w-4 h-4">
-            </div>
-            <div class="min-w-0">
-                <div class="flex items-center gap-1.5">
-                    <span class="text-sm font-extrabold tracking-tight text-slate-900 leading-none">KAMBUS</span>
-                    <span class="bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider">
+<!-- TOP HEADER -->
+<header class="bg-white border-b border-slate-200 px-3.5 py-2.5 sticky top-0 z-50 flex items-center justify-between shadow-xs">
+    <!-- Logo & Title -->
+    <div class="flex items-center gap-2.5 min-w-0">
+        <div class="w-8 h-8 rounded-lg bg-navy flex items-center justify-center shrink-0 shadow-xs">
+            <img src="brand/mark-white.svg" alt="KAMBUS" class="w-4 h-4">
+        </div>
+        <div class="min-w-0">
+            <div class="flex items-center gap-1.5">
+                <span class="text-sm font-extrabold tracking-tight text-slate-900 leading-none">KAMBUS</span>
+                <span class="bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider">
                         Student
                     </span>
-                </div>
-                <p id="studentBusRoute" class="text-xs text-slate-500 font-medium truncate mt-0.5">
-                    Loading assigned bus...
-                </p>
             </div>
+            <p id="studentBusRoute" class="text-xs text-slate-500 font-medium truncate mt-0.5">
+                Loading assigned bus...
+            </p>
         </div>
+    </div>
 
-        <!-- Header Actions with Guaranteed Universal SVGs -->
-        <div class="flex items-center gap-2 shrink-0">
-            <!-- Notification Bell -->
-            <button id="notificationBell" type="button" class="btn-bell" aria-label="Notifications" title="Notifications">
-                <svg class="w-4 h-4 text-slate-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-                <span id="notificationBadge" class="hidden absolute top-1 right-1 w-2 h-2 rounded-full bg-rose-500 border border-white"></span>
-            </button>
+    <!-- Header Actions with Guaranteed Universal SVGs -->
+    <div class="flex items-center gap-2 shrink-0">
+        <!-- Notification Bell -->
+        <button id="notificationBell" type="button" class="btn-bell" aria-label="Notifications" title="Notifications">
+            <svg class="w-4 h-4 text-slate-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            <span id="notificationBadge" class="hidden absolute top-1 right-1 w-2 h-2 rounded-full bg-rose-500 border border-white"></span>
+        </button>
 
-            <!-- My Pass Button -->
-            <button type="button" onclick="togglePassModal()" class="btn-pass" aria-label="My Pass">
-                <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
-                <span>My Pass</span>
-            </button>
+        <!-- My Pass Button -->
+        <button type="button" onclick="togglePassModal()" class="btn-pass" aria-label="My Pass">
+            <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+            <span>My Pass</span>
+        </button>
 
-            <!-- Logout Link -->
-            <a href="index.html" class="btn-logout" aria-label="Logout" title="Log out">
-                <svg class="w-4 h-4 text-rose-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-            </a>
-        </div>
-    </header>
-
-    <!-- SOS ALERT BANNER -->
-    <div id="studentSosAlertBanner" class="hidden bg-gradient-to-r from-red-600 to-rose-600 text-white px-3.5 py-2 flex items-center justify-between gap-3 text-xs font-bold shadow-md">
-        <div class="flex items-center gap-2 min-w-0">
-            <span class="w-2 h-2 rounded-full bg-white animate-ping shrink-0"></span>
-            <span id="studentSosAlertText" class="truncate">🚨 Emergency Alert: Bus driver reported an incident.</span>
-        </div>
-        <a href="tel:08702564888" class="px-2.5 py-1 bg-white text-red-600 rounded-full text-xs font-black shrink-0 flex items-center gap-1 shadow-xs">
-            <span>📞</span>
-            <span>Call Transport</span>
+        <!-- Logout Link -->
+        <a href="index.html" class="btn-logout" aria-label="Logout" title="Log out">
+            <svg class="w-4 h-4 text-rose-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
         </a>
     </div>
+</header>
 
-    <!-- DETOUR ALERT BANNER -->
-    <div id="studentDetourAlertBanner" class="hidden bg-amber-100 text-amber-900 border-b-2 border-amber-300 px-3.5 py-2 flex items-center justify-between gap-2 text-xs font-bold shadow-xs">
-        <div class="flex items-center gap-1.5 min-w-0">
-            <span class="text-sm">⚠️</span>
-            <span id="studentDetourAlertText" class="truncate">Route Detour Active: Expected delay</span>
-        </div>
-        <span class="text-[10px] font-black uppercase bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full">Detour</span>
+<!-- SOS ALERT BANNER -->
+<div id="studentSosAlertBanner" class="kx-alert kx-alert--sos hidden" role="alert">
+    <span class="kx-alert-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
+    <div class="kx-alert-body">
+        <span class="kx-alert-title">Emergency alert</span>
+        <span id="studentSosAlertText" class="kx-alert-text">Bus driver reported an incident.</span>
+        <a href="tel:08702564888" class="kx-alert-call"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg><span>Call Transport</span></a>
     </div>
+    <button type="button" class="kx-alert-close" onclick="dismissAlertBanner('sos')" aria-label="Dismiss emergency alert"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+</div>
 
-    <!-- BLUE HERO BLOCK (Ultra-Compact, Sleek & Fully Aligned) -->
-    <section id="navyHero" class="text-white">
-        <div class="max-w-2xl mx-auto space-y-2">
-            <!-- Row 1: Live Status & Map Button -->
-            <div class="flex items-center justify-between gap-2">
-                <div class="flex items-center gap-1.5 min-w-0">
-                    <div class="flex items-center gap-1.5 bg-emerald-500/25 border border-emerald-400/40 px-2.5 py-0.5 rounded-full shrink-0">
-                        <span id="etaDot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                        <span class="text-[10px] font-extrabold uppercase tracking-wide text-emerald-300">Live ETA</span>
-                    </div>
-                    <span id="etaStatus" class="text-[11px] font-bold bg-white/15 px-2 py-0.5 rounded-full text-sky-200 truncate">Approaching</span>
+<!-- DETOUR ALERT BANNER -->
+<div id="studentDetourAlertBanner" class="kx-alert kx-alert--detour hidden" role="status">
+    <span class="kx-alert-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 11 22 2 13 21 11 13 3 11"/></svg></span>
+    <div class="kx-alert-body">
+        <span class="kx-alert-title">Route detour</span>
+        <span id="studentDetourAlertText" class="kx-alert-text">Your bus has taken a detour. Expect a delay.</span>
+    </div>
+    <button type="button" class="kx-alert-close" onclick="dismissAlertBanner('detour')" aria-label="Dismiss detour alert"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+</div>
+
+<!-- BLUE HERO BLOCK (Ultra-Compact, Sleek & Fully Aligned) -->
+<section id="navyHero" class="text-white">
+    <div class="max-w-2xl mx-auto space-y-2">
+        <!-- Row 1: Live Status & Map Button -->
+        <div class="flex items-center justify-between gap-2">
+            <div class="flex items-center gap-1.5 min-w-0">
+                <div id="etaLivePill" class="eta-pill" data-state="idle">
+                    <span id="etaDot" class="eta-dot" aria-hidden="true"></span>
+                    <span class="eta-pill-label">Live ETA</span>
                 </div>
-
-                <button id="viewStopOnMap" type="button" aria-label="Show my stop on the map" class="px-2.5 py-0.5 rounded-full bg-sky-500/30 hover:bg-sky-500/40 border border-sky-400/30 text-sky-100 text-[11px] font-bold flex items-center gap-1 shadow-xs transition-transform active:scale-95 shrink-0">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
-                    <span>Show on Map</span>
-                </button>
+                <span id="etaStatus" class="text-[11px] font-bold bg-white/15 px-2 py-0.5 rounded-full text-sky-200 truncate">Approaching</span>
             </div>
 
-            <!-- Row 2: ETA & Stop Info Card -->
-            <div class="bg-white/10 rounded-xl p-2.5 border border-white/10 flex items-center justify-between gap-3">
-                <div class="min-w-0 flex-1">
-                    <span class="text-[10px] font-extrabold uppercase tracking-wider text-sky-200/80 block leading-tight">Estimated Arrival</span>
-                    <div id="etaValue" class="tabular-nums truncate mt-0.5">-- min</div>
-                    <div id="myStopEta" class="text-[11px] text-emerald-300 font-semibold truncate mt-0.5 leading-tight">ETA: calculating...</div>
-                </div>
+            <button id="viewStopOnMap" type="button" aria-label="Show my stop on the map" class="px-2.5 py-0.5 rounded-full bg-sky-500/30 hover:bg-sky-500/40 border border-sky-400/30 text-sky-100 text-[11px] font-bold flex items-center gap-1 shadow-xs transition-transform active:scale-95 shrink-0">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+                <span>Show on Map</span>
+            </button>
+        </div>
 
-                <div class="w-px h-9 bg-white/15 shrink-0"></div>
+        <!-- Row 2: ETA & Stop Info Card -->
+        <div class="bg-white/10 rounded-xl p-2.5 border border-white/10 flex items-center justify-between gap-3">
+            <div class="min-w-0 flex-1">
+                <span class="text-[10px] font-extrabold uppercase tracking-wider text-sky-200/80 block leading-tight">Estimated Arrival</span>
+                <div id="etaValue" class="tabular-nums truncate mt-0.5">-- min</div>
+                <div id="myStopEta" class="text-[11px] text-emerald-300 font-semibold truncate mt-0.5 leading-tight">ETA: calculating...</div>
+            </div>
 
-                <div class="text-right min-w-0 flex-1">
+            <div class="w-px h-9 bg-white/15 shrink-0"></div>
+
+            <div class="text-right min-w-0 flex-1">
                     <span class="text-[10px] font-extrabold uppercase tracking-wider text-sky-200/80 flex items-center justify-end gap-0.5 leading-tight">
                         <span class="text-xs">📍</span> Pickup Stop
                     </span>
-                    <div id="myStopName" class="text-xs sm:text-sm font-bold text-white truncate mt-0.5 leading-tight">Loading stop...</div>
-                    <div id="myStopDistance" class="text-[11px] font-semibold text-sky-200 truncate mt-0.5 leading-tight">Distance: calculating...</div>
-                </div>
-            </div>
-
-            <!-- Row 3: Compact Live Info Chips (Route, Bus, Driver) -->
-            <div id="myStopCard" class="flex items-center gap-1.5 overflow-x-auto text-[11px] no-scrollbar">
-                <p class="hidden tracking-wider text-[9px] uppercase font-bold text-sky-300">MY STOP</p>
-                <div id="myStopRoute" class="px-2 py-0.5 rounded-full bg-white/15 border border-white/20 text-sky-100 font-bold truncate shrink-0">
-                    Route loading...
-                </div>
-                <div id="myStopBus" class="px-2 py-0.5 rounded-full bg-white/15 border border-white/20 text-amber-200 font-bold truncate shrink-0">
-                    Bus: --
-                </div>
-                <div id="myStopDriver" class="px-2 py-0.5 rounded-full bg-white/15 border border-white/20 text-indigo-100 font-bold truncate shrink-0">
-                    Driver: --
-                </div>
-                <div id="myStopRetryRow" class="hidden shrink-0">
+                <div id="myStopName" class="text-xs sm:text-sm font-bold text-white truncate mt-0.5 leading-tight">Loading stop...</div>
+                <div id="myStopDistance" class="text-[11px] font-semibold text-sky-200 truncate mt-0.5 leading-tight">Distance: calculating...</div>
+                <div id="myStopRetryRow" class="hidden mt-1 text-right">
                     <button id="retryMyStop" type="button" class="px-2 py-0.5 rounded-full bg-rose-500 text-white font-bold text-[10px]">Retry</button>
                 </div>
             </div>
-
-            <!-- Hidden elements preserved for JS compatibility -->
-            <div id="etaBar" class="hidden"><div id="etaChip"></div></div>
-        </div>
-    </section>
-
-    <!-- LIVE MAP -->
-    <main class="flex-1 min-h-0 relative">
-        <div id="map"></div>
-
-        <!-- Recenter Button with Clean SVG Crosshairs -->
-        <button id="recenterMapButton" type="button" onclick="recenterMap()" aria-label="Recenter map" title="Center map">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
-                <circle cx="12" cy="12" r="7"/>
-                <line x1="12" y1="2" x2="12" y2="5"/>
-                <line x1="12" y1="19" x2="12" y2="22"/>
-                <line x1="2" y1="12" x2="5" y2="12"/>
-                <line x1="19" y1="12" x2="22" y2="12"/>
-            </svg>
-        </button>
-    </main>
-
-    <!-- BOTTOM ACTION BAR -->
-    <footer class="bg-white border-t border-slate-200 p-2.5 sm:p-3.5 space-y-2.5 z-40 shadow-lg">
-        <!-- DRIVER CARD -->
-        <div id="driverRow" class="flex items-center justify-between gap-3 bg-slate-50 border border-slate-200/90 rounded-xl px-3 py-2">
-            <div class="flex items-center gap-2.5 min-w-0">
-                <div class="w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-700 flex items-center justify-center shrink-0">
-                    <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                        <circle cx="12" cy="7" r="4"/>
-                    </svg>
-                </div>
-                <div class="min-w-0">
-                    <h2 id="driverName" class="text-xs sm:text-sm font-extrabold text-slate-900 truncate leading-tight">Driver unavailable</h2>
-                    <p id="driverDetails" class="text-[11px] text-slate-500 font-medium truncate leading-tight mt-0.5">Loading assignment...</p>
-                </div>
-            </div>
-
-            <div class="flex items-center gap-2 shrink-0">
-                <button id="driverComplaintButton" type="button" onclick="openDriverComplaintModal()" aria-label="Report a problem with the driver" title="Report driver">
-                    <span>⚠️</span>
-                </button>
-
-                <a id="driverPhoneLink" href="#" aria-label="Call driver">
-                    <span>📞</span>
-                    <span>Call</span>
-                </a>
-            </div>
         </div>
 
-        <!-- 4 ACTION BUTTONS: UNIFORM, HORIZONTAL, REFINED & NO CLUTTER -->
-        <div id="actionGrid" class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            <!-- 1. Request Wait: Warm Amber -->
-            <button id="btnWaitRequest" type="button" onclick="openWaitModal()" class="action-btn">
-                <span id="waitIcon" class="shrink-0 flex items-center"><svg class="w-4 h-4 text-amber-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>
-                <span id="waitBtnText" class="truncate">Request Wait</span>
-            </button>
+        <!-- Hidden elements preserved for JS compatibility -->
+        <div id="etaBar" class="hidden"><div id="etaChip"></div></div>
+    </div>
+</section>
 
-            <!-- 2. Not Travelling: Neutral Slate -->
-            <button id="btnNotTravelling" type="button" onclick="openNotTravellingModal()" class="action-btn">
-                <i id="btnIcon" class="not-italic shrink-0 text-sm">🚫</i>
-                <span id="btnText" class="truncate">Not Travelling</span>
-            </button>
+<!-- LIVE MAP -->
+<main class="flex-1 min-h-0 relative">
+    <div id="map"></div>
 
-            <!-- 3. Missed Bus: Rose / Red (No car emoji!) -->
-            <button id="btnMissedBus" type="button" onclick="openMissedBusModal()" class="action-btn">
-                <svg class="w-4 h-4 shrink-0 text-rose-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 11h16M4 3h16v15H4z"/><line x1="2" y1="2" x2="22" y2="22"/></svg>
-                <span class="truncate">Missed Bus</span>
-            </button>
+    <!-- Recenter Button with Clean SVG Crosshairs -->
+    <button id="recenterMapButton" type="button" onclick="recenterMap()" aria-label="Recenter map" title="Center map">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="7"/>
+            <line x1="12" y1="2" x2="12" y2="5"/>
+            <line x1="12" y1="19" x2="12" y2="22"/>
+            <line x1="2" y1="12" x2="5" y2="12"/>
+            <line x1="19" y1="12" x2="22" y2="12"/>
+        </svg>
+    </button>
+</main>
 
-            <!-- 4. Temporary Stop: Sky Blue (Single text span to avoid student.js dual-line bug!) -->
-            <button id="btnTemporaryStop" type="button" onclick="openTemporaryStopModal()" class="action-btn">
-                <i class="not-italic shrink-0 text-sm">📍</i>
-                <span class="truncate">Change Stop</span>
+<!-- BOTTOM ACTION BAR -->
+<footer id="actionFooter" class="bg-white border-t border-slate-200 p-2.5 sm:p-3.5 space-y-2.5 z-40 shadow-lg">
+    <!-- DRIVER CARD -->
+    <div id="driverRow" class="flex items-center justify-between gap-3 bg-slate-50 border border-slate-200/90 rounded-xl px-3 py-2">
+        <div class="flex items-center gap-2.5 min-w-0">
+            <div class="w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-700 flex items-center justify-center shrink-0">
+                <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                </svg>
+            </div>
+            <div class="min-w-0">
+                <h2 id="driverName" class="text-xs sm:text-sm font-extrabold text-slate-900 truncate leading-tight">Driver unavailable</h2>
+                <p id="driverDetails" class="text-[11px] text-slate-500 font-medium truncate leading-tight mt-0.5">Loading assignment...</p>
+            </div>
+
+            <button id="driverComplaintButton" type="button" onclick="openDriverComplaintModal()" aria-label="Report a problem with the driver" title="Report driver">
+                <span>⚠️</span>
             </button>
         </div>
 
-        <p id="missedBusStatus" class="hidden"></p>
-        <p id="temporaryStopActionStatus" class="hidden"></p>
-    </footer>
-
-    <!-- MISSED BUS MODAL -->
-    <div id="missedBusModal" class="kambus-modal-backdrop hidden">
-        <div class="kambus-modal-window text-center space-y-4">
-            <button type="button" onclick="closeMissedBusModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 text-slate-500 font-bold hover:bg-slate-200 flex items-center justify-center" aria-label="Close">
-                ✕
-            </button>
-
-            <div class="w-14 h-14 mx-auto rounded-2xl bg-rose-100 border-2 border-rose-300 text-3xl flex items-center justify-center">
-                ⚠️
-            </div>
-
-            <div>
-                <h3 class="text-lg font-black text-slate-900">Missed your bus?</h3>
-                <p class="mt-1 text-xs text-slate-600 font-medium">
-                    We will automatically find the best alternative bus for your stop today.
-                </p>
-            </div>
-
-            <div class="rounded-2xl border-2 border-slate-200 bg-slate-50 p-3.5 text-left text-xs">
-                <span class="text-slate-500 font-bold uppercase tracking-wider text-[10px]">Your Normal Bus</span>
-                <div id="missedBusRegularNumber" class="mt-0.5 text-base font-extrabold text-slate-900">--</div>
-            </div>
-
-            <button id="confirmMissedBusBtn" type="button" onclick="requestAlternativeBus()" class="w-full py-3.5 rounded-2xl bg-gradient-to-r from-rose-500 to-red-600 hover:from-rose-600 hover:to-red-700 text-white font-extrabold text-sm shadow-md transition-transform active:scale-95 flex items-center justify-center gap-2">
-                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                <span>Find Alternative Bus</span>
-            </button>
-
-            <button type="button" onclick="closeMissedBusModal()" class="w-full py-2 text-xs font-bold text-slate-500 hover:text-slate-800">
-                Cancel
-            </button>
+        <div class="flex items-center gap-2 shrink-0">
+            <a id="driverPhoneLink" href="#" aria-label="Call driver">
+                <span>📞</span>
+                <span>Call</span>
+            </a>
         </div>
     </div>
 
-    <!-- WAIT REQUEST MODAL -->
-    <div id="waitModal" class="kambus-modal-backdrop hidden">
-        <div class="kambus-modal-window text-center space-y-4">
-            <button type="button" onclick="closeWaitModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 text-slate-500 font-bold hover:bg-slate-200 flex items-center justify-center" aria-label="Close">
-                ✕
+    <!-- 4 ACTION BUTTONS: UNIFORM, HORIZONTAL, REFINED & NO CLUTTER -->
+    <div id="actionGrid" class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <!-- 1. Request Wait: Warm Amber -->
+        <button id="btnWaitRequest" type="button" onclick="openWaitModal()" class="action-btn">
+            <span id="waitIcon" class="shrink-0 flex items-center"><svg class="w-4 h-4 text-amber-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>
+            <span id="waitBtnText" class="truncate">Request Wait</span>
+        </button>
+
+        <!-- 2. Not Travelling: Neutral Slate -->
+        <button id="btnNotTravelling" type="button" onclick="openNotTravellingModal()" class="action-btn">
+            <i id="btnIcon" class="not-italic shrink-0 text-sm">🚫</i>
+            <span id="btnText" class="truncate">Not Travelling</span>
+        </button>
+
+        <!-- 3. Missed Bus: Rose / Red (No car emoji!) -->
+        <button id="btnMissedBus" type="button" onclick="openMissedBusModal()" class="action-btn">
+            <svg class="w-4 h-4 shrink-0 text-rose-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 11h16M4 3h16v15H4z"/><line x1="2" y1="2" x2="22" y2="22"/></svg>
+            <span class="truncate">Missed Bus</span>
+        </button>
+
+        <!-- 4. Temporary Stop: Sky Blue (Single text span to avoid student.js dual-line bug!) -->
+        <button id="btnTemporaryStop" type="button" onclick="openTemporaryStopModal()" class="action-btn">
+            <i class="not-italic shrink-0 text-sm">📍</i>
+            <span class="truncate">Change Stop</span>
+        </button>
+    </div>
+
+    <p id="missedBusStatus" class="hidden"></p>
+    <p id="temporaryStopActionStatus" class="hidden"></p>
+</footer>
+
+<!-- MISSED BUS MODAL -->
+<div id="missedBusModal" class="kambus-modal-backdrop hidden">
+    <div class="kx-sheet kx-sheet--rose">
+        <div class="kx-head">
+            <div class="kx-head-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="14" rx="2"/><path d="M4 11h16"/><path d="M8 21v-4M16 21v-4"/><line x1="3" y1="3" x2="21" y2="21"/></svg></div>
+            <div class="kx-head-text">
+                <h3 class="kx-title">Missed your bus?</h3>
+                <p class="kx-sub">Get an alternative bus for today</p>
+            </div>
+            <button type="button" onclick="closeMissedBusModal()" class="kx-close" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+
+        <div class="kx-body">
+            <p class="kx-note">We will automatically find the best alternative bus for your stop today.</p>
+
+            <div class="kx-info">
+                <span class="kx-info-label">Your normal bus</span>
+                <span id="missedBusRegularNumber" class="kx-info-value">--</span>
+            </div>
+
+            <button id="confirmMissedBusBtn" type="button" onclick="requestAlternativeBus()" class="kx-btn kx-btn--primary">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <span>Find My Alternative Bus</span>
             </button>
+            <button type="button" onclick="closeMissedBusModal()" class="kx-btn kx-btn--quiet">Cancel</button>
+        </div>
+    </div>
+</div>
 
-            <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-xl border border-amber-200 flex items-center justify-center mx-auto">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+<!-- WAIT REQUEST MODAL -->
+<div id="waitModal" class="kambus-modal-backdrop hidden">
+    <div class="kx-sheet">
+        <div class="kx-head">
+            <div class="kx-head-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg></div>
+            <div class="kx-head-text">
+                <h3 class="kx-title">Request bus to wait</h3>
+                <p class="kx-sub">Ask the driver to hold for you</p>
+            </div>
+            <button type="button" onclick="closeWaitModal()" class="kx-close" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+
+        <div class="kx-body">
+            <div id="waitEligibilityInfo" class="kx-callout">
+                <p class="kx-callout-label">Status</p>
+                <p id="waitEligibilityText" class="kx-callout-text">Checking bus status...</p>
             </div>
 
-            <div>
-                <h3 class="text-lg font-black text-slate-900">Request Bus to Wait</h3>
-                <p class="text-xs text-slate-600 mt-1">Select how many minutes you need the driver to hold:</p>
-            </div>
-
-            <div id="waitEligibilityInfo" class="bg-amber-50 border-2 border-amber-200 rounded-2xl p-3 text-left">
-                <p class="text-[10px] font-black text-amber-800 uppercase tracking-wider">Status</p>
-                <p id="waitEligibilityText" class="text-xs text-amber-950 font-bold mt-0.5">Checking bus status...</p>
-            </div>
-
-            <div id="waitOptions" class="grid grid-cols-2 gap-2.5">
-                <button type="button" onclick="sendWaitRequest(1)" class="py-3 bg-amber-100 hover:bg-amber-200 border-2 border-amber-400 font-black text-sm rounded-xl text-amber-950 shadow-xs transition-transform active:scale-95">1 Minute</button>
-                <button type="button" onclick="sendWaitRequest(2)" class="py-3 bg-amber-100 hover:bg-amber-200 border-2 border-amber-400 font-black text-sm rounded-xl text-amber-950 shadow-xs transition-transform active:scale-95">2 Minutes</button>
-                <button type="button" onclick="sendWaitRequest(3)" class="py-3 bg-amber-100 hover:bg-amber-200 border-2 border-amber-400 font-black text-sm rounded-xl text-amber-950 shadow-xs transition-transform active:scale-95">3 Minutes</button>
-                <button type="button" onclick="sendWaitRequest(4)" class="py-3 bg-amber-100 hover:bg-amber-200 border-2 border-amber-400 font-black text-sm rounded-xl text-amber-950 shadow-xs transition-transform active:scale-95">4 Minutes</button>
+            <div id="waitOptions" class="kx-wait-grid">
+                <p class="kx-note" style="grid-column: 1 / -1;">How many minutes should the driver wait?</p>
+                <button type="button" onclick="sendWaitRequest(1)" class="kx-wait-tile"><span class="kx-wait-num">1</span><span class="kx-wait-unit">minute</span></button>
+                <button type="button" onclick="sendWaitRequest(2)" class="kx-wait-tile"><span class="kx-wait-num">2</span><span class="kx-wait-unit">minutes</span></button>
+                <button type="button" onclick="sendWaitRequest(3)" class="kx-wait-tile"><span class="kx-wait-num">3</span><span class="kx-wait-unit">minutes</span></button>
+                <button type="button" onclick="sendWaitRequest(4)" class="kx-wait-tile"><span class="kx-wait-num">4</span><span class="kx-wait-unit">minutes</span></button>
             </div>
 
             <div id="waitRequestState" class="hidden">
-                <div class="bg-amber-100 border-2 border-amber-300 rounded-2xl p-3 text-amber-950">
-                    <p id="waitRequestStateTitle" class="text-xs font-black">Wait request created</p>
-                    <p id="waitRequestStateMessage" class="text-xs text-amber-800 mt-1">Waiting for decision window...</p>
+                <div class="kx-callout">
+                    <p id="waitRequestStateTitle" class="kx-callout-text">Wait request created</p>
+                    <p id="waitRequestStateMessage" class="kx-note" style="margin-top:2px">Waiting for decision window...</p>
                 </div>
             </div>
         </div>
     </div>
+</div>
 
-    <!-- DIGITAL PASS MODAL -->
-    <div id="passModal" class="kambus-modal-backdrop hidden">
-        <div class="kambus-modal-window text-center space-y-4 border-2 border-emerald-300">
-            <button type="button" onclick="togglePassModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 text-slate-500 font-bold hover:bg-slate-200 flex items-center justify-center" aria-label="Close pass">
-                ✕
-            </button>
+<!-- DIGITAL PASS MODAL -->
+<div id="passModal" class="kambus-modal-backdrop hidden">
+    <div class="kambus-modal-window text-center space-y-4 border-2 border-emerald-300">
+        <button type="button" onclick="togglePassModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 text-slate-500 font-bold hover:bg-slate-200 flex items-center justify-center" aria-label="Close pass">
+            ✕
+        </button>
 
-            <span class="inline-block px-3 py-1 bg-emerald-100 border-2 border-emerald-300 text-emerald-800 text-xs font-black rounded-full uppercase tracking-wider">
+        <span class="inline-block px-3 py-1 bg-emerald-100 border-2 border-emerald-300 text-emerald-800 text-xs font-black rounded-full uppercase tracking-wider">
                 ✅ PASS ACTIVE
             </span>
 
-            <div>
-                <h3 id="passStudentName" class="text-xl font-black text-slate-900">Student</h3>
-                <p id="passStudentDetails" class="text-xs text-slate-500 font-semibold">Loading profile...</p>
-            </div>
+        <div>
+            <h3 id="passStudentName" class="text-xl font-black text-slate-900">Student</h3>
+            <p id="passStudentDetails" class="text-xs text-slate-500 font-semibold">Loading profile...</p>
+        </div>
 
-            <!-- QR Box -->
-            <div class="bg-slate-50 p-4 rounded-2xl border-2 border-slate-200 inline-block shadow-inner">
-                <svg class="w-36 h-36 mx-auto text-slate-900" viewBox="0 0 100 100" fill="currentColor">
-                    <rect x="5" y="5" width="28" height="28" fill="none" stroke="currentColor" stroke-width="6"/>
-                    <rect x="13" y="13" width="12" height="12"/>
-                    <rect x="67" y="5" width="28" height="28" fill="none" stroke="currentColor" stroke-width="6"/>
-                    <rect x="75" y="13" width="12" height="12"/>
-                    <rect x="5" y="67" width="28" height="28" fill="none" stroke="currentColor" stroke-width="6"/>
-                    <rect x="13" y="75" width="12" height="12"/>
-                    <rect x="42" y="10" width="6" height="6"/>
-                    <rect x="52" y="10" width="6" height="6"/>
-                    <rect x="42" y="24" width="6" height="6"/>
-                    <rect x="10" y="44" width="6" height="6"/>
-                    <rect x="24" y="44" width="6" height="6"/>
-                    <rect x="38" y="40" width="8" height="8"/>
-                    <rect x="54" y="40" width="8" height="8"/>
-                    <rect x="46" y="54" width="8" height="8"/>
-                    <rect x="70" y="44" width="8" height="8"/>
-                    <rect x="84" y="44" width="6" height="6"/>
-                    <rect x="42" y="70" width="6" height="6"/>
-                    <rect x="52" y="70" width="8" height="8"/>
-                    <rect x="68" y="68" width="6" height="6"/>
-                    <rect x="80" y="76" width="10" height="10"/>
-                    <rect x="42" y="86" width="8" height="8"/>
-                    <rect x="60" y="86" width="6" height="6"/>
-                </svg>
-            </div>
+        <!-- QR Box -->
+        <div class="bg-slate-50 p-4 rounded-2xl border-2 border-slate-200 inline-block shadow-inner">
+            <svg class="w-36 h-36 mx-auto text-slate-900" viewBox="0 0 100 100" fill="currentColor">
+                <rect x="5" y="5" width="28" height="28" fill="none" stroke="currentColor" stroke-width="6"/>
+                <rect x="13" y="13" width="12" height="12"/>
+                <rect x="67" y="5" width="28" height="28" fill="none" stroke="currentColor" stroke-width="6"/>
+                <rect x="75" y="13" width="12" height="12"/>
+                <rect x="5" y="67" width="28" height="28" fill="none" stroke="currentColor" stroke-width="6"/>
+                <rect x="13" y="75" width="12" height="12"/>
+                <rect x="42" y="10" width="6" height="6"/>
+                <rect x="52" y="10" width="6" height="6"/>
+                <rect x="42" y="24" width="6" height="6"/>
+                <rect x="10" y="44" width="6" height="6"/>
+                <rect x="24" y="44" width="6" height="6"/>
+                <rect x="38" y="40" width="8" height="8"/>
+                <rect x="54" y="40" width="8" height="8"/>
+                <rect x="46" y="54" width="8" height="8"/>
+                <rect x="70" y="44" width="8" height="8"/>
+                <rect x="84" y="44" width="6" height="6"/>
+                <rect x="42" y="70" width="6" height="6"/>
+                <rect x="52" y="70" width="8" height="8"/>
+                <rect x="68" y="68" width="6" height="6"/>
+                <rect x="80" y="76" width="10" height="10"/>
+                <rect x="42" y="86" width="8" height="8"/>
+                <rect x="60" y="86" width="6" height="6"/>
+            </svg>
+        </div>
 
-            <div class="text-xs text-slate-700 border-t-2 border-slate-100 pt-3 flex justify-between font-bold">
-                <span>Bus: <strong id="passBusNumber" class="text-blue-700 font-extrabold">--</strong></span>
-                <span>Stop: <strong id="passStopName" class="text-emerald-700 font-extrabold">--</strong></span>
-            </div>
+        <div class="text-xs text-slate-700 border-t-2 border-slate-100 pt-3 flex justify-between font-bold">
+            <span>Bus: <strong id="passBusNumber" class="text-blue-700 font-extrabold">--</strong></span>
+            <span>Stop: <strong id="passStopName" class="text-emerald-700 font-extrabold">--</strong></span>
         </div>
     </div>
+</div>
 
-    <!-- TEMPORARY STOP MODAL -->
-    <div id="temporaryStopModal" class="kambus-modal-backdrop hidden">
-        <div class="kambus-modal-window max-w-md max-h-[90vh] overflow-y-auto space-y-3">
-            <div class="flex items-center justify-between border-b border-slate-200 pb-3">
-                <div class="flex items-center gap-2">
-                    <span class="text-xl">📍</span>
-                    <h3 class="text-base font-black text-slate-900">Change Pickup Stop</h3>
-                </div>
-                <button type="button" onclick="closeTemporaryStopModal()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 font-bold hover:bg-slate-200 flex items-center justify-center" aria-label="Close">
-                    ✕
-                </button>
+<!-- TEMPORARY STOP MODAL -->
+<div id="temporaryStopModal" class="kambus-modal-backdrop hidden">
+    <div class="kx-sheet kx-sheet--sky kx-sheet--wide">
+        <div class="kx-head">
+            <div class="kx-head-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></div>
+            <div class="kx-head-text">
+                <h3 class="kx-title">Change pickup stop</h3>
+                <p class="kx-sub">Use a different stop for a few days</p>
             </div>
+            <button type="button" onclick="closeTemporaryStopModal()" class="kx-close" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
 
+        <div class="kx-body">
             <div id="temporaryStopStatus" class="hidden"></div>
-            <div id="temporaryCurrentRoute" class="rounded-2xl border-2 border-slate-200 bg-slate-50 p-3 text-xs text-slate-600 font-bold">
-                Loading normal route...
+            <div id="temporaryCurrentRoute" class="kx-route">Loading normal route...</div>
+
+            <div class="kx-map">
+                <div id="tempStopPickerMap"></div>
             </div>
 
-            <div class="h-44 w-full rounded-2xl overflow-hidden border-2 border-slate-200 relative">
-                <div id="tempStopPickerMap" class="w-full h-full"></div>
+            <div class="kx-seg">
+                <button id="temporaryRegisteredModeBtn" type="button" onclick="setTemporaryStopInputMode('registered')" class="kx-seg-btn">Registered stop</button>
+                <button id="temporaryPinModeBtn" type="button" onclick="setTemporaryStopInputMode('pin')" class="kx-seg-btn is-active">Map pin</button>
             </div>
 
-            <div class="grid grid-cols-2 gap-2">
-                <button id="temporaryRegisteredModeBtn" type="button" onclick="setTemporaryStopInputMode('registered')" class="py-2.5 rounded-xl border-2 border-slate-300 bg-slate-100 text-slate-800 font-black text-xs">
-                    Registered Stop
-                </button>
-                <button id="temporaryPinModeBtn" type="button" onclick="setTemporaryStopInputMode('pin')" class="py-2.5 rounded-xl bg-blue-600 text-white font-black text-xs shadow-sm">
-                    Map Pin
-                </button>
+            <div id="temporaryRegisteredStopFields" class="hidden kx-stack">
+                <div>
+                    <label for="temporaryRegisteredStop" class="kx-label">Choose stop</label>
+                    <select id="temporaryRegisteredStop" class="kx-input"></select>
+                </div>
+                <button type="button" onclick="checkTemporaryStopRoute()" class="kx-btn kx-btn--soft kx-btn--sm">Check this stop</button>
             </div>
 
-            <div id="temporaryRegisteredStopFields" class="hidden space-y-2">
-                <label for="temporaryRegisteredStop" class="block text-xs font-black text-slate-800">Choose Stop</label>
-                <select id="temporaryRegisteredStop" class="w-full px-3 py-2.5 rounded-xl border-2 border-slate-300 bg-white text-xs font-bold text-slate-900"></select>
-                <button type="button" onclick="checkTemporaryStopRoute()" class="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs shadow-sm">
-                    Check This Stop
-                </button>
-            </div>
-
-            <details id="manualCoordinatesDetails" class="rounded-2xl border-2 border-slate-200 bg-slate-50 p-2 text-xs">
-                <summary class="cursor-pointer font-bold select-none text-slate-700">Manual Coordinates (Optional)</summary>
-                <div id="temporaryPinCoordinates" class="grid grid-cols-2 gap-2 mt-2">
-                    <input id="temporaryPinLatitude" type="number" step="any" placeholder="Latitude" class="w-full px-3 py-2 rounded-xl border-2 border-slate-300 font-mono text-xs">
-                    <input id="temporaryPinLongitude" type="number" step="any" placeholder="Longitude" class="w-full px-3 py-2 rounded-xl border-2 border-slate-300 font-mono text-xs">
+            <details id="manualCoordinatesDetails" class="kx-details">
+                <summary>Manual coordinates (optional)</summary>
+                <div id="temporaryPinCoordinates" class="kx-coords">
+                    <input id="temporaryPinLatitude" type="number" step="any" placeholder="Latitude" class="kx-input">
+                    <input id="temporaryPinLongitude" type="number" step="any" placeholder="Longitude" class="kx-input">
                 </div>
             </details>
-            <button id="checkTemporaryPinBtn" type="button" onclick="checkTemporaryStopRoute()" class="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs shadow-sm">
-                Step 1: Check Location
-            </button>
+            <button id="checkTemporaryPinBtn" type="button" onclick="checkTemporaryStopRoute()" class="kx-btn kx-btn--soft kx-btn--sm">Step 1: Check Location</button>
 
             <div id="temporaryRouteCheckResult" class="hidden"></div>
-            <div id="temporaryCandidateBuses" class="space-y-2"></div>
+            <div id="temporaryCandidateBuses" class="kx-stack"></div>
 
-            <div id="tempStopPickerLabel" class="bg-slate-100 border-2 border-slate-200 rounded-2xl p-2.5">
-                <div class="text-[10px] font-black uppercase text-slate-500">Selected Pickup Point</div>
-                <div id="tempStopPickerAddress" class="text-xs font-black text-slate-900 truncate">Tap map to pick location...</div>
+            <div id="tempStopPickerLabel" class="kx-pickup">
+                <div class="kx-pickup-label">Selected pickup point</div>
+                <div id="tempStopPickerAddress" class="kx-pickup-address">Tap map to pick location...</div>
             </div>
 
-            <div class="grid grid-cols-2 gap-2">
+            <div class="kx-dates">
                 <div>
-                    <label for="temporaryStartDate" class="block text-[11px] font-black text-slate-700 mb-1">Start Date</label>
-                    <input id="temporaryStartDate" type="date" class="w-full px-2 py-1.5 rounded-xl border-2 border-slate-300 text-xs">
+                    <label for="temporaryStartDate" class="kx-label">Start date</label>
+                    <input id="temporaryStartDate" type="date" class="kx-input">
                 </div>
                 <div>
-                    <label for="temporaryEndDate" class="block text-[11px] font-black text-slate-700 mb-1">End Date</label>
-                    <input id="temporaryEndDate" type="date" class="w-full px-2 py-1.5 rounded-xl border-2 border-slate-300 text-xs">
-                </div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-2 pt-1">
-                <button id="confirmTemporaryStopBtn" type="button" onclick="submitTemporaryStopChange()" disabled class="py-3 rounded-xl bg-emerald-600 text-white font-black text-xs shadow-sm opacity-50 cursor-not-allowed">
-                    Step 2: Confirm
-                </button>
-                <button id="cancelTemporaryStopBtn" type="button" onclick="cancelTemporaryStopChange()" class="py-3 rounded-xl border-2 border-slate-300 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-black">
-                    Remove
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- DRIVER COMPLAINT POLL ALERT -->
-    <div id="driverComplaintAlert">
-        <div class="kambus-modal-window text-center space-y-4">
-            <div class="w-14 h-14 mx-auto rounded-2xl bg-amber-100 text-amber-700 border-2 border-amber-300 text-3xl flex items-center justify-center">
-                ⚠️
-            </div>
-
-            <h2 class="text-base font-black text-slate-900">Driver Complaint Poll</h2>
-            <p class="text-xs text-slate-600">A student reported an issue with your bus driver.</p>
-
-            <div class="bg-slate-50 border-2 border-slate-200 rounded-2xl p-3 text-left">
-                <p class="text-[10px] text-slate-500 uppercase font-black">Reported Issue</p>
-                <p id="complaintReason" class="text-xs font-black text-slate-900 mt-0.5">--</p>
-            </div>
-
-            <p class="text-xs font-black text-slate-900">Have you faced the same problem?</p>
-
-            <div class="grid grid-cols-2 gap-2.5">
-                <button id="complaintYesBtn" type="button" class="py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-black shadow-sm" onclick="answerDriverComplaintPoll('yes')">
-                    Yes
-                </button>
-                <button id="complaintNoBtn" type="button" class="py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black shadow-sm" onclick="answerDriverComplaintPoll('no')">
-                    No
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- DRIVER COMPLAINT MODAL -->
-    <div id="driverComplaintModal" class="hidden kambus-modal-backdrop" style="z-index: 2100;">
-        <div class="kambus-modal-window space-y-4">
-            <div class="flex items-center justify-between border-b-2 border-slate-100 pb-3">
-                <div class="flex items-center gap-2">
-                    <span class="text-xl">⚠️</span>
-                    <h2 class="text-base font-black text-slate-900">Report Driver</h2>
-                </div>
-                <button type="button" onclick="closeDriverComplaintModal()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 font-bold hover:bg-slate-200 flex items-center justify-center" aria-label="Close">
-                    ✕
-                </button>
-            </div>
-
-            <div id="driverComplaintOptionsView" class="grid gap-2">
-                <button type="button" class="driverComplaintOptionBtn w-full flex items-center justify-between p-3 rounded-2xl border-2 border-slate-200 bg-slate-50 hover:bg-slate-100 text-left transition-colors" onclick="submitDriverComplaint('driver_not_on_time')">
-                    <div>
-                        <p class="text-xs font-black text-slate-900">Driver was late</p>
-                        <p class="text-xs text-slate-500">Bus arrived later than expected</p>
-                    </div>
-                    <span class="text-slate-400 font-bold">›</span>
-                </button>
-
-                <button type="button" class="driverComplaintOptionBtn w-full flex items-center justify-between p-3 rounded-2xl border-2 border-slate-200 bg-slate-50 hover:bg-slate-100 text-left transition-colors" onclick="submitDriverComplaint('over_speeding_rash_driving')">
-                    <div>
-                        <p class="text-xs font-black text-slate-900">Rash / Over Speeding</p>
-                        <p class="text-xs text-slate-500">Unsafe or dangerous driving</p>
-                    </div>
-                    <span class="text-slate-400 font-bold">›</span>
-                </button>
-
-                <button type="button" class="driverComplaintOptionBtn w-full flex items-center justify-between p-3 rounded-2xl border-2 border-slate-200 bg-slate-50 hover:bg-slate-100 text-left transition-colors" onclick="submitDriverComplaint('improper_behaviour')">
-                    <div>
-                        <p class="text-xs font-black text-slate-900">Rude Behaviour</p>
-                        <p class="text-xs text-slate-500">Inappropriate or disrespectful conduct</p>
-                    </div>
-                    <span class="text-slate-400 font-bold">›</span>
-                </button>
-
-                <button type="button" class="driverComplaintOptionBtn w-full flex items-center justify-between p-3 rounded-2xl border-2 border-slate-200 bg-slate-50 hover:bg-slate-100 text-left transition-colors" onclick="submitDriverComplaint('foul_language')">
-                    <div>
-                        <p class="text-xs font-black text-slate-900">Foul Language</p>
-                        <p class="text-xs text-slate-500">Offensive or abusive words</p>
-                    </div>
-                    <span class="text-slate-400 font-bold">›</span>
-                </button>
-
-                <button type="button" class="driverComplaintOptionBtn w-full flex items-center justify-between p-3 rounded-2xl border-2 border-slate-200 bg-slate-50 hover:bg-slate-100 text-left transition-colors" onclick="showOtherComplaintInput()">
-                    <div>
-                        <p class="text-xs font-black text-slate-900">Other Issue</p>
-                        <p class="text-xs text-slate-500">Type a custom description</p>
-                    </div>
-                    <span class="text-slate-400 font-bold">›</span>
-                </button>
-            </div>
-
-            <div id="driverComplaintOtherView" class="hidden space-y-3">
-                <textarea id="driverComplaintOtherText" rows="3" maxlength="500" placeholder="Describe the issue clearly..." class="w-full rounded-2xl border-2 border-slate-300 bg-slate-50 p-3 text-xs text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:outline-none resize-none"></textarea>
-                <p id="driverComplaintOtherError" class="hidden text-xs text-rose-600 font-bold">Please describe the issue before submitting.</p>
-
-                <div class="flex gap-2">
-                    <button type="button" onclick="cancelOtherComplaint()" class="flex-1 py-2.5 rounded-xl border-2 border-slate-300 bg-slate-100 text-slate-700 text-xs font-black">Cancel</button>
-                    <button type="button" id="driverComplaintOtherSubmitBtn" onclick="submitOtherDriverComplaint()" class="flex-[2] py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-black shadow-md">Submit Complaint</button>
+                    <label for="temporaryEndDate" class="kx-label">End date</label>
+                    <input id="temporaryEndDate" type="date" class="kx-input">
                 </div>
             </div>
         </div>
+
+        <div class="kx-foot">
+            <button id="confirmTemporaryStopBtn" type="button" onclick="submitTemporaryStopChange()" disabled class="kx-btn kx-btn--primary opacity-50 cursor-not-allowed">
+                Step 2: Confirm
+            </button>
+            <button id="cancelTemporaryStopBtn" type="button" onclick="cancelTemporaryStopChange()" class="kx-btn kx-btn--ghost">
+                Remove
+            </button>
+        </div>
     </div>
+</div>
 
-    <!-- SCRIPTS -->
-    <script src="vendor/leaflet/leaflet.js"></script>
-    <script src="kambus-ui.js"></script>
-    <script src="notification-center.js"></script>
-    <script src="student.js"></script>
+<!-- DRIVER COMPLAINT POLL ALERT -->
+<div id="driverComplaintAlert">
+    <div class="kambus-modal-window text-center space-y-4">
+        <div class="w-14 h-14 mx-auto rounded-2xl bg-amber-100 text-amber-700 border-2 border-amber-300 text-3xl flex items-center justify-center">
+            ⚠️
+        </div>
 
-    <script>
-        function togglePassModal() {
-            const modal = document.getElementById("passModal");
-            if (!modal) return;
-            modal.classList.toggle("hidden");
+        <h2 class="text-base font-black text-slate-900">Driver Complaint Poll</h2>
+        <p class="text-xs text-slate-600">A student reported an issue with your bus driver.</p>
+
+        <div class="bg-slate-50 border-2 border-slate-200 rounded-2xl p-3 text-left">
+            <p class="text-[10px] text-slate-500 uppercase font-black">Reported Issue</p>
+            <p id="complaintReason" class="text-xs font-black text-slate-900 mt-0.5">--</p>
+        </div>
+
+        <p class="text-xs font-black text-slate-900">Have you faced the same problem?</p>
+
+        <div class="grid grid-cols-2 gap-2.5">
+            <button id="complaintYesBtn" type="button" class="py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-black shadow-sm" onclick="answerDriverComplaintPoll('yes')">
+                Yes
+            </button>
+            <button id="complaintNoBtn" type="button" class="py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black shadow-sm" onclick="answerDriverComplaintPoll('no')">
+                No
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- DRIVER COMPLAINT MODAL -->
+<div id="driverComplaintModal" class="hidden kambus-modal-backdrop" style="z-index: 2100;">
+    <div class="kx-sheet">
+        <div class="kx-head">
+            <div class="kx-head-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+            <div class="kx-head-text">
+                <h3 class="kx-title">Report driver</h3>
+                <p class="kx-sub">Tell us what went wrong</p>
+            </div>
+            <button type="button" onclick="closeDriverComplaintModal()" class="kx-close" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+
+        <div class="kx-body">
+            <div id="driverComplaintOptionsView" class="kx-list">
+                <button type="button" class="driverComplaintOptionBtn kx-option" onclick="submitDriverComplaint('driver_not_on_time')">
+                    <span class="kx-option-icon kx-option-icon--amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg></span>
+                    <span class="kx-option-text">
+                        <span class="kx-option-title">Driver was late</span>
+                        <span class="kx-option-desc">Bus arrived later than expected</span>
+                    </span>
+                    <svg class="kx-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+                <button type="button" class="driverComplaintOptionBtn kx-option" onclick="submitDriverComplaint('over_speeding_rash_driving')">
+                    <span class="kx-option-icon kx-option-icon--rose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 14l4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/></svg></span>
+                    <span class="kx-option-text">
+                        <span class="kx-option-title">Rash / Over Speeding</span>
+                        <span class="kx-option-desc">Unsafe or dangerous driving</span>
+                    </span>
+                    <svg class="kx-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+                <button type="button" class="driverComplaintOptionBtn kx-option" onclick="submitDriverComplaint('improper_behaviour')">
+                    <span class="kx-option-icon kx-option-icon--violet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M16 16s-1.5-2-4-2-4 2-4 2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg></span>
+                    <span class="kx-option-text">
+                        <span class="kx-option-title">Rude Behaviour</span>
+                        <span class="kx-option-desc">Inappropriate or disrespectful conduct</span>
+                    </span>
+                    <svg class="kx-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+                <button type="button" class="driverComplaintOptionBtn kx-option" onclick="submitDriverComplaint('foul_language')">
+                    <span class="kx-option-icon kx-option-icon--sky"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="12" y1="7" x2="12" y2="11"/><line x1="12" y1="14" x2="12.01" y2="14"/></svg></span>
+                    <span class="kx-option-text">
+                        <span class="kx-option-title">Foul Language</span>
+                        <span class="kx-option-desc">Offensive or abusive words</span>
+                    </span>
+                    <svg class="kx-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+                <button type="button" class="driverComplaintOptionBtn kx-option" onclick="showOtherComplaintInput()">
+                    <span class="kx-option-icon kx-option-icon--slate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></span>
+                    <span class="kx-option-text">
+                        <span class="kx-option-title">Other Issue</span>
+                        <span class="kx-option-desc">Type a custom description</span>
+                    </span>
+                    <svg class="kx-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+            </div>
+
+            <div id="driverComplaintOtherView" class="hidden kx-stack">
+                <label for="driverComplaintOtherText" class="kx-label">Describe the issue</label>
+                <textarea id="driverComplaintOtherText" rows="4" maxlength="500" placeholder="Describe the issue clearly..." class="kx-textarea"></textarea>
+                <p id="driverComplaintOtherError" class="hidden kx-error">Please describe the issue before submitting.</p>
+
+                <div class="kx-row">
+                    <button type="button" onclick="cancelOtherComplaint()" class="kx-btn kx-btn--ghost">Cancel</button>
+                    <button type="button" id="driverComplaintOtherSubmitBtn" onclick="submitOtherDriverComplaint()" class="kx-btn kx-btn--primary">Submit Complaint</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- SCRIPTS -->
+<script src="vendor/leaflet/leaflet.js"></script>
+<script src="kambus-ui.js"></script>
+<script src="notification-center.js"></script>
+<script src="student.js"></script>
+
+<script>
+    function togglePassModal() {
+        const modal = document.getElementById("passModal");
+        if (!modal) return;
+        modal.classList.toggle("hidden");
+    }
+
+    function recenterMap() {
+        if (typeof map === "undefined" || !map) return;
+        map.invalidateSize();
+        if (typeof busMarker !== "undefined" && busMarker) {
+            const position = busMarker.getLatLng();
+            map.setView([position.lat, position.lng], 16, { animate: true });
+            busMarker.openPopup?.();
+            return;
+        }
+        if (typeof assignedStop !== "undefined" && assignedStop) {
+            map.setView([assignedStop.latitude, assignedStop.longitude], 16, { animate: true });
+            if (typeof stopMarker !== "undefined" && stopMarker) stopMarker.openPopup?.();
+            return;
+        }
+        if (typeof COLLEGE_LOCATION !== "undefined" && COLLEGE_LOCATION) {
+            map.setView([COLLEGE_LOCATION.latitude, COLLEGE_LOCATION.longitude], 14, { animate: true });
+            return;
+        }
+        if (typeof KambusNotify !== "undefined") {
+            KambusNotify.notify({ type: "info", title: "Location unavailable", message: "Bus or assigned stop location is not available yet." });
+        }
+    }
+
+    let waitRequestPollTimer = null;
+    let waitRequestActiveId = null;
+    let waitRequestLastStatus = null;
+
+    async function openWaitModal() {
+        if (typeof travelStatusKnown !== "undefined" && (!travelStatusKnown || !studentTravellingToday)) {
+            KambusNotify.notify({ type: "info", title: "Wait request unavailable", message: "You are marked as not travelling today." });
+            return;
+        }
+        const modal = document.getElementById("waitModal");
+        if (!modal) return;
+        modal.classList.remove("hidden");
+
+        const eligibilityText = document.getElementById("waitEligibilityText");
+        const waitOptions = document.getElementById("waitOptions");
+        const waitState = document.getElementById("waitRequestState");
+
+        if (waitOptions) waitOptions.classList.remove("hidden");
+        if (waitState) waitState.classList.add("hidden");
+        if (eligibilityText) eligibilityText.textContent = "Checking bus eligibility...";
+
+        if (typeof busTripActive !== "undefined" && !busTripActive) {
+            if (eligibilityText) eligibilityText.textContent = "No active trip is currently running.";
+            if (waitOptions) waitOptions.classList.add("hidden");
+            return;
         }
 
-        function recenterMap() {
-            if (typeof map === "undefined" || !map) return;
-            map.invalidateSize();
-            if (typeof busMarker !== "undefined" && busMarker) {
-                const position = busMarker.getLatLng();
-                map.setView([position.lat, position.lng], 16, { animate: true });
-                busMarker.openPopup?.();
-                return;
-            }
-            if (typeof assignedStop !== "undefined" && assignedStop) {
-                map.setView([assignedStop.latitude, assignedStop.longitude], 16, { animate: true });
-                if (typeof stopMarker !== "undefined" && stopMarker) stopMarker.openPopup?.();
-                return;
-            }
-            if (typeof COLLEGE_LOCATION !== "undefined" && COLLEGE_LOCATION) {
-                map.setView([COLLEGE_LOCATION.latitude, COLLEGE_LOCATION.longitude], 14, { animate: true });
-                return;
-            }
-            if (typeof KambusNotify !== "undefined") {
-                KambusNotify.notify({ type: "info", title: "Location unavailable", message: "Bus or assigned stop location is not available yet." });
-            }
+        if (typeof assignedStop === "undefined" || !assignedStop) {
+            if (eligibilityText) eligibilityText.textContent = "Your assigned stop is unavailable.";
+            if (waitOptions) waitOptions.classList.add("hidden");
+            return;
         }
 
-        let waitRequestPollTimer = null;
-        let waitRequestActiveId = null;
-        let waitRequestLastStatus = null;
-
-        async function openWaitModal() {
-            if (typeof travelStatusKnown !== "undefined" && (!travelStatusKnown || !studentTravellingToday)) {
-                KambusNotify.notify({ type: "info", title: "Wait request unavailable", message: "You are marked as not travelling today." });
-                return;
-            }
-            const modal = document.getElementById("waitModal");
-            if (!modal) return;
-            modal.classList.remove("hidden");
-
-            const eligibilityText = document.getElementById("waitEligibilityText");
-            const waitOptions = document.getElementById("waitOptions");
-            const waitState = document.getElementById("waitRequestState");
-
-            if (waitOptions) waitOptions.classList.remove("hidden");
-            if (waitState) waitState.classList.add("hidden");
-            if (eligibilityText) eligibilityText.textContent = "Checking bus eligibility...";
-
-            if (typeof busTripActive !== "undefined" && !busTripActive) {
-                if (eligibilityText) eligibilityText.textContent = "No active trip is currently running.";
-                if (waitOptions) waitOptions.classList.add("hidden");
-                return;
-            }
-
-            if (typeof assignedStop === "undefined" || !assignedStop) {
-                if (eligibilityText) eligibilityText.textContent = "Your assigned stop is unavailable.";
-                if (waitOptions) waitOptions.classList.add("hidden");
-                return;
-            }
-
-            const etaText = document.getElementById("etaValue")?.textContent || "";
-            if (etaText.toLowerCase().includes("unavailable")) {
-                if (eligibilityText) eligibilityText.textContent = "Live ETA is currently unavailable.";
-                if (waitOptions) waitOptions.classList.add("hidden");
-                return;
-            }
-
-            if (eligibilityText) {
-                eligibilityText.textContent = "Bus is approaching your stop. Choose 1-4 minutes.";
-            }
+        const etaText = document.getElementById("etaValue")?.textContent || "";
+        if (etaText.toLowerCase().includes("unavailable")) {
+            if (eligibilityText) eligibilityText.textContent = "Live ETA is currently unavailable.";
+            if (waitOptions) waitOptions.classList.add("hidden");
+            return;
         }
 
-        function closeWaitModal() {
-            const modal = document.getElementById("waitModal");
-            if (modal) modal.classList.add("hidden");
+        if (eligibilityText) {
+            eligibilityText.textContent = "Bus is approaching your stop. Choose 1-4 minutes.";
+        }
+    }
+
+    function closeWaitModal() {
+        const modal = document.getElementById("waitModal");
+        if (modal) modal.classList.add("hidden");
+    }
+
+    async function sendWaitRequest(minutes) {
+        if (typeof travelStatusKnown !== "undefined" && (!travelStatusKnown || !studentTravellingToday)) {
+            KambusNotify.notify({ type: "info", title: "Wait request unavailable", message: "You are marked as not travelling today." });
+            return;
+        }
+        if (minutes < 1 || minutes > 4) {
+            KambusNotify.notify({ type: "warn", title: "Invalid wait time", message: "Choose between 1 and 4 minutes." });
+            return;
+        }
+        const token = getToken();
+        if (!token) {
+            KambusNotify.notify({ type: "warn", title: "Session expired", message: "Please login again." });
+            return;
+        }
+        if (typeof busData === "undefined" || !busData || !busData.bus_id) {
+            KambusNotify.notify({ type: "info", title: "Bus information", message: "Bus information is still loading." });
+            return;
         }
 
-        async function sendWaitRequest(minutes) {
-            if (typeof travelStatusKnown !== "undefined" && (!travelStatusKnown || !studentTravellingToday)) {
-                KambusNotify.notify({ type: "info", title: "Wait request unavailable", message: "You are marked as not travelling today." });
-                return;
-            }
-            if (minutes < 1 || minutes > 4) {
-                KambusNotify.notify({ type: "warn", title: "Invalid wait time", message: "Choose between 1 and 4 minutes." });
-                return;
-            }
-            const token = getToken();
-            if (!token) {
-                KambusNotify.notify({ type: "warn", title: "Session expired", message: "Please login again." });
-                return;
-            }
-            if (typeof busData === "undefined" || !busData || !busData.bus_id) {
-                KambusNotify.notify({ type: "info", title: "Bus information", message: "Bus information is still loading." });
-                return;
-            }
+        const waitButtons = document.querySelectorAll("#waitOptions button");
+        waitButtons.forEach(button => { button.disabled = true; button.classList.add("opacity-50"); });
 
-            const waitButtons = document.querySelectorAll("#waitOptions button");
-            waitButtons.forEach(button => { button.disabled = true; button.classList.add("opacity-50"); });
-
-            try {
-                const response = await fetch(`${API_BASE}/student/wait-request`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-                    body: JSON.stringify({ minutes: minutes })
-                });
-                const data = await response.json();
-                if (!response.ok) {
-                    KambusNotify.notify({ type: "warn", title: "Wait request unavailable", message: data.detail || "Unable to send wait request." });
-                    waitButtons.forEach(button => { button.disabled = false; button.classList.remove("opacity-50"); });
-                    return;
-                }
-
-                waitRequestActiveId = Number(data.request_id);
-                waitRequestLastStatus = null;
-                closeWaitModal();
-                showWaitRequestBanner(data);
-                KambusNotify.notify({ type: "ok", title: "Wait request created", message: `Your ${data.minutes}-minute request is active.` });
-                startWaitRequestStatusPolling();
-            } catch (error) {
-                KambusNotify.notify({ type: "danger", title: "Connection unavailable", message: "Unable to connect to KAMBUS." });
-                waitButtons.forEach(button => { button.disabled = false; button.classList.remove("opacity-50"); });
-            }
-        }
-
-        function showWaitRequestBanner(data) {
-            const button = document.getElementById("btnWaitRequest");
-            if (!button) return;
-            button.disabled = true;
-            button.className = "action-btn opacity-75 cursor-not-allowed";
-            button.innerHTML = `<svg class="w-4 h-4 text-amber-700 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>Wait Active</span>`;
-        }
-
-        function startWaitRequestStatusPolling() {
-            stopWaitRequestStatusPolling();
-            loadWaitRequestStatus();
-            waitRequestPollTimer = setInterval(loadWaitRequestStatus, 3000);
-        }
-
-        async function loadWaitRequestStatus() {
-            const token = getToken();
-            if (!token) return;
-            try {
-                const response = await fetch(`${API_BASE}/student/wait-request/status`, {
-                    method: "GET",
-                    headers: { "Accept": "application/json", "Authorization": `Bearer ${token}` }
-                });
-                if (response.status === 404) {
-                    stopWaitRequestStatusPolling();
-                    restoreWaitRequestButton();
-                    return;
-                }
-                const data = await response.json();
-                if (!response.ok) return;
-
-                if (data.status === "completed") {
-                    stopWaitRequestStatusPolling();
-                    updateWaitRequestStateUI("completed", data);
-                    KambusNotify.notify({ type: "ok", title: "Wait completed", message: "The bus has finished waiting." });
-                    waitRequestActiveId = null;
-                    restoreWaitRequestButton(true);
-                    return;
-                }
-                if (waitRequestActiveId !== null && Number(data.request_id) !== Number(waitRequestActiveId)) return;
-                if (data.status === "pending") {
-                    updateWaitRequestStateUI("pending", data);
-                    return;
-                }
-                if (data.status === "accepted") {
-                    stopWaitRequestStatusPolling();
-                    updateWaitRequestStateUI("accepted", data);
-                    if (waitRequestLastStatus !== "accepted") {
-                        KambusNotify.notify({ type: "ok", title: "Wait accepted", message: `Your ${data.minutes}-minute wait request has been accepted.` });
-                    }
-                    waitRequestLastStatus = "accepted";
-                    waitRequestActiveId = null;
-                    restoreWaitRequestButton(true);
-                    return;
-                }
-                if (data.status === "rejected") {
-                    stopWaitRequestStatusPolling();
-                    updateWaitRequestStateUI("rejected", data);
-                    if (waitRequestLastStatus !== "rejected") {
-                        KambusNotify.notify({ type: "warn", title: "Wait request skipped", message: "The driver skipped your wait request." });
-                    }
-                    waitRequestLastStatus = "rejected";
-                    waitRequestActiveId = null;
-                    restoreWaitRequestButton(true);
-                }
-            } catch (error) {}
-        }
-
-        function updateWaitRequestStateUI(status, data) {
-            const title = document.getElementById("waitRequestStateTitle");
-            const message = document.getElementById("waitRequestStateMessage");
-            if (!title || !message) return;
-            const minutes = Number(data.minutes || 0);
-            if (status === "pending") {
-                title.textContent = "Wait request active";
-                message.textContent = `Your ${minutes}-minute request is pending.`;
-            } else if (status === "accepted") {
-                title.textContent = "Wait accepted";
-                message.textContent = `The bus will wait approximately ${minutes} minute(s).`;
-            } else if (status === "rejected") {
-                title.textContent = "Wait skipped";
-                message.textContent = "The driver skipped this wait request.";
-            } else if (status === "completed") {
-                title.textContent = "Wait completed";
-                message.textContent = "The bus has finished waiting and resumed travel.";
-            }
-        }
-
-        function stopWaitRequestStatusPolling() {
-            if (waitRequestPollTimer) {
-                clearInterval(waitRequestPollTimer);
-                waitRequestPollTimer = null;
-            }
-        }
-
-        function restoreWaitRequestButton(available = true) {
-            const button = document.getElementById("btnWaitRequest");
-            if (!button) return;
-            if (!available || (typeof studentTravellingToday !== "undefined" && !studentTravellingToday)) {
-                button.disabled = true;
-                button.className = "action-btn opacity-50 cursor-not-allowed";
-                button.innerHTML = `<svg class="w-4 h-4 text-amber-700 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>Unavailable</span>`;
-                return;
-            }
-            button.disabled = false;
-            button.className = "action-btn";
-            button.innerHTML = `
-                <span id="waitIcon" class="shrink-0 flex items-center"><svg class="w-4 h-4 text-amber-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>
-                <span id="waitBtnText">Request Wait</span>
-            `;
-        }
-
-        async function openNotTravellingModal() {
-            const approved = await KambusNotify.confirm({
-                title: "Not travelling today?",
-                message: "We will notify the driver that you will not be boarding the bus today.",
-                confirmText: "Confirm",
-                cancelText: "Cancel",
-                danger: true
+        try {
+            const response = await fetch(`${API_BASE}/student/wait-request`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+                body: JSON.stringify({ minutes: minutes })
             });
-            if (approved) {
-                await confirmNotTravelling();
-            }
-        }
-
-        async function confirmNotTravelling() {
-            const btn = document.getElementById("btnNotTravelling");
-            const text = document.getElementById("btnText");
-            const token = getToken();
-            if (!token) {
-                KambusNotify.notify({ type: "warn", title: "Session expired", message: "Please login again." });
+            const data = await response.json();
+            if (!response.ok) {
+                KambusNotify.notify({ type: "warn", title: "Wait request unavailable", message: data.detail || "Unable to send wait request." });
+                waitButtons.forEach(button => { button.disabled = false; button.classList.remove("opacity-50"); });
                 return;
             }
+
+            waitRequestActiveId = Number(data.request_id);
+            waitRequestLastStatus = null;
+            closeWaitModal();
+            showWaitRequestBanner(data);
+            KambusNotify.notify({ type: "ok", title: "Wait request created", message: `Your ${data.minutes}-minute request is active.` });
+            startWaitRequestStatusPolling();
+        } catch (error) {
+            KambusNotify.notify({ type: "danger", title: "Connection unavailable", message: "Unable to connect to KAMBUS." });
+            waitButtons.forEach(button => { button.disabled = false; button.classList.remove("opacity-50"); });
+        }
+    }
+
+    function showWaitRequestBanner(data) {
+        const button = document.getElementById("btnWaitRequest");
+        if (!button) return;
+        button.disabled = true;
+        button.className = "action-btn opacity-75 cursor-not-allowed";
+        button.innerHTML = `<svg class="w-4 h-4 text-amber-700 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>Wait Active</span>`;
+    }
+
+    function startWaitRequestStatusPolling() {
+        stopWaitRequestStatusPolling();
+        loadWaitRequestStatus();
+        waitRequestPollTimer = setInterval(loadWaitRequestStatus, 3000);
+    }
+
+    async function loadWaitRequestStatus() {
+        const token = getToken();
+        if (!token) return;
+        try {
+            const response = await fetch(`${API_BASE}/student/wait-request/status`, {
+                method: "GET",
+                headers: { "Accept": "application/json", "Authorization": `Bearer ${token}` }
+            });
+            if (response.status === 404) {
+                stopWaitRequestStatusPolling();
+                restoreWaitRequestButton();
+                return;
+            }
+            const data = await response.json();
+            if (!response.ok) return;
+
+            if (data.status === "completed") {
+                stopWaitRequestStatusPolling();
+                updateWaitRequestStateUI("completed", data);
+                KambusNotify.notify({ type: "ok", title: "Wait completed", message: "The bus has finished waiting." });
+                waitRequestActiveId = null;
+                restoreWaitRequestButton(true);
+                return;
+            }
+            if (waitRequestActiveId !== null && Number(data.request_id) !== Number(waitRequestActiveId)) return;
+            if (data.status === "pending") {
+                updateWaitRequestStateUI("pending", data);
+                return;
+            }
+            if (data.status === "accepted") {
+                stopWaitRequestStatusPolling();
+                updateWaitRequestStateUI("accepted", data);
+                if (waitRequestLastStatus !== "accepted") {
+                    KambusNotify.notify({ type: "ok", title: "Wait accepted", message: `Your ${data.minutes}-minute wait request has been accepted.` });
+                }
+                waitRequestLastStatus = "accepted";
+                waitRequestActiveId = null;
+                restoreWaitRequestButton(true);
+                return;
+            }
+            if (data.status === "rejected") {
+                stopWaitRequestStatusPolling();
+                updateWaitRequestStateUI("rejected", data);
+                if (waitRequestLastStatus !== "rejected") {
+                    KambusNotify.notify({ type: "warn", title: "Wait request skipped", message: "The driver skipped your wait request." });
+                }
+                waitRequestLastStatus = "rejected";
+                waitRequestActiveId = null;
+                restoreWaitRequestButton(true);
+            }
+        } catch (error) {}
+    }
+
+    function updateWaitRequestStateUI(status, data) {
+        const title = document.getElementById("waitRequestStateTitle");
+        const message = document.getElementById("waitRequestStateMessage");
+        if (!title || !message) return;
+        const minutes = Number(data.minutes || 0);
+        if (status === "pending") {
+            title.textContent = "Wait request active";
+            message.textContent = `Your ${minutes}-minute request is pending.`;
+        } else if (status === "accepted") {
+            title.textContent = "Wait accepted";
+            message.textContent = `The bus will wait approximately ${minutes} minute(s).`;
+        } else if (status === "rejected") {
+            title.textContent = "Wait skipped";
+            message.textContent = "The driver skipped this wait request.";
+        } else if (status === "completed") {
+            title.textContent = "Wait completed";
+            message.textContent = "The bus has finished waiting and resumed travel.";
+        }
+    }
+
+    function stopWaitRequestStatusPolling() {
+        if (waitRequestPollTimer) {
+            clearInterval(waitRequestPollTimer);
+            waitRequestPollTimer = null;
+        }
+    }
+
+    function restoreWaitRequestButton(available = true) {
+        const button = document.getElementById("btnWaitRequest");
+        if (!button) return;
+        if (!available || (typeof studentTravellingToday !== "undefined" && !studentTravellingToday)) {
+            button.disabled = true;
+            button.className = "action-btn opacity-50 cursor-not-allowed";
+            button.innerHTML = `<svg class="w-4 h-4 text-amber-700 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>Unavailable</span>`;
+            return;
+        }
+        button.disabled = false;
+        button.className = "action-btn";
+        button.innerHTML = `
+            <span id="waitIcon" class="shrink-0 flex items-center"><svg class="w-4 h-4 text-amber-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>
+            <span id="waitBtnText">Request Wait</span>
+        `;
+    }
+
+    async function openNotTravellingModal() {
+        const approved = await KambusNotify.confirm({
+            title: "Not travelling today?",
+            message: "We will notify the driver that you will not be boarding the bus today.",
+            confirmText: "Confirm",
+            cancelText: "Cancel",
+            danger: true
+        });
+        if (approved) {
+            await confirmNotTravelling();
+        }
+    }
+
+    async function confirmNotTravelling() {
+        const btn = document.getElementById("btnNotTravelling");
+        const text = document.getElementById("btnText");
+        const token = getToken();
+        if (!token) {
+            KambusNotify.notify({ type: "warn", title: "Session expired", message: "Please login again." });
+            return;
+        }
+        if (btn) {
+            btn.disabled = true;
+            btn.className = "action-btn opacity-50 cursor-not-allowed";
+        }
+        if (text) text.innerText = "Updating...";
+
+        try {
+            const response = await fetch(`${API_BASE}/student/travel-status`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+                body: JSON.stringify({ status: "not_travelling" })
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.detail || "Unable to update travel status");
+
+            if (typeof studentTravellingToday !== "undefined") studentTravellingToday = false;
+            if (typeof travelStatusKnown !== "undefined") travelStatusKnown = true;
+
+            stopWaitRequestStatusPolling();
+            waitRequestActiveId = null;
+            restoreWaitRequestButton(false);
+
             if (btn) {
                 btn.disabled = true;
-                btn.className = "action-btn opacity-50 cursor-not-allowed";
+                btn.className = "action-btn";
+                btn.style.background = "#fecdd3";
+                btn.style.borderColor = "#f43f5e";
+                btn.style.color = "#9f1239";
             }
-            if (text) text.innerText = "Updating...";
-
-            try {
-                const response = await fetch(`${API_BASE}/student/travel-status`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-                    body: JSON.stringify({ status: "not_travelling" })
-                });
-                const data = await response.json();
-                if (!response.ok) throw new Error(data.detail || "Unable to update travel status");
-
-                if (typeof studentTravellingToday !== "undefined") studentTravellingToday = false;
-                if (typeof travelStatusKnown !== "undefined") travelStatusKnown = true;
-
-                stopWaitRequestStatusPolling();
-                waitRequestActiveId = null;
-                restoreWaitRequestButton(false);
-
-                if (btn) {
-                    btn.disabled = true;
-                    btn.className = "action-btn";
-                    btn.style.background = "#fecdd3";
-                    btn.style.borderColor = "#f43f5e";
-                    btn.style.color = "#9f1239";
-                }
-                if (text) text.innerText = "Skipped Today";
-                KambusNotify.notify({ type: "ok", title: "Status updated", message: "Marked as not travelling today." });
-            } catch (error) {
-                if (btn) {
-                    btn.disabled = false;
-                    btn.className = "action-btn";
-                }
-                if (text) text.innerText = "Not Travelling";
-                KambusNotify.notify({ type: "danger", title: "Update failed", message: error.message || "Unable to connect." });
+            if (text) text.innerText = "Skipped Today";
+            KambusNotify.notify({ type: "ok", title: "Status updated", message: "Marked as not travelling today." });
+        } catch (error) {
+            if (btn) {
+                btn.disabled = false;
+                btn.className = "action-btn";
             }
+            if (text) text.innerText = "Not Travelling";
+            KambusNotify.notify({ type: "danger", title: "Update failed", message: error.message || "Unable to connect." });
         }
+    }
 
-        document.addEventListener("click", event => {
-            const waitModal = document.getElementById("waitModal");
-            const passModal = document.getElementById("passModal");
-            const complaintModal = document.getElementById("driverComplaintModal");
-            if (event.target === waitModal) closeWaitModal();
-            if (event.target === passModal) togglePassModal();
-            if (event.target === complaintModal) closeDriverComplaintModal();
-        });
+    document.addEventListener("click", event => {
+        const waitModal = document.getElementById("waitModal");
+        const passModal = document.getElementById("passModal");
+        const complaintModal = document.getElementById("driverComplaintModal");
+        if (event.target === waitModal) closeWaitModal();
+        if (event.target === passModal) togglePassModal();
+        if (event.target === complaintModal) closeDriverComplaintModal();
+    });
 
-        document.addEventListener("keydown", event => {
-            if (event.key !== "Escape") return;
-            closeWaitModal();
-            const passModal = document.getElementById("passModal");
-            if (passModal && !passModal.classList.contains("hidden")) togglePassModal();
-            const complaintModal = document.getElementById("driverComplaintModal");
-            if (complaintModal && !complaintModal.classList.contains("hidden")) closeDriverComplaintModal();
-        });
-    </script>
+    document.addEventListener("keydown", event => {
+        if (event.key !== "Escape") return;
+        closeWaitModal();
+        const passModal = document.getElementById("passModal");
+        if (passModal && !passModal.classList.contains("hidden")) togglePassModal();
+        const complaintModal = document.getElementById("driverComplaintModal");
+        if (complaintModal && !complaintModal.classList.contains("hidden")) closeDriverComplaintModal();
+    });
+</script>
 </body>
 </html>

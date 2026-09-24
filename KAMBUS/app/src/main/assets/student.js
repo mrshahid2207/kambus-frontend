@@ -106,7 +106,7 @@ function getToken() {
 function setEtaBanner(status, eta, isLive = false) {
     const statusElement = document.getElementById("etaStatus");
     const etaElement = document.getElementById("etaValue");
-    const dotElement = document.getElementById("etaDot");
+    const pillElement = document.getElementById("etaLivePill");
 
     if (!statusElement || !etaElement) return;
 
@@ -115,12 +115,14 @@ function setEtaBanner(status, eta, isLive = false) {
 
     etaElement.className = isLive ? "text-ok font-semibold ml-1 text-xs" : "text-ink-muted font-semibold ml-1 text-xs";
 
-    if (dotElement) {
-        if (isLive) {
-            dotElement.innerHTML = `<span class="relative inline-flex rounded-full h-2 w-2 bg-ok animate-pulse"></span>`;
-        } else {
-            dotElement.innerHTML = `<span class="relative inline-flex rounded-full h-2 w-2 bg-line"></span>`;
-        }
+    // Indicator state is handled entirely in CSS (see .eta-pill in student.html):
+    //   live     -> green dot with a pulsing ring
+    //   updating -> amber dot, slow blink (waiting for a fresh GPS fix)
+    //   idle     -> grey dot, no animation (trip ended / unavailable)
+    if (pillElement) {
+        pillElement.dataset.state = isLive
+            ? "live"
+            : (/updat|calculat/i.test(status) ? "updating" : "idle");
     }
 }
 
@@ -1413,7 +1415,7 @@ if (typeof KambusNotify !== "undefined") {
                             duration: 9000
                         });
                     }
-                    showStudentSosAlert(data.message);
+                    showStudentSosAlert(data.message, data);
                     window.KambusNotificationCenter?.refresh();
                     return;
                 }
@@ -1428,7 +1430,7 @@ if (typeof KambusNotify !== "undefined") {
                             duration: 7000
                         });
                     }
-                    showStudentDetourAlert(data.message, data.delay_minutes);
+                    showStudentDetourAlert(data.message, data.delay_minutes, data);
                     window.KambusNotificationCenter?.refresh();
                     return;
                 }
@@ -1444,6 +1446,7 @@ if (typeof KambusNotify !== "undefined") {
                     }
                     if (data.type === "trip_ended") {
                         busTripActive = false;
+                        dismissAllAlertBanners();
                         removeBusMarker();
                         setEtaBanner("Trip ended", "Bus is not travelling");
                     }
@@ -1515,22 +1518,168 @@ notificationSocket = null;
     }
 }
 
-function showStudentSosAlert(message) {
-    const banner = document.getElementById("studentSosAlertBanner");
-    const text = document.getElementById("studentSosAlertText");
-    if (banner && text) {
-        if (message) text.textContent = message;
+// ========================================================================
+// SOS / DETOUR ALERT BANNERS
+// An alert banner is hidden again when:
+//   - the student taps the close button (stored so it does not come back,
+//     and the notification is marked read on the server),
+//   - the trip ends,
+//   - the server no longer reports it as an unread alert, or
+//   - the notification is older than ALERT_MAX_AGE_MS.
+// ========================================================================
+
+const ALERT_BANNERS = {
+    sos:    { bannerId: "studentSosAlertBanner",    textId: "studentSosAlertText" },
+    detour: { bannerId: "studentDetourAlertBanner", textId: "studentDetourAlertText" }
+};
+const ALERT_MAX_AGE_MS = 30 * 60 * 1000;      // stop showing alerts older than 30 min
+const ALERT_SYNC_GRACE_MS = 15000;            // do not hide a fresh banner because of a slow poll
+const ALERT_MESSAGE_SUPPRESS_MS = 2 * 60 * 1000;
+const ALERTS_ONLY_DURING_TRIP = true;         // set false to show alerts even when no trip is running
+const DISMISSED_ALERTS_KEY = "kambus_dismissed_alerts";
+
+function loadDismissedAlerts() {
+    try {
+        const raw = JSON.parse(localStorage.getItem(DISMISSED_ALERTS_KEY) || "{}");
+        return raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {};
+    } catch (e) {
+        return {};
+    }
+}
+
+function rememberDismissedAlert(kind, alertData) {
+    const map = loadDismissedAlerts();
+    const now = Date.now();
+    if (alertData?.id !== null && alertData?.id !== undefined && alertData.id !== "") {
+        map[`${kind}:${alertData.id}`] = now;
+    }
+    if (alertData?.message) {
+        map[`${kind}:msg:${alertData.message}`] = now;
+    }
+    const newest = Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 60);
+    try {
+        localStorage.setItem(DISMISSED_ALERTS_KEY, JSON.stringify(Object.fromEntries(newest)));
+    } catch (e) {}
+}
+
+function isAlertDismissed(kind, alertData) {
+    const map = loadDismissedAlerts();
+    if (alertData?.id !== null && alertData?.id !== undefined && alertData.id !== "" && map[`${kind}:${alertData.id}`]) {
+        return true;
+    }
+    const messageStamp = alertData?.message ? map[`${kind}:msg:${alertData.message}`] : null;
+    return Boolean(messageStamp) && Date.now() - messageStamp <= ALERT_MESSAGE_SUPPRESS_MS;
+}
+
+function isAlertFresh(createdAt) {
+    if (!createdAt || typeof createdAt !== "string") return true;
+    // Only trust the age when the timestamp carries a timezone; otherwise skip the check.
+    if (!/(Z|[+-]\d{2}:?\d{2})$/.test(createdAt.trim())) return true;
+    const created = Date.parse(createdAt);
+    if (!Number.isFinite(created)) return true;
+    return Date.now() - created <= ALERT_MAX_AGE_MS;
+}
+
+function alertFromNotification(n) {
+    return {
+        id: n?.id ?? n?.notification_id ?? null,
+        message: n?.message || "",
+        createdAt: n?.created_at || n?.createdAt || n?.timestamp || null
+    };
+}
+
+function showAlertBanner(kind, alertData) {
+    const cfg = ALERT_BANNERS[kind];
+    const banner = document.getElementById(cfg.bannerId);
+    const text = document.getElementById(cfg.textId);
+    if (!banner || !text) return;
+    if (isAlertDismissed(kind, alertData)) return;
+
+    if (alertData?.message) text.textContent = alertData.message;
+    if (alertData?.id !== null && alertData?.id !== undefined && alertData.id !== "") {
+        banner.dataset.notificationId = String(alertData.id);
+    }
+    if (banner.classList.contains("hidden")) {
+        banner.dataset.shownAt = String(Date.now());
         banner.classList.remove("hidden");
     }
 }
 
-function showStudentDetourAlert(message, delayMinutes) {
-    const banner = document.getElementById("studentDetourAlertBanner");
-    const text = document.getElementById("studentDetourAlertText");
-    if (banner && text) {
-        if (message) text.textContent = message;
-        banner.classList.remove("hidden");
+function hideAlertBanner(kind) {
+    const cfg = ALERT_BANNERS[kind];
+    const banner = document.getElementById(cfg.bannerId);
+    if (!banner) return;
+    banner.classList.add("hidden");
+    delete banner.dataset.notificationId;
+    delete banner.dataset.shownAt;
+}
+
+async function markNotificationRead(notificationId) {
+    const token = getToken();
+    if (!token || !notificationId) return;
+    try {
+        await fetch(`${API_BASE}/notifications/${notificationId}/read`, {
+            method: "PATCH",
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+        window.KambusNotificationCenter?.refresh();
+    } catch (err) {
+        console.warn("Mark notification read error:", err);
     }
+}
+
+function dismissAlertBanner(kind) {
+    const cfg = ALERT_BANNERS[kind];
+    const banner = document.getElementById(cfg?.bannerId);
+    const text = document.getElementById(cfg?.textId);
+    if (!banner) return;
+
+    const notificationId = banner.dataset.notificationId || null;
+    rememberDismissedAlert(kind, { id: notificationId, message: text?.textContent || "" });
+    hideAlertBanner(kind);
+    if (notificationId) markNotificationRead(notificationId);
+}
+window.dismissAlertBanner = dismissAlertBanner;
+
+/** Called when the trip ends: clear both banners and make sure they stay cleared. */
+function dismissAllAlertBanners() {
+    Object.keys(ALERT_BANNERS).forEach(kind => {
+        const banner = document.getElementById(ALERT_BANNERS[kind].bannerId);
+        if (banner && !banner.classList.contains("hidden")) dismissAlertBanner(kind);
+    });
+}
+
+/** Hide a banner the server no longer reports, unless it only just appeared. */
+function hideAlertBannerIfStale(kind) {
+    const banner = document.getElementById(ALERT_BANNERS[kind].bannerId);
+    if (!banner || banner.classList.contains("hidden")) return;
+    const shownAt = Number(banner.dataset.shownAt || 0);
+    if (Date.now() - shownAt > ALERT_SYNC_GRACE_MS) hideAlertBanner(kind);
+}
+
+function showStudentSosAlert(message, meta = {}) {
+    showAlertBanner("sos", { id: meta.id ?? meta.notification_id ?? null, message });
+}
+
+function showStudentDetourAlert(message, delayMinutes, meta = {}) {
+    showAlertBanner("detour", { id: meta.id ?? meta.notification_id ?? null, message });
+}
+
+function syncAlertBanners(notifications) {
+    const tripAllowsAlerts = !ALERTS_ONLY_DURING_TRIP || busTripActive;
+    const sources = [["sos", "emergency_sos"], ["detour", "detour_alert"]];
+
+    sources.forEach(([kind, type]) => {
+        const match = tripAllowsAlerts
+            ? notifications
+                .filter(n => n.type === type && !n.is_read)
+                .map(alertFromNotification)
+                .find(a => isAlertFresh(a.createdAt) && !isAlertDismissed(kind, a))
+            : null;
+
+        if (match) showAlertBanner(kind, match);
+        else hideAlertBannerIfStale(kind);
+    });
 }
 
 async function checkActiveDriverAlerts() {
@@ -1550,17 +1699,9 @@ async function checkActiveDriverAlerts() {
         const data = await response.json();
         const notifications = Array.isArray(data) ? data : (data.notifications || []);
 
-        // Check for active unread SOS
-        const unreadSos = notifications.find(n => n.type === "emergency_sos" && !n.is_read);
-        if (unreadSos) {
-            showStudentSosAlert(unreadSos.message);
-        }
-
-        // Check for active unread Detour
-        const unreadDetour = notifications.find(n => n.type === "detour_alert" && !n.is_read);
-        if (unreadDetour) {
-            showStudentDetourAlert(unreadDetour.message);
-        }
+        // SOS / detour banners: show while unread, fresh and the trip is running;
+        // hide again once the server stops reporting them.
+        syncAlertBanners(notifications);
 
         // Check driver complaint poll
         const pollNotification = notifications.find(
@@ -2117,12 +2258,9 @@ function setTemporaryStopInputMode(mode) {
     registeredFields?.classList.toggle("hidden", mode !== "registered");
     pinCoordinates?.classList.toggle("hidden", mode !== "pin");
     checkPinButton?.classList.toggle("hidden", mode !== "pin");
-    if (registeredButton) registeredButton.className = mode === "registered"
-        ? "py-2 rounded bg-navy text-white font-bold text-xs"
-        : "py-2 rounded bg-surface border border-line text-ink font-bold text-xs";
-    if (pinButton) pinButton.className = mode === "pin"
-        ? "py-2 rounded bg-navy text-white font-bold text-xs"
-        : "py-2 rounded bg-surface border border-line text-ink font-bold text-xs";
+    document.getElementById("manualCoordinatesDetails")?.classList.toggle("hidden", mode !== "pin");
+    if (registeredButton) registeredButton.className = mode === "registered" ? "kx-seg-btn is-active" : "kx-seg-btn";
+    if (pinButton) pinButton.className = mode === "pin" ? "kx-seg-btn is-active" : "kx-seg-btn";
     resetTemporaryStopRouteCheck();
 }
 window.setTemporaryStopInputMode = setTemporaryStopInputMode;
@@ -2216,7 +2354,7 @@ function renderTemporaryStopCandidates(candidates) {
     if (!candidates.length) {
         // No bus currently passes through this location — make this clear
         // instead of leaving the Confirm button silently disabled.
-        container.innerHTML = `<div class="flex items-center justify-center gap-2 py-2 px-3 rounded text-xs font-semibold mx-auto w-full text-center border border-danger/20 bg-danger/10 text-danger"><svg class="w-4 h-4 shrink-0 text-danger" aria-hidden="true"><use href="icons.svg#icon-xmark"/></svg><span>No bus is currently available for this location. You cannot submit a temporary stop change here.</span></div>`;
+        container.innerHTML = `<div class="kx-notice kx-notice--row kx-notice--danger"><svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-xmark"/></svg><span>No bus is currently available for this location. You cannot submit a temporary stop change here.</span></div>`;
         return;
     }
 
@@ -2224,12 +2362,15 @@ function renderTemporaryStopCandidates(candidates) {
     container.innerHTML = candidates.map(candidate => {
         const eta = Number.isFinite(Number(candidate.eta_minutes)) ? `ETA ~${candidate.eta_minutes} min` : "Live ETA unavailable";
         const occupancy = candidate.capacity == null ? `Occupancy: ${candidate.occupancy ?? "unavailable"}` : `Occupancy: ${candidate.occupancy ?? "—"}/${candidate.capacity}`;
-        const approximate = candidate.is_approximate_match ? `<br><span class="text-ink-muted">${escapeTemporaryStopText(candidate.match_description)}</span>` : "";
-        return `<label class="block rounded border border-line bg-bg py-2 px-2.5 text-xs text-navy">
+        const approximate = candidate.is_approximate_match ? `<span class="kx-muted">${escapeTemporaryStopText(candidate.match_description)}</span>` : "";
+        return `<label class="kx-bus-option">
             <input type="radio" name="temporaryCandidateBus" value="${Number(candidate.bus_id)}" ${candidate.is_recommended ? "checked" : ""}>
-            <span class="font-bold text-navy">${escapeTemporaryStopText(candidate.bus_number)}</span>${candidate.is_own_bus ? " <span class=\"text-ok font-semibold\">• Your Assigned Bus</span>" : ""}${candidate.is_recommended ? " <span class=\"text-brand font-semibold\">• Recommended</span>" : ""}
-            <div class="mt-1">${escapeTemporaryStopText(candidate.route_name)} · ${escapeTemporaryStopText(candidate.driver_name)} (${escapeTemporaryStopText(candidate.driver_phone)})</div>
-            <div class="mt-0.5">${eta} · ${occupancy}</div>${approximate}
+            <span class="kx-bus-body">
+                <span class="kx-bus-title">${escapeTemporaryStopText(candidate.bus_number)}${candidate.is_own_bus ? "<span class=\"kx-tag kx-tag--ok\">• Your Assigned Bus</span>" : ""}${candidate.is_recommended ? "<span class=\"kx-tag kx-tag--brand\">• Recommended</span>" : ""}</span>
+                <span>${escapeTemporaryStopText(candidate.route_name)} · ${escapeTemporaryStopText(candidate.driver_name)} (${escapeTemporaryStopText(candidate.driver_phone)})</span>
+                <span>${eta} · ${occupancy}</span>
+                ${approximate}
+            </span>
         </label>`;
     }).join("");
     container.querySelectorAll("input[name='temporaryCandidateBus']").forEach(input => {
@@ -2259,10 +2400,10 @@ async function checkTemporaryStopRoute() {
         if (result) {
             result.classList.remove("hidden");
             if (data.on_route) {
-                result.className = "flex items-center justify-center gap-2 py-2 px-3 rounded text-xs font-semibold mx-auto w-full text-center border border-ok/20 bg-ok/10 text-ok";
+                result.className = "kx-notice kx-notice--row kx-notice--ok";
                 result.innerHTML = `<svg class="w-4 h-4 shrink-0 text-ok" aria-hidden="true"><use href="icons.svg#icon-check"/></svg><span>${escapeTemporaryStopText(data.message || "Selected stop is on your assigned bus route")}</span>`;
             } else {
-                result.className = "flex items-center justify-center gap-2 py-2 px-3 rounded text-xs font-semibold mx-auto w-full text-center border border-danger/20 bg-danger/10 text-danger";
+                result.className = "kx-notice kx-notice--row kx-notice--danger";
                 result.innerHTML = `<svg class="w-4 h-4 shrink-0 text-danger" aria-hidden="true"><use href="icons.svg#icon-xmark"/></svg><span>${escapeTemporaryStopText(data.message || "Selected stop is not on your assigned bus route")}</span>`;
             }
         }
@@ -2439,13 +2580,13 @@ function renderTemporaryStopStatus() {
         if (tempBtnText) tempBtnText.textContent = "Temporary Stop (Active)";
 
         if (statusBox) {
-            statusBox.className = "rounded border border-ok/20 bg-ok/10 p-2 text-xs text-ok";
+            statusBox.className = "kx-notice kx-notice--ok";
             statusBox.innerHTML = `
-                <div class="font-bold flex items-center justify-between">
+                <div class="kx-status-head">
                     <span>Temporary Stop Active</span>
-                    <span class="text-[10px] text-ok">${temporaryStopChange.start_date} → ${temporaryStopChange.end_date}</span>
+                    <span class="kx-status-dates">${temporaryStopChange.start_date} → ${temporaryStopChange.end_date}</span>
                 </div>
-                <div class="mt-0.5 font-semibold text-ok font-semibold truncate">${temporaryStopChange.temporary_stop_name || "Custom pickup location"}</div>
+                <div class="kx-status-name">${temporaryStopChange.temporary_stop_name || "Custom pickup location"}</div>
             `;
             statusBox.classList.remove("hidden");
         }
@@ -2457,13 +2598,13 @@ function renderTemporaryStopStatus() {
         if (tempBtnText) tempBtnText.textContent = "Temporary Stop (Scheduled)";
 
         if (statusBox) {
-            statusBox.className = "rounded border border-warn/20 bg-warn/10 p-2 text-xs text-warn";
+            statusBox.className = "kx-notice kx-notice--warn";
             statusBox.innerHTML = `
-                <div class="font-bold flex items-center justify-between">
+                <div class="kx-status-head">
                     <span>Temporary Stop Scheduled</span>
-                    <span class="text-[10px] text-warn">${temporaryStopChange.start_date} → ${temporaryStopChange.end_date}</span>
+                    <span class="kx-status-dates">${temporaryStopChange.start_date} → ${temporaryStopChange.end_date}</span>
                 </div>
-                <div class="mt-0.5 font-semibold text-warn font-semibold truncate">${temporaryStopChange.temporary_stop_name || "Custom pickup location"}</div>
+                <div class="kx-status-name">${temporaryStopChange.temporary_stop_name || "Custom pickup location"}</div>
             `;
             statusBox.classList.remove("hidden");
         }
@@ -2474,9 +2615,9 @@ function renderTemporaryStopStatus() {
         if (cancelBtn) cancelBtn.classList.remove("hidden");
         if (tempBtnText) tempBtnText.textContent = "Temporary Stop (Pending)";
         if (statusBox) {
-            statusBox.className = "rounded border border-warn/20 bg-warn/10 p-2 text-xs text-warn";
-            statusBox.innerHTML = `<div class="font-bold">Requires Admin Confirmation</div>
-                <div class="mt-0.5 font-semibold truncate">${temporaryStopChange.temporary_stop_name || "Temporary pickup location"}</div>`;
+            statusBox.className = "kx-notice kx-notice--warn";
+            statusBox.innerHTML = `<div class="kx-status-head"><span>Requires Admin Confirmation</span></div>
+                <div class="kx-status-name">${temporaryStopChange.temporary_stop_name || "Temporary pickup location"}</div>`;
             statusBox.classList.remove("hidden");
         }
         return;
