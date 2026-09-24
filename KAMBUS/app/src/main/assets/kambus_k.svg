@@ -1,5 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="KAMBUS">
-  <path fill="#28205f" d="M18 12h25c4 0 7 3 7 7v39L85 21c3-3 7-5 11-5h14c5 0 8 6 4 10L72 68l43 42c4 4 1 10-5 10H94c-4 0-8-2-11-5L50 83v30c0 4-3 7-7 7H18c-4 0-7-3-7-7V19c0-4 3-7 7-7Z"/>
-  <path fill="none" stroke="#edf2ff" stroke-linecap="round" stroke-width="8" d="M16 104V88c0-22 16-38 37-38 21 0 34 13 51 34l12 16"/>
-  <path fill="none" stroke="#edf2ff" stroke-linecap="round" stroke-width="7" d="M40 105V92c0-10 6-17 15-17 8 0 14 6 21 14l18 18"/>
-</svg>

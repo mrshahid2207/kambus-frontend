@@ -80,10 +80,8 @@ async function acquireWakeLock() {
         if ("wakeLock" in navigator) {
             wakeLockSentinel = await navigator.wakeLock.request("screen");
             wakeLockSentinel.addEventListener("release", () => {
-                console.log("🔓 Wake lock released");
-            });
-            console.log("🔒 Screen wake lock acquired");
-        }
+});
+}
     } catch (err) {
         console.warn("Wake lock request failed:", err.message);
     }
@@ -115,9 +113,7 @@ function getToken() {
 // ========================================================================
 
 document.addEventListener("DOMContentLoaded", () => {
-    console.log("🚍 KAMBUS Driver Dashboard loaded");
-
-    // Bind Start & End Trip Buttons
+// Bind Start & End Trip Buttons
     document.getElementById("startTripBtn")?.addEventListener("click", handleStartTrip);
     document.getElementById("endTripBtn")?.addEventListener("click", confirmAndEndTrip);
 
@@ -159,14 +155,13 @@ async function handleDriverLogout(event) {
                 }
             });
             if (response.ok) {
-                console.log("✅ Trip ended on backend during logout.");
-            } else {
+} else {
                 const data = await response.json().catch(() => ({}));
-                console.warn("⚠️ End-trip call during logout returned non-OK:", response.status, data.detail || "");
+                console.warn("[WARN] End-trip call during logout returned non-OK:", response.status, data.detail || "");
                 // Proceed with logout anyway — don't block the user
             }
         } catch (err) {
-            console.error("❌ End-trip call during logout failed (network error):", err);
+            console.error("[ERROR] End-trip call during logout failed (network error):", err);
             // Proceed with logout anyway — don't block the user
         }
     }
@@ -186,7 +181,7 @@ async function handleDriverLogout(event) {
 }
 
 // ========================================================================
-// STATUS BAR ELAPSED TIMER (🟢 Sending • 3s ago)
+// STATUS BAR ELAPSED TIMER (Sending • 3s ago)
 // ========================================================================
 
 function startStatusElapsedTicker() {
@@ -213,17 +208,17 @@ function updateTopStatusBar() {
     }
 
     if (isGpsPaused) {
-        dot.className = "w-2 h-2 rounded-full bg-amber-500 animate-pulse";
+        dot.className = "w-2 h-2 rounded-full bg-warn animate-pulse";
         statusText.textContent = "GPS Paused";
-        statusText.className = "text-xs font-bold text-amber-600";
+        statusText.className = "text-xs font-bold text-warn";
         elapsedText.textContent = "Updates suspended";
         return;
     }
 
     if (lastLocationSentAt === 0) {
-        dot.className = "w-2 h-2 rounded-full bg-emerald-500 animate-pulse";
+        dot.className = "w-2 h-2 rounded-full bg-ok animate-pulse";
         statusText.textContent = "Acquiring GPS";
-        statusText.className = "text-xs font-bold text-emerald-600";
+        statusText.className = "text-xs font-bold text-ok";
         elapsedText.textContent = "Waiting for first fix…";
         return;
     }
@@ -231,14 +226,14 @@ function updateTopStatusBar() {
     const elapsedSeconds = Math.max(0, Math.floor((Date.now() - lastLocationSentAt) / 1000));
 
     if (elapsedSeconds <= 15) {
-        dot.className = "w-2 h-2 rounded-full bg-emerald-500 animate-pulse";
+        dot.className = "w-2 h-2 rounded-full bg-ok animate-pulse";
         statusText.textContent = "LIVE";
-        statusText.className = "text-xs font-bold text-emerald-600";
+        statusText.className = "text-xs font-bold text-ok";
         elapsedText.textContent = `Sending • ${elapsedSeconds}s ago`;
     } else {
-        dot.className = "w-2 h-2 rounded-full bg-amber-500";
+        dot.className = "w-2 h-2 rounded-full bg-warn";
         statusText.textContent = "Slow GPS";
-        statusText.className = "text-xs font-bold text-amber-600";
+        statusText.className = "text-xs font-bold text-warn";
         elapsedText.textContent = `Sending • ${elapsedSeconds}s ago`;
     }
 }
@@ -268,15 +263,13 @@ async function restoreDriverDashboardState() {
         const data = await response.json();
 
         if (response.ok && data.active) {
-            console.log("🟢 Active trip detected on server. Resuming active view…");
-            isTripActive = true;
+isTripActive = true;
             switchToActiveTripView();
             startGpsTracking();
             startWaitRequestsPolling();
             startBusAssignmentPolling();
         } else {
-            console.log("⚪ No active trip. Showing pre-trip view.");
-            isTripActive = false;
+isTripActive = false;
             switchToPreTripView();
         }
     } catch (error) {
@@ -300,7 +293,7 @@ function switchToPreTripView() {
     const statusDot = document.getElementById("routeStatusDot");
     const statusText = document.getElementById("routeStatusText");
     if (statusBadge) statusBadge.classList.remove("hidden");
-    if (statusDot) statusDot.className = "w-1.5 h-1.5 rounded-full bg-indigo-400";
+    if (statusDot) statusDot.className = "w-1.5 h-1.5 rounded-full bg-brand";
     if (statusText) statusText.textContent = "Route Preview • Ready";
 
     updatePreTripOverview();
@@ -330,7 +323,7 @@ function switchToActiveTripView() {
     const statusDot = document.getElementById("routeStatusDot");
     const statusText = document.getElementById("routeStatusText");
     if (statusBadge) statusBadge.classList.remove("hidden");
-    if (statusDot) statusDot.className = "w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse";
+    if (statusDot) statusDot.className = "w-1.5 h-1.5 rounded-full bg-ok animate-pulse";
     if (statusText) statusText.textContent = "Trip Active • Live GPS";
 
     // Initialize/refresh map on active switch
@@ -363,7 +356,7 @@ async function loadDriverBus() {
         const data = await response.json();
 
         if (!response.ok || !data.bus_id) {
-            console.error("❌ Failed to load driver bus:", data);
+            console.error("[ERROR] Failed to load driver bus:", data);
             return { success: false, message: data.detail || "Bus unavailable" };
         }
 
@@ -379,7 +372,7 @@ async function loadDriverBus() {
 
         return { success: true, bus: data };
     } catch (error) {
-        console.error("❌ loadDriverBus connection error:", error);
+        console.error("[ERROR] loadDriverBus connection error:", error);
         return { success: false, message: error.message };
     }
 }
@@ -497,7 +490,10 @@ async function handleStartTrip() {
     const startText = document.getElementById("startTripText");
 
     if (startBtn) startBtn.disabled = true;
-    if (startIcon) startIcon.className = "fa-solid fa-circle-notch fa-spin text-3xl mb-0.5";
+    if (startIcon) {
+        startIcon.className = "w-4 h-4 animate-spin shrink-0";
+        startIcon.innerHTML = '<use href="icons.svg#icon-spinner"/>';
+    }
     if (startText) startText.textContent = "STARTING TRIP…";
 
     try {
@@ -514,10 +510,7 @@ async function handleStartTrip() {
         if (!response.ok) {
             throw new Error(data.detail || "Server failed to start trip");
         }
-
-        console.log("✅ Trip started successfully:", data);
-
-        isTripActive = true;
+isTripActive = true;
         isGpsPaused = false;
         passedStopIds.clear();
         lastRouteFetchAt = 0;
@@ -544,7 +537,10 @@ async function handleStartTrip() {
     } finally {
         isTripStarting = false;
         if (startBtn) startBtn.disabled = false;
-        if (startIcon) startIcon.className = "fa-solid fa-play text-3xl mb-0.5";
+        if (startIcon) {
+        startIcon.className = "w-4 h-4 shrink-0";
+        startIcon.innerHTML = '<use href="icons.svg#icon-play"/>';
+    }
         if (startText) startText.textContent = "START MORNING TRIP";
     }
 }
@@ -584,10 +580,7 @@ async function confirmAndEndTrip() {
         if (!response.ok) {
             throw new Error(data.detail || "Failed to end trip");
         }
-
-        console.log("🛑 Trip ended successfully:", data);
-
-        // Stop GPS & Intervals
+// Stop GPS & Intervals
         stopGpsTracking();
         stopWaitRequestsPolling();
         stopBusAssignmentPolling();
@@ -653,8 +646,6 @@ function startGpsTracking() {
             timeout: 10000
         }
     );
-
-    console.log("📡 GPS Tracking started.");
 }
 
 function stopGpsTracking() {
@@ -894,7 +885,7 @@ function renderNextStopCard({ name, distance, orderText, studentCount, isCollege
             studentsContainer.classList.add("hidden");
         } else {
             studentsContainer.classList.remove("hidden");
-            studentsElem.textContent = `👥 ${count} expected`;
+            studentsElem.textContent = `${count} students expected`;
         }
     }
 }
@@ -927,14 +918,14 @@ function updateStopProgressionUI() {
     const remainingCount = Math.max(0, totalStops - passedCount);
 
     const passedElem = document.getElementById("progressPassedText");
-    if (passedElem) passedElem.innerHTML = `<i class="fa-solid fa-check"></i> ${passedCount} passed`;
+    if (passedElem) passedElem.innerHTML = `<svg class="w-3.5 h-3.5 text-ok shrink-0 inline mr-1" aria-hidden="true"><use href="icons.svg#icon-check"/></svg>${passedCount} passed`;
 
     const remainingElem = document.getElementById("progressRemainingText");
-    if (remainingElem) remainingElem.textContent = `○ ${remainingCount} remaining`;
+    if (remainingElem) remainingElem.textContent = `${remainingCount} remaining`;
 
     const nextElem = document.getElementById("progressNextText");
     if (nextElem) {
-        nextElem.textContent = currentNextStop ? `● Next: ${currentNextStop.name}` : `● To College`;
+        nextElem.textContent = currentNextStop ? `Next: ${currentNextStop.name}` : `To College`;
     }
 }
 
@@ -958,11 +949,11 @@ function initOrUpdateRouteMap() {
 
         // Separate layer groups for roads and markers
         completedRouteLayer = L.geoJSON(null, {
-            style: { color: "#94a3b8", weight: 4, opacity: 0.55 }
+            style: { color: "#52707A", weight: 4, opacity: 0.55 }
         }).addTo(routeMap);
 
         remainingRouteLayer = L.geoJSON(null, {
-            style: { color: "#4F46E5", weight: 5, opacity: 0.85 }
+            style: { color: "#4A6F79", weight: 5, opacity: 0.85 }
         }).addTo(routeMap);
 
         stopMarkersGroup = L.layerGroup().addTo(routeMap);
@@ -987,7 +978,7 @@ function renderMapMarkers() {
         const stopIcon = createStopMarkerIcon(stop.stop_order, isPassed, isNext);
 
         const marker = L.marker([lat, lng], { icon: stopIcon, zIndexOffset: isNext ? 500 : 100 })
-            .bindPopup(`<strong>${stop.name}</strong><br>Stop ${stop.stop_order}${stop.student_count ? ` • 👥 ${stop.student_count} expected` : ''}`);
+            .bindPopup(`<strong>${stop.name}</strong><br>Stop ${stop.stop_order}${stop.student_count ? ` • ${stop.student_count} expected` : ''}`);
 
         marker.stopData = stop;
         stopMarkersGroup.addLayer(marker);
@@ -998,20 +989,18 @@ function renderMapMarkers() {
         className: "",
         html: `
             <div style="
-                width: 34px; height: 34px;
-                border-radius: 10px;
-                background: #059669;
+                width: 32px; height: 32px;
+                border-radius: 4px;
+                background: var(--navy);
                 color: #ffffff;
-                border: 3px solid #ffffff;
+                border: 2px solid #ffffff;
                 display: flex; align-items: center; justify-content: center;
-                font-size: 15px;
-                box-shadow: 0 3px 8px rgba(0,0,0,0.25);
             ">
-                🏫
+                <svg style="width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2;"><use href="icons.svg#icon-kambus"/></svg>
             </div>
         `,
-        iconSize: [34, 34],
-        iconAnchor: [17, 17]
+        iconSize: [32, 32],
+        iconAnchor: [16, 16]
     });
 
     collegeMarker = L.marker([COLLEGE_LOCATION.latitude, COLLEGE_LOCATION.longitude], {
@@ -1031,18 +1020,18 @@ function renderMapMarkers() {
 
 function createStopMarkerIcon(stopOrder, isPassed, isNext) {
     let bg = '#ffffff';
-    let color = '#334155';
-    let border = '3px solid #cbd5e1';
+    let color = '#173541';
+    let border = '3px solid #E3E8E8';
     let size = 26;
 
     if (isPassed) {
-        bg = '#94a3b8';
+        bg = '#52707A';
         color = '#ffffff';
-        border = '2px solid #64748b';
+        border = '2px solid #173541';
     } else if (isNext) {
-        bg = '#4F46E5';
+        bg = '#4A6F79';
         color = '#ffffff';
-        border = '3px solid #818cf8';
+        border = '3px solid #173541';
         size = 30;
     }
 
@@ -1059,7 +1048,7 @@ function createStopMarkerIcon(stopOrder, isPassed, isNext) {
                 font-size: ${isNext ? '12px' : '11px'}; font-weight: 900;
                 box-shadow: ${isNext ? '0 0 0 4px rgba(79, 70, 229, 0.25), 0 3px 8px rgba(0,0,0,0.2)' : '0 2px 6px rgba(0,0,0,0.15)'};
             ">
-                ${isPassed ? '✓' : (stopOrder || '•')}
+                ${isPassed ? '•' : (stopOrder || '•')}
             </div>
         `,
         iconSize: [size, size],
@@ -1088,29 +1077,27 @@ function updateDriverMarkerOnMap(latitude, longitude, speed, isFirstFix = false)
         const busIcon = L.divIcon({
             className: "",
             html: `
-                <div style="position: relative; width: 40px; height: 40px;">
+                <div style="position: relative; width: 36px; height: 36px;">
                     <div class="bus-pulse-ring" style="
-                        position: absolute; inset: -5px;
+                        position: absolute; inset: -4px;
                         border-radius: 50%;
-                        background: rgba(79, 70, 229, 0.35);
+                        background: rgba(30, 58, 138, 0.25);
                     "></div>
                     <div style="
                         position: relative;
-                        width: 40px; height: 40px;
+                        width: 36px; height: 36px;
                         border-radius: 50%;
-                        background: #4F46E5;
+                        background: var(--navy);
                         color: white;
-                        border: 3px solid white;
+                        border: 2px solid white;
                         display: flex; align-items: center; justify-content: center;
-                        font-size: 18px;
-                        box-shadow: 0 3px 10px rgba(0,0,0,0.3);
                     ">
-                        🚌
+                        <svg style="width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2;"><use href="icons.svg#icon-bus"/></svg>
                     </div>
                 </div>
             `,
-            iconSize: [40, 40],
-            iconAnchor: [20, 20]
+            iconSize: [36, 36],
+            iconAnchor: [18, 18]
         });
 
         driverMarker = L.marker([latitude, longitude], { icon: busIcon, zIndexOffset: 1000 }).addTo(routeMap);
@@ -1228,18 +1215,16 @@ async function fetchAndDrawRoadRoute(driverPos, nextId) {
         // Update Road Status Badge
         if (statusBadge && statusDot && statusText) {
             statusBadge.classList.remove("hidden");
-            statusDot.className = "w-1.5 h-1.5 rounded-full bg-emerald-400";
+            statusDot.className = "w-1.5 h-1.5 rounded-full bg-ok";
             statusText.textContent = "Road Route Active";
         }
-
-        console.log("🛣️ OSRM Road Route successfully rendered.");
-    } catch (error) {
+} catch (error) {
         console.warn("Road routing notice:", error.message);
 
         // Fallback: Keep markers working, do not draw fake straight lines
         if (statusBadge && statusDot && statusText) {
             statusBadge.classList.remove("hidden");
-            statusDot.className = "w-1.5 h-1.5 rounded-full bg-amber-400";
+            statusDot.className = "w-1.5 h-1.5 rounded-full bg-warn";
             statusText.textContent = "Road Route Unavailable";
         }
     } finally {
@@ -1323,7 +1308,7 @@ function renderActiveWaitCard(group) {
 
         const remainingMs = deadline - Date.now();
         if (remainingMs <= 0) {
-            countdownElem.textContent = "Auto-accepted ✓";
+            countdownElem.textContent = "Auto-accepted";
             clearInterval(waitCountdownInterval);
             setTimeout(loadActiveWaitRequests, 1000);
             return;
@@ -1354,7 +1339,7 @@ async function handleSkipActiveWait() {
     const skipBtn = document.getElementById("skipWaitBtn");
     if (skipBtn) {
         skipBtn.disabled = true;
-        skipBtn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin text-xs"></i>`;
+        skipBtn.innerHTML = `<svg class="w-3.5 h-3.5 animate-spin shrink-0" aria-hidden="true"><use href="icons.svg#icon-spinner"/></svg>`;
     }
 
     const token = getToken();
@@ -1389,7 +1374,7 @@ async function handleSkipActiveWait() {
     } finally {
         if (skipBtn) {
             skipBtn.disabled = false;
-            skipBtn.innerHTML = `<i class="fa-solid fa-forward-step text-[10px]"></i> <span>SKIP</span>`;
+            skipBtn.innerHTML = `<svg class="w-3 h-3 shrink-0" aria-hidden="true"><use href="icons.svg#icon-forward-step"/></svg><span>SKIP</span>`;
         }
     }
 }
@@ -1498,8 +1483,7 @@ window.startCameraScanner = startCameraScanner;
 
 function startBarcodeDetectionLoop(video) {
     if (!('BarcodeDetector' in window)) {
-        console.log("BarcodeDetector API not natively available, relying on manual/file input.");
-        return;
+return;
     }
 
     try {
@@ -1513,8 +1497,7 @@ function startBarcodeDetectionLoop(video) {
                 if (barcodes && barcodes.length > 0) {
                     const rawVal = barcodes[0].rawValue;
                     if (rawVal) {
-                        console.log("🎯 QR Scanned:", rawVal);
-                        await verifyStudentPassBackend(rawVal);
+await verifyStudentPassBackend(rawVal);
                     }
                 }
             } catch (scanErr) {
@@ -1651,11 +1634,11 @@ async function verifyStudentPassBackend(queryStr) {
 
                 if (badgeElem) {
                     if (data.status === "warning_not_travelling") {
-                        badgeElem.className = "text-[11px] font-black tracking-wider uppercase text-amber-800 bg-amber-100 border border-amber-200 px-2.5 py-1 rounded-lg";
-                        badgeElem.textContent = "⚠️ MARKED NOT TRAVELLING";
+                        badgeElem.className = "text-[11px] font-black tracking-wider uppercase text-warn bg-warn/10 border border-warn/20 px-2.5 py-1 rounded";
+                        badgeElem.textContent = "MARKED NOT TRAVELLING";
                     } else {
-                        badgeElem.className = "text-[11px] font-black tracking-wider uppercase text-emerald-800 bg-emerald-100 border border-emerald-200 px-2.5 py-1 rounded-lg";
-                        badgeElem.textContent = "✓ PASS VALID & ACTIVE";
+                        badgeElem.className = "text-[11px] font-black tracking-wider uppercase text-ok bg-ok/10 border border-ok/20 px-2.5 py-1 rounded";
+                        badgeElem.textContent = "PASS VALID & ACTIVE";
                     }
                 }
 
@@ -1667,7 +1650,7 @@ async function verifyStudentPassBackend(queryStr) {
 
             KambusNotify.notify({
                 type: "success",
-                title: "Student Verified ✓",
+                title: "Student Verified",
                 message: `${data.student_name} (${data.roll_number}) boarded for ${data.stop_name}.`
             });
 
@@ -1728,9 +1711,9 @@ function selectDetourReason(button, reason) {
     currentDetourReason = reason;
     const allButtons = document.querySelectorAll(".detourReasonBtn");
     allButtons.forEach(btn => {
-        btn.className = "detourReasonBtn py-2.5 px-3 rounded-2xl border border-slate-200 bg-slate-50 text-slate-700 font-bold text-left";
+        btn.className = "detourReasonBtn py-2.5 px-3 rounded border border-line bg-surface text-ink font-bold text-left";
     });
-    button.className = "detourReasonBtn py-2.5 px-3 rounded-2xl border border-amber-300 bg-amber-50 text-amber-900 font-black text-left";
+    button.className = "detourReasonBtn py-2.5 px-3 rounded border border-warn bg-warn/10 text-warn font-black text-left";
 }
 window.selectDetourReason = selectDetourReason;
 
@@ -1738,9 +1721,9 @@ function selectDetourDelay(button, minutes) {
     currentDetourDelay = Number(minutes);
     const allButtons = document.querySelectorAll(".detourDelayBtn");
     allButtons.forEach(btn => {
-        btn.className = "detourDelayBtn py-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-700";
+        btn.className = "detourDelayBtn py-2 rounded border border-line bg-surface text-ink";
     });
-    button.className = "detourDelayBtn py-2 rounded-xl border border-amber-300 bg-amber-50 text-amber-900 font-black";
+    button.className = "detourDelayBtn py-2 rounded border border-warn bg-warn/10 text-warn font-black";
 }
 window.selectDetourDelay = selectDetourDelay;
 
@@ -1770,7 +1753,7 @@ async function submitDetourReport() {
         const textElem = document.getElementById("activeDetourText");
 
         if (banner && textElem) {
-            textElem.textContent = `🚧 Active Detour: ${currentDetourReason} (+${currentDetourDelay} min delay)`;
+            textElem.textContent = `Active Detour: ${currentDetourReason} (+${currentDetourDelay} min delay)`;
             banner.classList.remove("hidden");
         }
 
@@ -1827,9 +1810,9 @@ function selectSosType(button, type) {
     currentSosType = type;
     const allButtons = document.querySelectorAll(".sosTypeBtn");
     allButtons.forEach(btn => {
-        btn.className = "sosTypeBtn py-2.5 px-3 rounded-2xl border border-slate-200 bg-slate-50 text-slate-700 font-bold text-left";
+        btn.className = "sosTypeBtn py-2.5 px-3 rounded border border-line bg-surface text-ink font-bold text-left";
     });
-    button.className = "sosTypeBtn py-2.5 px-3 rounded-2xl border border-rose-300 bg-rose-50 text-rose-900 font-black text-left";
+    button.className = "sosTypeBtn py-2.5 px-3 rounded border border-danger bg-danger/10 text-danger font-black text-left";
 }
 window.selectSosType = selectSosType;
 
@@ -1860,7 +1843,7 @@ async function submitEmergencySos() {
         const textElem = document.getElementById("activeSosText");
 
         if (banner && textElem) {
-            textElem.textContent = `🚨 SOS ACTIVE: ${currentSosType} — Authorities & Dispatch Alerted`;
+            textElem.textContent = `SOS ACTIVE: ${currentSosType} — Authorities & Dispatch Alerted`;
             banner.classList.remove("hidden");
         }
 

@@ -98,52 +98,29 @@
 
 
         if (topBell && panel) {
-
             topBell.addEventListener("click", async () => {
-
+                try {
+                    window.AndroidTTS?.requestNotificationPermission?.();
+                } catch (e) {}
                 open = !open;
-
                 panel.hidden = !open;
-
                 if (open) {
                     await refresh();
                 }
-
             });
-
         }
 
-
-        const readAll =
-            document.getElementById("kambusReadAll");
-
-
+        const readAll = document.getElementById("kambusReadAll");
         if (readAll) {
-
             readAll.addEventListener("click", async () => {
-
                 try {
-
                     await request(
                         "/notifications/read-all",
-                        {
-                            method: "PATCH"
-                        }
+                        { method: "PATCH" }
                     );
-
                     await refresh();
-
-                } catch (error) {
-
-                    console.error(
-                        "Notification read-all error:",
-                        error
-                    );
-
-                }
-
+                } catch (error) {}
             });
-
         }
 
     }
@@ -245,14 +222,7 @@
 
                                 await refresh();
 
-                            } catch (error) {
-
-                                console.error(
-                                    "Notification read error:",
-                                    error
-                                );
-
-                            }
+                            } catch (error) {}
 
                         }
                     );
@@ -261,11 +231,6 @@
 
 
         } catch (error) {
-
-            console.error(
-                "Notification refresh error:",
-                error
-            );
 
             const list =
                 document.getElementById(

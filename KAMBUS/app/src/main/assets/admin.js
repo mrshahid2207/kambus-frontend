@@ -98,25 +98,27 @@
 
     function showToast(type, title, message) {
         const toast = document.createElement("div");
-        toast.className = `fixed bottom-5 right-5 z-[9999] max-w-sm w-full p-4 rounded-2xl shadow-xl border flex items-start gap-3 transition-all duration-300 transform translate-y-2 opacity-0 ${
+        toast.className = `fixed bottom-5 right-5 z-[9999] max-w-sm w-full p-4 rounded border flex items-start gap-3 transition-all duration-300 transform translate-y-2 opacity-0 ${
             type === "error"
-                ? "bg-rose-950 text-rose-100 border-rose-800"
+                ? "bg-surface text-danger border-danger"
                 : type === "warning"
-                ? "bg-amber-950 text-amber-100 border-amber-800"
+                ? "bg-surface text-warn border-warn"
                 : type === "success"
-                ? "bg-emerald-950 text-emerald-100 border-emerald-800"
-                : "bg-slate-900 text-slate-100 border-slate-700"
+                ? "bg-surface text-ok border-ok"
+                : "bg-surface text-ink border-line"
         }`;
 
-        const icon = type === "error" ? "🚨" : type === "warning" ? "⚠️" : type === "success" ? "✅" : "🔔";
+        const iconSymbol = type === "error" ? "icon-alert" : type === "warning" ? "icon-alert" : type === "success" ? "icon-check" : "icon-bell";
 
         toast.innerHTML = `
-            <span class="text-xl">${icon}</span>
+            <svg class="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true"><use href="icons.svg#${iconSymbol}"/></svg>
             <div class="flex-1 min-w-0">
-                <h4 class="text-xs font-black tracking-wide">${escapeHtml(title)}</h4>
-                <p class="text-xs text-slate-300 mt-0.5 leading-relaxed">${escapeHtml(message)}</p>
+                <h4 class="text-xs font-black tracking-wide text-ink">${escapeHtml(title)}</h4>
+                <p class="text-xs text-ink-muted mt-0.5 leading-relaxed">${escapeHtml(message)}</p>
             </div>
-            <button class="text-slate-400 hover:text-white" onclick="this.parentElement.remove()">✕</button>
+            <button class="text-ink-muted hover:text-ink w-5 h-5 flex items-center justify-center shrink-0" onclick="this.parentElement.remove()">
+                <svg class="w-3.5 h-3.5"><use href="icons.svg#icon-xmark"/></svg>
+            </button>
         `;
 
         document.body.appendChild(toast);
@@ -420,10 +422,10 @@
                     activeTripsContainer.innerHTML = `<div class="p-6 text-center text-xs text-slate-400">No active trips currently in transit.</div>`;
                 } else {
                     activeTripsContainer.innerHTML = data.active_trips.map(trip => `
-                        <div class="p-3 bg-slate-50 border border-slate-200/80 rounded-xl flex items-center justify-between gap-2">
+                        <div class="p-3 bg-slate-50 border border-slate-200/80 rounded flex items-center justify-between gap-2">
                             <div>
                                 <div class="flex items-center gap-2">
-                                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                    <span class="w-2 h-2 rounded-full bg-ok/100 animate-pulse"></span>
                                     <span class="font-black text-slate-900 text-xs">${escapeHtml(trip.bus_number)}</span>
                                     <span class="text-slate-400">&bull;</span>
                                     <span class="text-slate-600 text-xs font-semibold">${escapeHtml(trip.route_name || 'Campus Route')}</span>
@@ -448,7 +450,7 @@
                         <div class="py-2.5 flex items-start justify-between gap-3 text-xs">
                             <div class="min-w-0">
                                 <div class="flex items-center gap-1.5">
-                                    <span class="text-sm">${alert.type === 'emergency_sos' ? '🚨' : '⚠️'}</span>
+                                    <span class="w-4 h-4 shrink-0 flex items-center justify-center">${alert.type === 'emergency_sos' ? '<svg class="w-4 h-4 text-danger"><use href="icons.svg#icon-alert"/></svg>' : '<svg class="w-4 h-4 text-warn"><use href="icons.svg#icon-alert"/></svg>'}</span>
                                     <span class="font-bold text-slate-900 truncate">${escapeHtml(alert.title)}</span>
                                 </div>
                                 <p class="text-slate-500 text-[11px] truncate mt-0.5">${escapeHtml(alert.message)}</p>
@@ -492,36 +494,37 @@
         }
 
         container.innerHTML = buses.map(bus => `
-            <div class="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-xs hover:border-brand/40 transition cursor-pointer flex flex-col justify-between" onclick="window.KambusAdmin.openBusModal(${bus.bus_id})">
+            <div class="bg-white border border-slate-200/90 rounded p-4 shadow-xs hover:border-brand/40 transition cursor-pointer flex flex-col justify-between" onclick="window.KambusAdmin.openBusModal(${bus.bus_id})">
                 <div>
                     <div class="flex items-start justify-between gap-2">
                         <div>
                             <span class="text-base font-black text-slate-900">Bus ${escapeHtml(bus.bus_number)}</span>
                             <p class="text-[11px] font-mono text-slate-400">${escapeHtml(bus.registration_number || 'No reg number')}</p>
                         </div>
-                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black ${bus.trip_status === 'active' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'}">
-                            ${bus.trip_status === 'active' ? '🟢 IN TRANSIT' : 'IDLE'}
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black inline-flex items-center gap-1 ${bus.trip_status === 'active' ? 'bg-ok/10 text-ok' : 'bg-surface text-ink-muted border border-line'}">
+                            ${bus.trip_status === 'active' ? '<span class="w-1.5 h-1.5 rounded-full bg-ok inline-block shrink-0"></span>IN TRANSIT' : 'IDLE'}
                         </span>
                     </div>
 
                     <div class="mt-3.5 space-y-1.5 text-xs">
                         <div class="flex items-center gap-1.5 text-slate-700">
-                            <i class="fa-solid fa-route text-slate-400 w-4 text-center"></i>
+                            <svg class="w-4 h-4 shrink-0 text-ink-muted inline" aria-hidden="true"><use href="icons.svg#icon-route"/></svg>
                             <span class="truncate font-semibold">${escapeHtml(bus.route_name || 'No Route Assigned')}</span>
                         </div>
                         <div class="flex items-center gap-1.5 text-slate-700">
-                            <i class="fa-solid fa-user-tie text-slate-400 w-4 text-center"></i>
+                            <svg class="w-4 h-4 shrink-0 text-ink-muted inline" aria-hidden="true"><use href="icons.svg#icon-user-tie"/></svg>
                             <span class="truncate">${escapeHtml(bus.driver_name ? `${bus.driver_name} (${bus.driver_code})` : 'No Driver Assigned')}</span>
                         </div>
                     </div>
                 </div>
 
                 <div class="pt-3.5 mt-3.5 border-t border-slate-100 flex items-center justify-between text-xs">
-                    <span class="text-slate-500 font-bold">
-                        👥 <strong>${bus.student_count}</strong> students (${bus.travelling_today_count} today)
+                    <span class="text-ink-muted font-bold inline-flex items-center gap-1.5">
+                        <svg class="w-3.5 h-3.5 text-ink-muted shrink-0"><use href="icons.svg#icon-users"/></svg>
+                        <span><strong>${bus.student_count}</strong> students (${bus.travelling_today_count} today)</span>
                     </span>
-                    <button type="button" onclick="event.stopPropagation(); window.KambusAdmin.deleteBus(${bus.bus_id}, ${jsArg(bus.bus_number)})" class="text-slate-300 hover:text-rose-600 p-1 transition" title="Delete Bus">
-                        <i class="fa-solid fa-trash-can text-sm"></i>
+                    <button type="button" onclick="event.stopPropagation(); window.KambusAdmin.deleteBus(${bus.bus_id}, ${jsArg(bus.bus_number)})" class="text-slate-300 hover:text-danger p-1 transition" title="Delete Bus">
+                        <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-trash"/></svg>
                     </button>
                 </div>
             </div>
@@ -545,15 +548,15 @@
 
             const badge = document.getElementById("modalBusStatusBadge");
             if (badge) {
-                badge.className = `px-2.5 py-1 rounded-full text-xs font-black ${bus.trip_status === 'active' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'}`;
-                badge.textContent = bus.trip_status === 'active' ? "🟢 IN TRANSIT" : "IDLE";
+                badge.className = `px-2.5 py-1 rounded-full text-xs font-black inline-flex items-center gap-1.5 ${bus.trip_status === 'active' ? 'bg-ok/10 text-ok' : 'bg-surface text-ink-muted border border-line'}`;
+                badge.innerHTML = bus.trip_status === 'active' ? '<span class="w-1.5 h-1.5 rounded-full bg-ok inline-block shrink-0"></span>IN TRANSIT' : 'IDLE';
             }
 
             document.getElementById("modalBusStudentCount").textContent = bus.student_count || 0;
             document.getElementById("modalBusTravellingCount").textContent = bus.travelling_today_count || 0;
 
             document.getElementById("modalBusDriverName").textContent = bus.driver_name || "Unassigned";
-            document.getElementById("modalBusDriverPhone").textContent = bus.driver_phone ? `📞 ${bus.driver_phone}` : "";
+            document.getElementById("modalBusDriverPhone").textContent = bus.driver_phone ? bus.driver_phone : "";
             document.getElementById("modalBusDriverSelect").value = bus.driver_id || "";
 
             document.getElementById("modalBusRouteName").textContent = bus.route_name || "Unassigned";
@@ -720,25 +723,25 @@
         }
 
         container.innerHTML = drivers.map(d => `
-            <div class="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-xs hover:border-brand/40 transition flex flex-col justify-between cursor-pointer" onclick="window.KambusAdmin.openDriverModal(${d.driver_id})">
+            <div class="bg-white border border-slate-200/90 rounded p-4 shadow-xs hover:border-brand/40 transition flex flex-col justify-between cursor-pointer" onclick="window.KambusAdmin.openDriverModal(${d.driver_id})">
                 <div>
                     <div class="flex items-start justify-between gap-2">
                         <div>
                             <span class="text-base font-black text-slate-900">${escapeHtml(d.name || 'Driver')}</span>
                             <p class="text-[11px] font-mono font-bold text-brand uppercase">${escapeHtml(d.driver_code)}</p>
                         </div>
-                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black ${d.is_online ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'}">
-                            ${d.is_online ? '🟢 ONLINE' : 'OFFLINE'}
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black inline-flex items-center gap-1 ${d.is_online ? 'bg-ok/10 text-ok' : 'bg-surface text-ink-muted border border-line'}">
+                            ${d.is_online ? '<span class="w-1.5 h-1.5 rounded-full bg-ok inline-block shrink-0"></span>ONLINE' : 'OFFLINE'}
                         </span>
                     </div>
 
                     <div class="mt-3.5 space-y-1.5 text-xs text-slate-600">
-                        <p>📞 <strong>${escapeHtml(d.phone || '-')}</strong></p>
-                        <p>🚌 Assigned: <strong>${escapeHtml(d.bus_number ? `Bus ${d.bus_number}` : 'Unassigned')}</strong></p>
-                        <p>🛣️ Route: <strong>${escapeHtml(d.route_name || '-')}</strong></p>
+                        <p class="inline-flex items-center gap-1.5"><svg class="w-3.5 h-3.5 text-ink-muted shrink-0"><use href="icons.svg#icon-phone"/></svg> <strong>${escapeHtml(d.phone || '-')}</strong></p>
+                        <p>Assigned: <strong>${escapeHtml(d.bus_number ? `Bus ${d.bus_number}` : 'Unassigned')}</strong></p>
+                        <p>Route: <strong>${escapeHtml(d.route_name || '-')}</strong></p>
                         ${(d.complaints_count || 0) > 0 ? `
-                            <p class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 font-bold text-[11px] mt-1">
-                                <i class="fa-solid fa-triangle-exclamation text-amber-600"></i> ${d.complaints_count} ${d.complaints_count === 1 ? 'Complaint' : 'Complaints'}
+                            <p class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-warn/10 border border-warn/20 text-warn font-bold text-[11px] mt-1">
+                                <svg class="w-4 h-4 shrink-0 text-warn inline mr-1" aria-hidden="true"><use href="icons.svg#icon-alert"/></svg> ${d.complaints_count} ${d.complaints_count === 1 ? 'Complaint' : 'Complaints'}
                             </p>
                         ` : ''}
                     </div>
@@ -748,10 +751,10 @@
                     <span class="text-slate-400 text-[11px]">License: ${escapeHtml(d.license_number || 'N/A')}</span>
                     <div class="flex items-center gap-1">
                         <button type="button" onclick="event.stopPropagation(); window.KambusAdmin.openEditDriverModal(${d.driver_id})" class="text-slate-400 hover:text-brand p-1 transition" title="Edit Driver">
-                            <i class="fa-solid fa-pen-to-square text-sm"></i>
+                            <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-pen"/></svg>
                         </button>
-                        <button type="button" onclick="event.stopPropagation(); window.KambusAdmin.deleteDriver(${d.driver_id}, ${jsArg(d.name || d.driver_code)})" class="text-slate-300 hover:text-rose-600 p-1 transition" title="Delete Driver">
-                            <i class="fa-solid fa-trash-can text-sm"></i>
+                        <button type="button" onclick="event.stopPropagation(); window.KambusAdmin.deleteDriver(${d.driver_id}, ${jsArg(d.name || d.driver_code)})" class="text-slate-300 hover:text-danger p-1 transition" title="Delete Driver">
+                            <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-trash"/></svg>
                         </button>
                     </div>
                 </div>
@@ -765,7 +768,7 @@
 
             document.getElementById("modalDriverName").textContent = driver.name || "Driver Profile";
             document.getElementById("modalDriverCode").textContent = `Code: ${driver.driver_code}`;
-            document.getElementById("modalDriverPhone").textContent = `📞 ${driver.phone || 'No phone'}`;
+            document.getElementById("modalDriverPhone").textContent = driver.phone || "No phone";
             document.getElementById("modalDriverBus").textContent = driver.bus_number ? `Assigned to Bus ${driver.bus_number} (${driver.route_name || 'No route'})` : "No Bus Assigned";
 
             const editBtn = document.getElementById("modalEditDriverBtn");
@@ -788,7 +791,7 @@
                             <span class="font-bold text-slate-800">Trip #${t.trip_id}</span>
                             <p class="text-[11px] text-slate-400">${formatDateTime(t.started_at)}</p>
                         </div>
-                        <span class="px-2 py-0.5 rounded text-[10px] font-bold ${t.status === 'completed' ? 'bg-slate-100 text-slate-700' : 'bg-emerald-100 text-emerald-800'}">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold ${t.status === 'completed' ? 'bg-slate-100 text-slate-700' : 'bg-ok/10 text-ok'}">
                             ${t.status.toUpperCase()}
                         </span>
                     </div>
@@ -926,12 +929,12 @@
             cachedStudents = students;
 
             if (students.length === 0) {
-                container.innerHTML = `<div class="p-8 text-center text-xs text-slate-400 bg-white border border-slate-200/90 rounded-2xl">No students matching criteria.</div>`;
+                container.innerHTML = `<div class="p-8 text-center text-xs text-slate-400 bg-white border border-slate-200/90 rounded">No students matching criteria.</div>`;
                 return;
             }
 
             container.innerHTML = `
-                <div class="bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-xs">
+                <div class="bg-white border border-slate-200/90 rounded overflow-hidden shadow-xs">
                     <div class="overflow-x-auto">
                         <table class="w-full text-left text-xs border-collapse">
                             <thead class="bg-slate-50 border-b border-slate-200/80 text-[11px] font-black text-slate-500 uppercase tracking-wider">
@@ -955,14 +958,14 @@
                                         <td class="p-3.5 font-mono font-bold text-brand uppercase">${escapeHtml(s.roll_number)}</td>
                                         <td class="p-3.5 text-slate-600 font-semibold">${escapeHtml(s.department || '-')}</td>
                                         <td class="p-3.5">
-                                            ${s.bus_number ? `<span class="px-2 py-0.5 bg-indigo-50 border border-indigo-100 rounded text-indigo-900 font-bold text-[11px]">Bus ${escapeHtml(s.bus_number)}</span>` : '<span class="text-slate-300">Unassigned</span>'}
+                                            ${s.bus_number ? `<span class="px-2 py-0.5 bg-brand/10 border border-brand/20 rounded text-navy font-bold text-[11px]">Bus ${escapeHtml(s.bus_number)}</span>` : '<span class="text-slate-300">Unassigned</span>'}
                                         </td>
                                         <td class="p-3.5">
                                             ${s.stop_name ? `<span class="font-bold text-slate-700">${escapeHtml(s.stop_name)}</span>` : '<span class="text-slate-300">No Stop</span>'}
                                         </td>
                                         <td class="p-3.5">
-                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-black ${s.travelling_today ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
-                                                ${s.travelling_today ? '✓ Travelling' : '✕ Not Travelling'}
+                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-black ${s.travelling_today ? 'bg-ok/10 text-ok' : 'bg-danger/10 text-danger'}">
+                                                ${s.travelling_today ? 'Travelling' : 'Not Travelling'}
                                             </span>
                                         </td>
                                         <td class="p-3.5 text-right space-x-1">
@@ -972,8 +975,8 @@
                                             <button type="button" onclick="window.KambusAdmin.openAssignStudentModal(${s.student_id}, ${jsArg(s.name)}, ${s.bus_id || 'null'}, ${s.stop_id || 'null'})" class="px-2.5 py-1 bg-slate-100 hover:bg-brand hover:text-white rounded-lg text-[11px] font-bold text-slate-700 transition">
                                                 Assign
                                             </button>
-                                            <button type="button" onclick="window.KambusAdmin.deleteStudent(${s.student_id}, ${jsArg(s.roll_number)})" class="p-1 text-slate-300 hover:text-rose-600 transition" title="Delete Student">
-                                                <i class="fa-solid fa-trash-can"></i>
+                                            <button type="button" onclick="window.KambusAdmin.deleteStudent(${s.student_id}, ${jsArg(s.roll_number)})" class="p-1 text-slate-300 hover:text-danger transition" title="Delete Student">
+                                                <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-trash"/></svg>
                                             </button>
                                         </td>
                                     </tr>
@@ -1143,28 +1146,28 @@
             cachedStops = stops;
 
             if (stops.length === 0) {
-                container.innerHTML = `<div class="p-8 text-center text-xs text-slate-400 bg-white border border-slate-200/90 rounded-2xl">No stops found. Click "Add Stop" to create one.</div>`;
+                container.innerHTML = `<div class="p-8 text-center text-xs text-slate-400 bg-white border border-slate-200/90 rounded">No stops found. Click "Add Stop" to create one.</div>`;
                 return;
             }
 
             container.innerHTML = stops.map(s => `
-                <div class="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-xs flex items-center justify-between gap-3 text-xs">
+                <div class="bg-white border border-slate-200/90 rounded p-4 shadow-xs flex items-center justify-between gap-3 text-xs">
                     <div class="flex items-center gap-3">
-                        <span class="w-8 h-8 rounded-xl bg-brand/10 text-brand font-black flex items-center justify-center text-xs shrink-0">
+                        <span class="w-8 h-8 rounded bg-brand/10 text-brand font-black flex items-center justify-center text-xs shrink-0">
                             #${s.stop_order}
                         </span>
                         <div>
                             <h4 class="font-black text-slate-900 text-sm">${escapeHtml(s.name)}</h4>
-                            <p class="text-slate-500 font-semibold">Route: <strong>${escapeHtml(s.route_name || 'Unassigned')}</strong> &bull; 👥 <strong>${s.student_count}</strong> students assigned</p>
+                            <p class="text-slate-500 font-semibold">Route: <strong>${escapeHtml(s.route_name || 'Unassigned')}</strong> &bull; Students: <strong>${s.student_count}</strong> students assigned</p>
                             <p class="text-[10px] font-mono text-slate-400 mt-0.5">Lat: ${Number(s.latitude).toFixed(5)}, Lng: ${Number(s.longitude).toFixed(5)}</p>
                         </div>
                     </div>
                     <div class="flex items-center gap-1">
                         <button type="button" onclick="window.KambusAdmin.openEditStopModal(${s.stop_id})" class="text-slate-400 hover:text-brand p-2 transition" title="Edit Stop">
-                            <i class="fa-solid fa-pen-to-square text-sm"></i>
+                            <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-pen"/></svg>
                         </button>
-                        <button type="button" onclick="window.KambusAdmin.deleteStop(${s.stop_id}, ${jsArg(s.name)})" class="text-slate-300 hover:text-rose-600 p-2 transition" title="Delete Stop">
-                            <i class="fa-solid fa-trash-can text-sm"></i>
+                        <button type="button" onclick="window.KambusAdmin.deleteStop(${s.stop_id}, ${jsArg(s.name)})" class="text-slate-300 hover:text-danger p-2 transition" title="Delete Stop">
+                            <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-trash"/></svg>
                         </button>
                     </div>
                 </div>
@@ -1236,7 +1239,7 @@
 
         if (latInput) latInput.value = lat;
         if (lngInput) lngInput.value = lng;
-        if (display) display.textContent = `📍 ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+        if (display) display.textContent = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
 
         if (editStopPickerMarker) {
             editStopPickerMarker.setLatLng([lat, lng]);
@@ -1323,7 +1326,7 @@
 
         if (latInput) latInput.value = lat;
         if (lngInput) lngInput.value = lng;
-        if (display) display.textContent = `📍 ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+        if (display) display.textContent = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
 
         if (stopPickerMarker) {
             stopPickerMarker.setLatLng([lat, lng]);
@@ -1403,26 +1406,26 @@
             cachedRoutes = data.routes || [];
 
             if (cachedRoutes.length === 0) {
-                container.innerHTML = `<div class="p-8 text-center text-xs text-slate-400 bg-white border border-slate-200/90 rounded-2xl">No routes configured. Click "Create Route" to start.</div>`;
+                container.innerHTML = `<div class="p-8 text-center text-xs text-slate-400 bg-white border border-slate-200/90 rounded">No routes configured. Click "Create Route" to start.</div>`;
                 return;
             }
 
             container.innerHTML = cachedRoutes.map(r => `
-                <div class="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs">
+                <div class="bg-white border border-slate-200/90 rounded p-5 shadow-xs">
                     <div class="flex items-start justify-between gap-3">
                         <div>
                             <div class="flex items-center gap-2">
                                 <h3 class="text-base font-black text-slate-900">${escapeHtml(r.name)}</h3>
-                                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-50 text-indigo-700">${r.stops_count} Stops</span>
+                                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-brand/10 text-brand">${r.stops_count} Stops</span>
                             </div>
                             <p class="text-xs text-slate-500 mt-1">${escapeHtml(r.description || 'No description provided')}</p>
                         </div>
                         <div class="flex items-center gap-2">
-                            <button type="button" onclick="window.KambusAdmin.previewRouteRoadMap(${r.route_id})" class="px-3 py-1.5 bg-brand hover:bg-brandDark text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-2xs">
-                                <i class="fa-solid fa-map-location-dot"></i> View Road Map
+                            <button type="button" onclick="window.KambusAdmin.previewRouteRoadMap(${r.route_id})" class="px-3 py-1.5 bg-brand hover:bg-brandDark text-white font-bold rounded text-xs flex items-center gap-1.5 shadow-2xs">
+                                <svg class="w-4 h-4 shrink-0 inline mr-1" aria-hidden="true"><use href="icons.svg#icon-route"/></svg> View Road Map
                             </button>
-                            <button type="button" onclick="window.KambusAdmin.deleteRoute(${r.route_id}, ${jsArg(r.name)})" class="text-slate-300 hover:text-rose-600 p-1.5 transition" title="Delete Route">
-                                <i class="fa-solid fa-trash-can text-sm"></i>
+                            <button type="button" onclick="window.KambusAdmin.deleteRoute(${r.route_id}, ${jsArg(r.name)})" class="text-slate-300 hover:text-danger p-1.5 transition" title="Delete Route">
+                                <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-trash"/></svg>
                             </button>
                         </div>
                     </div>
@@ -1434,7 +1437,7 @@
                         </div>
                         <div class="flex items-center gap-2 overflow-x-auto pb-2">
                             ${(r.stops || []).map((stop, idx, arr) => `
-                                <div class="flex items-center gap-1.5 bg-slate-50 border border-slate-200/80 rounded-xl px-2.5 py-1.5 shrink-0 text-xs">
+                                <div class="flex items-center gap-1.5 bg-slate-50 border border-slate-200/80 rounded px-2.5 py-1.5 shrink-0 text-xs">
                                     <span class="font-black text-brand">#${stop.stop_order}</span>
                                     <span class="font-bold text-slate-800">${escapeHtml(stop.name)}</span>
                                     <div class="flex items-center gap-0.5 ml-1">
@@ -1546,8 +1549,8 @@
             // Add College Pin
             const collegeIcon = L.divIcon({
                 className: "",
-                html: `<div style="background:#E11D48;color:#fff;border-radius:12px;padding:5px 10px;font-size:11px;font-weight:900;border:2px solid #fff;box-shadow:0 3px 8px rgba(0,0,0,0.3)">🏫 KITSW College</div>`,
-                iconSize: [110, 28]
+                html: `<div style="background:var(--navy);color:#fff;border-radius:4px;padding:4px 8px;font-size:11px;font-weight:700;border:1px solid var(--line);display:flex;align-items:center;gap:4px;"><svg style="width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2;"><use href="icons.svg#icon-kambus"/></svg> KITSW College</div>`,
+                iconSize: [110, 24]
             });
             const collegeMarker = L.marker(COLLEGE_COORDS, { icon: collegeIcon }).addTo(routeMap);
             routeMapLayers.push(collegeMarker);
@@ -1607,17 +1610,17 @@
     function formatComplaintReason(reason) {
         switch (reason) {
             case "rash_driving":
-                return "🏎️ Rash / Reckless Driving";
+                return "Rash / Reckless Driving";
             case "delay":
-                return "⏱️ Severe Delay";
+                return "Severe Delay";
             case "overspeeding":
-                return "⚡ Overspeeding";
+                return "Overspeeding";
             case "skipped_stop":
-                return "🚫 Skipped Scheduled Stop";
+                return "Skipped Scheduled Stop";
             case "rude_behavior":
-                return "🗣️ Rude / Inappropriate Behavior";
+                return "Rude / Inappropriate Behavior";
             case "other":
-                return "📝 Other Concern";
+                return "Other Concern";
             default:
                 return escapeHtml(reason || "Complaint");
         }
@@ -1671,7 +1674,7 @@
         }
 
         if (complaints.length === 0) {
-            container.innerHTML = `<div class="p-8 text-center text-xs text-slate-400 bg-white border border-slate-200/90 rounded-2xl">No complaints found matching the criteria.</div>`;
+            container.innerHTML = `<div class="p-8 text-center text-xs text-slate-400 bg-white border border-slate-200/90 rounded">No complaints found matching the criteria.</div>`;
             return;
         }
 
@@ -1682,14 +1685,14 @@
             const totalVotes = c.corroboration?.total_votes || 0;
 
             return `
-                <div class="bg-white border ${isCorroborated ? 'border-rose-300 bg-rose-50/10' : 'border-slate-200/90'} rounded-2xl p-5 shadow-xs space-y-3.5">
+                <div class="bg-white border ${isCorroborated ? 'border-danger/20 bg-danger/10' : 'border-slate-200/90'} rounded p-5 shadow-xs space-y-3.5">
                     <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-2.5">
                         <div>
                             <div class="flex items-center gap-2 flex-wrap">
                                 <span class="font-black text-sm text-slate-900">${formatComplaintReason(c.reason)}</span>
                                 ${isCorroborated ? `
-                                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-100 text-rose-700 border border-rose-200 flex items-center gap-1">
-                                        <i class="fa-solid fa-triangle-exclamation"></i> CORROBORATED
+                                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-danger/10 text-danger border border-danger/20 flex items-center gap-1">
+                                        <svg class="w-3.5 h-3.5 shrink-0 inline mr-1" aria-hidden="true"><use href="icons.svg#icon-alert"/></svg> CORROBORATED
                                     </span>
                                 ` : `
                                     <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600">
@@ -1703,12 +1706,12 @@
                         </div>
 
                         <!-- Driver Info Tag -->
-                        <div class="bg-slate-50 border border-slate-200 rounded-xl p-2.5 flex items-center gap-3 shrink-0 self-start">
+                        <div class="bg-slate-50 border border-slate-200 rounded p-2.5 flex items-center gap-3 shrink-0 self-start">
                             <div>
                                 <p class="text-xs font-black text-slate-900">${escapeHtml(c.driver_name)}</p>
                                 <p class="text-[10px] font-mono text-slate-500">${escapeHtml(c.driver_code || '')} &bull; ${c.bus_number ? `Bus ${escapeHtml(c.bus_number)}` : 'Bus Unassigned'}</p>
                             </div>
-                            <span class="px-2 py-1 rounded-lg bg-amber-100 text-amber-900 text-[10px] font-black" title="Driver total lifetime complaints">
+                            <span class="px-2 py-1 rounded-lg bg-warn/10 text-warn text-[10px] font-black" title="Driver total lifetime complaints">
                                 ${c.driver_total_complaints || 1} Total
                             </span>
                         </div>
@@ -1716,7 +1719,7 @@
 
                     <!-- Description -->
                     ${c.description ? `
-                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs text-slate-700 leading-relaxed">
+                        <div class="p-3 bg-slate-50 rounded border border-slate-100 text-xs text-slate-700 leading-relaxed">
                             <span class="font-bold text-slate-900">Student Comment:</span> ${escapeHtml(c.description)}
                         </div>
                     ` : ''}
@@ -1725,18 +1728,18 @@
                     <div class="pt-2 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
                         <div class="flex items-center gap-2 flex-wrap">
                             <span class="text-slate-500 font-bold">Peer Verification:</span>
-                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                👍 ${yesVotes} Agreed
+                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-ok/10 text-ok border border-ok/20">
+                                ${yesVotes} Agreed
                             </span>
                             <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
-                                👎 ${noVotes} Disagreed
+                                ${noVotes} Disagreed
                             </span>
                             <span class="text-[11px] text-slate-400">(${totalVotes} peer ${totalVotes === 1 ? 'vote' : 'votes'})</span>
                         </div>
                         <div class="flex items-center gap-2">
                             ${isSuperAdmin() ? `
-                                <button type="button" onclick="window.KambusAdmin.openComplaintDetailModal(${c.complaint_id})" class="px-2.5 py-1 bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-700 font-bold text-[11px] rounded-lg transition flex items-center gap-1.5 shadow-2xs">
-                                    <i class="fa-solid fa-user-shield text-xs"></i> <span>Super-Admin Detail</span>
+                                <button type="button" onclick="window.KambusAdmin.openComplaintDetailModal(${c.complaint_id})" class="px-2.5 py-1 bg-brand/10 hover:bg-brand/10 border border-purple-200 text-brand font-bold text-[11px] rounded-lg transition flex items-center gap-1.5 shadow-2xs">
+                                    <svg class="w-3.5 h-3.5 shrink-0 inline mr-1" aria-hidden="true"><use href="icons.svg#icon-user-shield"/></svg> <span>Super-Admin Detail</span>
                                 </button>
                             ` : ''}
                             <span class="text-[11px] text-slate-400">
@@ -1779,24 +1782,24 @@
 
             const voters = data.voters || [];
             if (voters.length === 0) {
-                if (votersListEl) votersListEl.innerHTML = `<div class="p-4 text-center text-xs text-slate-400 bg-slate-50 rounded-xl border border-slate-100">No students have voted on this complaint yet.</div>`;
+                if (votersListEl) votersListEl.innerHTML = `<div class="p-4 text-center text-xs text-slate-400 bg-slate-50 rounded border border-slate-100">No students have voted on this complaint yet.</div>`;
             } else {
                 if (votersListEl) {
                     votersListEl.innerHTML = voters.map(v => `
-                        <div class="p-2.5 rounded-xl border ${v.vote === 'yes' ? 'border-emerald-200 bg-emerald-50/50' : 'border-slate-200 bg-slate-50'} flex items-center justify-between text-xs">
+                        <div class="p-2.5 rounded border ${v.vote === 'yes' ? 'border-ok/20 bg-ok/10' : 'border-slate-200 bg-slate-50'} flex items-center justify-between text-xs">
                             <div>
                                 <p class="font-bold text-slate-900">${escapeHtml(v.student_name)} <span class="text-slate-500 font-normal">(${escapeHtml(v.roll_number || '—')})</span></p>
                                 <p class="text-[10px] text-slate-400">Dept: ${escapeHtml(v.department || '—')} • Voted ${formatDateTime(v.created_at)}</p>
                             </div>
-                            <span class="px-2.5 py-1 rounded-lg font-black text-xs ${v.vote === 'yes' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-700'}">
-                                ${v.vote === 'yes' ? '👍 Agreed (Yes)' : '👎 Disagreed (No)'}
+                            <span class="px-2.5 py-1 rounded-lg font-black text-xs ${v.vote === 'yes' ? 'bg-ok/10 text-ok' : 'bg-slate-200 text-slate-700'}">
+                                ${v.vote === 'yes' ? 'Agreed (Yes)' : 'Disagreed (No)'}
                             </span>
                         </div>
                     `).join("");
                 }
             }
         } catch (e) {
-            if (votersListEl) votersListEl.innerHTML = `<div class="p-4 text-center text-xs text-rose-500">Failed to load details: ${escapeHtml(e.message)}</div>`;
+            if (votersListEl) votersListEl.innerHTML = `<div class="p-4 text-center text-xs text-danger">Failed to load details: ${escapeHtml(e.message)}</div>`;
         }
     }
 
@@ -1817,7 +1820,7 @@
             cachedTempStopLogs = Array.isArray(data) ? data : [];
             filterTempStopLogs();
         } catch (e) {
-            container.innerHTML = `<tr><td colspan="8" class="p-8 text-center text-xs text-rose-500">Failed to load temporary stop logs: ${escapeHtml(e.message)}</td></tr>`;
+            container.innerHTML = `<tr><td colspan="8" class="p-8 text-center text-xs text-danger">Failed to load temporary stop logs: ${escapeHtml(e.message)}</td></tr>`;
         }
     }
 
@@ -1839,29 +1842,29 @@
 
         container.innerHTML = logs.map(l => {
             const statusBadge = l.status === "active"
-                ? '<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800">ACTIVE</span>'
+                ? '<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-ok/10 text-ok">ACTIVE</span>'
                 : l.status === "scheduled"
-                ? '<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-indigo-100 text-indigo-800">SCHEDULED</span>'
+                ? '<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-brand/10 text-brand">SCHEDULED</span>'
                 : l.status === "cancelled"
                 ? '<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-slate-100 text-slate-600">CANCELLED</span>'
                 : `<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-slate-100 text-slate-600">${escapeHtml(l.status.toUpperCase())}</span>`;
 
             const matchDetail = l.is_approximate_match
-                ? `<span class="text-indigo-700 font-semibold text-[11px]">~${l.match_distance_m != null ? Math.round(l.match_distance_m) + 'm off route' : 'Approximate'}</span>`
-                : '<span class="text-emerald-700 font-semibold text-[11px]">Exact Stop Match</span>';
+                ? `<span class="text-brand font-semibold text-[11px]">~${l.match_distance_m != null ? Math.round(l.match_distance_m) + 'm off route' : 'Approximate'}</span>`
+                : '<span class="text-ok font-semibold text-[11px]">Exact Stop Match</span>';
 
             return `
                 <tr class="border-b border-slate-100 hover:bg-slate-50/50">
                     <td class="px-4 py-3 font-bold text-slate-900">${escapeHtml(l.student_name)} <span class="text-slate-400 font-normal">(${escapeHtml(l.student_roll_number || '—')})</span></td>
                     <td class="px-4 py-3 text-slate-600">${escapeHtml(l.original_stop_name || '—')}</td>
-                    <td class="px-4 py-3 font-bold text-indigo-900">${escapeHtml(l.temporary_stop_name || '—')}</td>
+                    <td class="px-4 py-3 font-bold text-navy">${escapeHtml(l.temporary_stop_name || '—')}</td>
                     <td class="px-4 py-3 font-bold text-slate-800">${escapeHtml(l.target_bus_number || 'Bus ' + (l.target_bus_id || '—'))}</td>
                     <td class="px-4 py-3 font-mono text-[11px] text-slate-500">${escapeHtml(l.start_date)} &rarr; ${escapeHtml(l.end_date)}</td>
                     <td class="px-4 py-3">${matchDetail}</td>
                     <td class="px-4 py-3">${statusBadge}</td>
                     <td class="px-4 py-3 text-right">
-                        <button type="button" onclick="window.KambusAdmin.deleteTemporaryStopChange(${Number(l.request_id)})" class="p-1 text-slate-300 hover:text-rose-600 transition" title="Delete this temporary stop change">
-                            <i class="fa-solid fa-trash-can"></i>
+                        <button type="button" onclick="window.KambusAdmin.deleteTemporaryStopChange(${Number(l.request_id)})" class="p-1 text-slate-300 hover:text-danger transition" title="Delete this temporary stop change">
+                            <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-trash"/></svg>
                         </button>
                     </td>
                 </tr>
@@ -1945,8 +1948,8 @@
 
             const collegeIcon = L.divIcon({
                 className: "",
-                html: `<div style="background:#E11D48;color:#fff;border-radius:12px;padding:5px 10px;font-size:11px;font-weight:900;border:2px solid #fff;box-shadow:0 3px 8px rgba(0,0,0,0.3)">🏫 KITSW College</div>`,
-                iconSize: [110, 28]
+                html: `<div style="background:var(--navy);color:#fff;border-radius:4px;padding:4px 8px;font-size:11px;font-weight:700;border:1px solid var(--line);display:flex;align-items:center;gap:4px;"><svg style="width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2;"><use href="icons.svg#icon-kambus"/></svg> KITSW College</div>`,
+                iconSize: [110, 24]
             });
             L.marker(COLLEGE_COORDS, { icon: collegeIcon }).addTo(liveMap);
         } else {
@@ -1994,7 +1997,7 @@
                                 display: flex; align-items: center; gap: 4px;
                                 box-shadow: 0 3px 8px rgba(0,0,0,0.35);
                             ">
-                                <span>🚌 Bus ${escapeHtml(bus.bus_number)}</span>
+                                <span>Bus ${escapeHtml(bus.bus_number)}</span>
                             </div>
                         `,
                         iconSize: [90, 28]
@@ -2104,11 +2107,11 @@
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="block text-xs font-bold text-slate-700 mb-1">Start Time</label>
-                            <input type="time" id="annFieldTime" value="08:00" class="w-full p-2.5 border border-slate-300 rounded-xl text-xs" oninput="window.KambusAdmin.previewAnnouncementText()">
+                            <input type="time" id="annFieldTime" value="08:00" class="w-full p-2.5 border border-slate-300 rounded text-xs" oninput="window.KambusAdmin.previewAnnouncementText()">
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-slate-700 mb-1">Duration / Date Range</label>
-                            <input type="text" id="annFieldDuration" placeholder="e.g. Morning Shift" value="Morning Trip" class="w-full p-2.5 border border-slate-300 rounded-xl text-xs" oninput="window.KambusAdmin.previewAnnouncementText()">
+                            <input type="text" id="annFieldDuration" placeholder="e.g. Morning Shift" value="Morning Trip" class="w-full p-2.5 border border-slate-300 rounded text-xs" oninput="window.KambusAdmin.previewAnnouncementText()">
                         </div>
                     </div>
                 `;
@@ -2117,7 +2120,7 @@
                 fieldsHtml = `
                     <div>
                         <label class="block text-xs font-bold text-slate-700 mb-1">Replacement Bus Number</label>
-                        <input type="text" id="annFieldReplacementBus" placeholder="e.g. 5" value="5" class="w-full p-2.5 border border-slate-300 rounded-xl text-xs" oninput="window.KambusAdmin.previewAnnouncementText()">
+                        <input type="text" id="annFieldReplacementBus" placeholder="e.g. 5" value="5" class="w-full p-2.5 border border-slate-300 rounded text-xs" oninput="window.KambusAdmin.previewAnnouncementText()">
                     </div>
                 `;
                 break;
@@ -2126,7 +2129,7 @@
                 fieldsHtml = `
                     <div>
                         <label class="block text-xs font-bold text-slate-700 mb-1">Effective Date</label>
-                        <input type="date" id="annFieldDate" value="${new Date().toISOString().split('T')[0]}" class="w-full p-2.5 border border-slate-300 rounded-xl text-xs" oninput="window.KambusAdmin.previewAnnouncementText()">
+                        <input type="date" id="annFieldDate" value="${new Date().toISOString().split('T')[0]}" class="w-full p-2.5 border border-slate-300 rounded text-xs" oninput="window.KambusAdmin.previewAnnouncementText()">
                     </div>
                 `;
                 break;
@@ -2135,11 +2138,11 @@
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="block text-xs font-bold text-slate-700 mb-1">Replacement Bus</label>
-                            <input type="text" id="annFieldReplacementBus" placeholder="e.g. 8" value="8" class="w-full p-2.5 border border-slate-300 rounded-xl text-xs" oninput="window.KambusAdmin.previewAnnouncementText()">
+                            <input type="text" id="annFieldReplacementBus" placeholder="e.g. 8" value="8" class="w-full p-2.5 border border-slate-300 rounded text-xs" oninput="window.KambusAdmin.previewAnnouncementText()">
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-slate-700 mb-1">Date</label>
-                            <input type="date" id="annFieldDate" value="${new Date().toISOString().split('T')[0]}" class="w-full p-2.5 border border-slate-300 rounded-xl text-xs" oninput="window.KambusAdmin.previewAnnouncementText()">
+                            <input type="date" id="annFieldDate" value="${new Date().toISOString().split('T')[0]}" class="w-full p-2.5 border border-slate-300 rounded text-xs" oninput="window.KambusAdmin.previewAnnouncementText()">
                         </div>
                     </div>
                 `;
@@ -2149,11 +2152,11 @@
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="block text-xs font-bold text-slate-700 mb-1">New Time</label>
-                            <input type="time" id="annFieldNewTime" value="08:30" class="w-full p-2.5 border border-slate-300 rounded-xl text-xs" oninput="window.KambusAdmin.previewAnnouncementText()">
+                            <input type="time" id="annFieldNewTime" value="08:30" class="w-full p-2.5 border border-slate-300 rounded text-xs" oninput="window.KambusAdmin.previewAnnouncementText()">
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-slate-700 mb-1">Old Time</label>
-                            <input type="time" id="annFieldOldTime" value="08:00" class="w-full p-2.5 border border-slate-300 rounded-xl text-xs" oninput="window.KambusAdmin.previewAnnouncementText()">
+                            <input type="time" id="annFieldOldTime" value="08:00" class="w-full p-2.5 border border-slate-300 rounded text-xs" oninput="window.KambusAdmin.previewAnnouncementText()">
                         </div>
                     </div>
                 `;
@@ -2225,10 +2228,10 @@
             const btn = document.getElementById("btnBroadcastAnnouncement");
 
             if (countDisplay) {
-                countDisplay.textContent = `🎯 Affected Students: ${count}`;
+                countDisplay.textContent = `Affected Students: ${count}`;
             }
             if (btn) {
-                btn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Send to ${count} Student${count === 1 ? '' : 's'}`;
+                btn.innerHTML = `<svg class="w-4 h-4 shrink-0 inline mr-1.5" aria-hidden="true"><use href="icons.svg#icon-paper-plane"/></svg> Send to ${count} Student${count === 1 ? '' : 's'}`;
                 btn.disabled = count === 0;
             }
         } catch (error) {
@@ -2285,7 +2288,7 @@
             }
 
             container.innerHTML = list.map(a => `
-                <div class="p-3.5 bg-slate-50 border border-slate-200/80 rounded-xl">
+                <div class="p-3.5 bg-slate-50 border border-slate-200/80 rounded">
                     <div class="flex items-center justify-between gap-2">
                         <span class="text-xs font-black text-slate-900">${escapeHtml(a.title)}</span>
                         <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-brand/10 text-brand">${a.recipient_count} recipients</span>
@@ -2321,11 +2324,11 @@
             }
 
             container.innerHTML = alerts.map(a => `
-                <div class="p-4 border rounded-2xl ${a.type === 'emergency_sos' ? 'bg-rose-50 border-rose-200' : (a.type === 'detour_alert' ? 'bg-amber-50 border-amber-200' : 'bg-white border-slate-200')} shadow-sm flex items-start justify-between gap-3">
+                <div class="p-4 border rounded ${a.type === 'emergency_sos' ? 'bg-danger/10 border-danger/20' : (a.type === 'detour_alert' ? 'bg-warn/10 border-warn/20' : 'bg-white border-slate-200')} shadow-sm flex items-start justify-between gap-3">
                     <div class="min-w-0">
                         <div class="flex items-center gap-2">
-                            <span class="text-base">${a.type === 'emergency_sos' ? '🚨' : (a.type === 'detour_alert' ? '🚧' : '🔔')}</span>
-                            <h4 class="text-xs font-black ${a.type === 'emergency_sos' ? 'text-rose-900' : 'text-slate-900'}">${escapeHtml(a.title)}</h4>
+                            <span class="flex items-center justify-center w-5 h-5">${a.type === "emergency_sos" ? '<svg class="w-4 h-4 text-danger shrink-0" aria-hidden="true"><use href="icons.svg#icon-alert"/></svg>' : (a.type === "detour_alert" ? '<svg class="w-4 h-4 text-warn shrink-0" aria-hidden="true"><use href="icons.svg#icon-route"/></svg>' : '<svg class="w-4 h-4 text-navy shrink-0" aria-hidden="true"><use href="icons.svg#icon-bell"/></svg>')}</span>
+                            <h4 class="text-xs font-black ${a.type === 'emergency_sos' ? 'text-danger' : 'text-slate-900'}">${escapeHtml(a.title)}</h4>
                         </div>
                         <p class="text-xs text-slate-700 mt-1">${escapeHtml(a.message)}</p>
                         <div class="flex items-center gap-3 text-[11px] text-slate-500 mt-2">
@@ -2335,10 +2338,10 @@
                         </div>
                     </div>
                     ${!a.is_read ? `
-                        <button onclick="window.KambusAdmin.acknowledgeAlert(${a.id})" class="px-3 py-1.5 bg-white text-slate-800 border border-slate-200 hover:bg-slate-50 rounded-xl text-xs font-bold shadow-2xs shrink-0">
+                        <button onclick="window.KambusAdmin.acknowledgeAlert(${a.id})" class="px-3 py-1.5 bg-white text-slate-800 border border-slate-200 hover:bg-slate-50 rounded text-xs font-bold shadow-2xs shrink-0">
                             Acknowledge
                         </button>
-                    ` : '<span class="text-[11px] font-bold text-slate-400 shrink-0">✓ Acknowledged</span>'}
+                    ` : '<span class="text-[11px] font-bold text-slate-400 shrink-0">Acknowledged</span>'}
                 </div>
             `).join("");
         } catch (error) {
@@ -2402,27 +2405,27 @@
 
             if (data.buses && data.buses.length > 0) {
                 html += `<div class="mb-3"><h5 class="text-[11px] font-black text-slate-400 uppercase">Buses</h5>` +
-                    data.buses.map(b => `<div onclick="window.KambusAdmin.openBusModal(${b.bus_id})" class="p-2 hover:bg-slate-50 rounded cursor-pointer text-xs font-bold text-slate-900">🚌 Bus ${escapeHtml(b.bus_number)} (${escapeHtml(b.driver_name || 'No driver')}) &rarr;</div>`).join("") + `</div>`;
+                    data.buses.map(b => `<div onclick="window.KambusAdmin.openBusModal(${b.bus_id})" class="p-2 hover:bg-slate-50 rounded cursor-pointer text-xs font-bold text-slate-900 flex items-center gap-1.5"><svg class="w-3.5 h-3.5 text-ink-muted shrink-0"><use href="icons.svg#icon-bus"/></svg><span>Bus ${escapeHtml(b.bus_number)} (${escapeHtml(b.driver_name || 'No driver')}) &rarr;</span></div>`).join("") + `</div>`;
             }
 
             if (data.drivers && data.drivers.length > 0) {
                 html += `<div class="mb-3"><h5 class="text-[11px] font-black text-slate-400 uppercase">Drivers</h5>` +
-                    data.drivers.map(d => `<div onclick="window.KambusAdmin.openDriverModal(${d.driver_id})" class="p-2 hover:bg-slate-50 rounded cursor-pointer text-xs font-bold text-slate-900">👨‍✈️ ${escapeHtml(d.name)} (${escapeHtml(d.driver_code)}) &rarr;</div>`).join("") + `</div>`;
+                    data.drivers.map(d => `<div onclick="window.KambusAdmin.openDriverModal(${d.driver_id})" class="p-2 hover:bg-slate-50 rounded cursor-pointer text-xs font-bold text-slate-900 flex items-center gap-1.5"><svg class="w-3.5 h-3.5 text-ink-muted shrink-0"><use href="icons.svg#icon-user-tie"/></svg><span>${escapeHtml(d.name)} (${escapeHtml(d.driver_code)}) &rarr;</span></div>`).join("") + `</div>`;
             }
 
             if (data.students && data.students.length > 0) {
                 html += `<div class="mb-3"><h5 class="text-[11px] font-black text-slate-400 uppercase">Students</h5>` +
-                    data.students.map(s => `<div onclick="window.KambusAdmin.openAssignStudentModal(${s.student_id}, ${jsArg(s.name)}, ${s.bus_id || 'null'}, ${s.stop_id || 'null'})" class="p-2 hover:bg-slate-50 rounded cursor-pointer text-xs font-bold text-slate-900">👨‍🎓 ${escapeHtml(s.name)} - ${escapeHtml(s.roll_number)} (${escapeHtml(s.bus_number ? 'Bus ' + s.bus_number : 'No bus')}) &rarr;</div>`).join("") + `</div>`;
+                    data.students.map(s => `<div onclick="window.KambusAdmin.openAssignStudentModal(${s.student_id}, ${jsArg(s.name)}, ${s.bus_id || 'null'}, ${s.stop_id || 'null'})" class="p-2 hover:bg-slate-50 rounded cursor-pointer text-xs font-bold text-slate-900 flex items-center gap-1.5"><svg class="w-3.5 h-3.5 text-ink-muted shrink-0"><use href="icons.svg#icon-user-graduate"/></svg><span>${escapeHtml(s.name)} - ${escapeHtml(s.roll_number)} (${escapeHtml(s.bus_number ? 'Bus ' + s.bus_number : 'No bus')}) &rarr;</span></div>`).join("") + `</div>`;
             }
 
             if (data.routes && data.routes.length > 0) {
                 html += `<div class="mb-3"><h5 class="text-[11px] font-black text-slate-400 uppercase">Routes</h5>` +
-                    data.routes.map(r => `<div onclick="window.KambusAdmin.previewRouteRoadMap(${r.route_id})" class="p-2 hover:bg-slate-50 rounded cursor-pointer text-xs font-bold text-slate-900">🛣️ ${escapeHtml(r.name)} (${r.stops_count} stops) &rarr;</div>`).join("") + `</div>`;
+                    data.routes.map(r => `<div onclick="window.KambusAdmin.previewRouteRoadMap(${r.route_id})" class="p-2 hover:bg-slate-50 rounded cursor-pointer text-xs font-bold text-slate-900 flex items-center gap-1.5"><svg class="w-3.5 h-3.5 text-ink-muted shrink-0"><use href="icons.svg#icon-route"/></svg><span>${escapeHtml(r.name)} (${r.stops_count} stops) &rarr;</span></div>`).join("") + `</div>`;
             }
 
             if (data.stops && data.stops.length > 0) {
                 html += `<div class="mb-3"><h5 class="text-[11px] font-black text-slate-400 uppercase">Stops</h5>` +
-                    data.stops.map(st => `<div onclick="window.KambusAdmin.showSection('stops')" class="p-2 hover:bg-slate-50 rounded cursor-pointer text-xs font-bold text-slate-900">📍 ${escapeHtml(st.name)} (Route: ${escapeHtml(st.route_name || '-')}) &rarr;</div>`).join("") + `</div>`;
+                    data.stops.map(st => `<div onclick="window.KambusAdmin.showSection('stops')" class="p-2 hover:bg-slate-50 rounded cursor-pointer text-xs font-bold text-slate-900 flex items-center gap-1.5"><svg class="w-3.5 h-3.5 text-ink-muted shrink-0"><use href="icons.svg#icon-map-pin"/></svg><span>${escapeHtml(st.name)} (Route: ${escapeHtml(st.route_name || '-')}) &rarr;</span></div>`).join("") + `</div>`;
             }
 
             resultsContainer.innerHTML = html || `<div class="p-4 text-center text-xs text-slate-400">No records found matching "${escapeHtml(query)}"</div>`;
@@ -2449,7 +2452,7 @@
             }
 
             container.innerHTML = logs.map(l => `
-                <div class="p-3.5 bg-white border border-slate-200/90 rounded-xl flex items-center justify-between text-xs">
+                <div class="p-3.5 bg-white border border-slate-200/90 rounded flex items-center justify-between text-xs">
                     <div>
                         <span class="font-black text-slate-900">${escapeHtml(l.action)}</span>
                         <p class="text-slate-600 mt-0.5">${escapeHtml(l.details || "")}</p>
@@ -2486,11 +2489,11 @@
                     const data = JSON.parse(event.data);
 
                     if (data.type === "emergency_sos") {
-                        showToast("error", data.title || "🚨 URGENT EMERGENCY SOS", data.message);
+                        showToast("error", data.title || "URGENT EMERGENCY SOS", data.message);
                         loadDashboard();
                         loadAlerts();
                     } else if (data.type === "detour_alert") {
-                        showToast("warning", data.title || "⚠️ Route Detour Reported", data.message);
+                        showToast("warning", data.title || "Route Detour Reported", data.message);
                         loadDashboard();
                         loadAlerts();
                     } else if (data.title || data.message) {
@@ -2522,7 +2525,7 @@
         btn.type = "button";
         btn.className = "admin-nav-btn";
         btn.setAttribute("data-section", "admins");
-        btn.innerHTML = '<i class="fa-solid fa-user-shield w-4 text-center"></i> <span>Admin Accounts</span>';
+        btn.innerHTML = '<svg class="w-4 h-4 shrink-0 inline mr-1.5" aria-hidden="true"><use href="icons.svg#icon-user-shield"/></svg> <span>Admin Accounts</span>';
         btn.addEventListener("click", () => showSection("admins"));
         activityBtn.insertAdjacentElement("afterend", btn);
     }
@@ -2536,12 +2539,12 @@
             cachedAdmins = Array.isArray(data) ? data : [];
 
             if (cachedAdmins.length === 0) {
-                container.innerHTML = `<div class="p-8 text-center text-xs text-slate-400 bg-white border border-slate-200/90 rounded-2xl">No admins yet. Use Add Admin to create one.</div>`;
+                container.innerHTML = `<div class="p-8 text-center text-xs text-slate-400 bg-white border border-slate-200/90 rounded">No admins yet. Use Add Admin to create one.</div>`;
                 return;
             }
 
             container.innerHTML = `
-                <div class="bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-xs">
+                <div class="bg-white border border-slate-200/90 rounded overflow-hidden shadow-xs">
                     <div class="overflow-x-auto">
                         <table class="w-full text-left text-xs border-collapse">
                             <thead class="bg-slate-50 border-b border-slate-200/80 text-[11px] font-black text-slate-500 uppercase tracking-wider">
@@ -2562,12 +2565,12 @@
                                         </td>
                                         <td class="p-3.5 font-mono font-bold text-brand">${escapeHtml(a.admin_id)}</td>
                                         <td class="p-3.5">
-                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-black ${a.status === "active" ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"}">${a.status === "active" ? "ACTIVE" : "DISABLED"}</span>
+                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-black ${a.status === "active" ? "bg-ok/10 text-ok" : "bg-danger/10 text-danger"}">${a.status === "active" ? "ACTIVE" : "DISABLED"}</span>
                                         </td>
                                         <td class="p-3.5 text-slate-500">${formatDateTime(a.created_at)}</td>
                                         <td class="p-3.5 text-right space-x-1">
                                             <button type="button" onclick="window.KambusAdmin.openResetAdminPasswordModal(${Number(a.admin_id)})" class="px-2.5 py-1 bg-slate-100 hover:bg-brand hover:text-white rounded-lg text-[11px] font-bold text-slate-700 transition">Reset password</button>
-                                            <button type="button" onclick="window.KambusAdmin.toggleAdminStatus(${Number(a.admin_id)})" class="px-2.5 py-1 bg-slate-100 hover:bg-rose-600 hover:text-white rounded-lg text-[11px] font-bold text-slate-700 transition">${a.status === "active" ? "Disable" : "Enable"}</button>
+                                            <button type="button" onclick="window.KambusAdmin.toggleAdminStatus(${Number(a.admin_id)})" class="px-2.5 py-1 bg-slate-100 hover:bg-danger hover:text-white rounded-lg text-[11px] font-bold text-slate-700 transition">${a.status === "active" ? "Disable" : "Enable"}</button>
                                         </td>
                                     </tr>
                                 `).join("")}

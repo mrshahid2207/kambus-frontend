@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Parent for your launcher activity theme (androidx.core:core-splashscreen) -->
+    <style name="Theme.Kambus.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/kambus_navy</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_icon</item>
+        <item name="postSplashScreenTheme">@style/Theme.Kambus</item>
+        <item name="android:statusBarColor">@color/kambus_navy</item>
+        <item name="android:navigationBarColor">@color/kambus_navy</item>
+    </style>
+</resources>

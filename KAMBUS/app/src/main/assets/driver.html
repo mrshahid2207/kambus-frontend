@@ -1,733 +1,488 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>KAMBUS - Driver Dashboard</title>
-
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Outfit Premium Font -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-
-    <!-- Notifications CSS -->
-    <link rel="stylesheet" href="notifications.css">
-
-    <script>
-        tailwind.config = {
-      theme: {
-          extend: {
-              colors: {
-                  brand: '#F4B942',
-                  brandDark: '#E8A317',
-                  brandLight: '#FDF3DE',
-                  navy: '#172554',
-                  surface: '#FFFFFF',
-                  slateDark: '#172554'
-              }
-          }
-      }
-  };
-    </script>
-
+    <title>KAMBUS</title>
+    <meta name="theme-color" content="#173541">
+    <meta name="description" content="KAMBUS, live bus tracking for KITSW.">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="favicon.ico" sizes="48x48">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="manifest" href="site.webmanifest">
+    <link rel="stylesheet" href="kambus.css">
+    <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
     <style>
-        html,
-body {
-    margin: 0;
-    padding: 0;
-    width: 100%;
-    min-height: 100%;
-    background-color: #F8FAFC;
-    background-image:
-        radial-gradient(circle at 12% 8%, rgba(244, 185, 66, 0.10), transparent 40%),
-        radial-gradient(circle at 88% 92%, rgba(23, 37, 84, 0.06), transparent 45%);
-    color: #172554;
-    font-family: 'Outfit', 'Inter', Arial, sans-serif;
-    overflow-x: hidden;
-    -webkit-font-smoothing: antialiased;
-}
-
-        body {
-            padding-top: env(safe-area-inset-top);
-            padding-bottom: env(safe-area-inset-bottom);
-        }
-
-        *, *::before, *::after {
-            box-sizing: border-box;
-        }
-
-        button {
-            -webkit-tap-highlight-color: transparent;
-            user-select: none;
-        }
-
-        /* Map styling */
         #routeMap {
             width: 100%;
             height: 100%;
-            z-index: 1;
-            background: #f1f5f9;
+            background: #FAFAF8;
         }
-
-        .leaflet-container {
-            font-family: inherit;
-        }
-
-        /* Pulse animation for driver live marker */
-        @keyframes pulse-ring {
-            0% { transform: scale(0.95); opacity: 0.8; }
-            50% { transform: scale(1.35); opacity: 0.2; }
-            100% { transform: scale(0.95); opacity: 0.8; }
-        }
-
-        .bus-pulse-ring {
-            animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
-
-        /* Scanner video styling */
-        #scannerVideo {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        /* Scanner targeting laser line animation */
-        @keyframes scan-laser {
-            0% { top: 10%; opacity: 0.8; }
-            50% { top: 90%; opacity: 1; }
-            100% { top: 10%; opacity: 0.8; }
-        }
-
         .scanner-laser {
             position: absolute;
             left: 10%;
             right: 10%;
             height: 2px;
-            background: #ef4444;
-            box-shadow: 0 0 8px #ef4444, 0 0 14px #ef4444;
+            background: #B02A34;
             animation: scan-laser 2.2s ease-in-out infinite;
         }
-        /* Premium Gold Arc - Top Left */
-body::before {
-    content: "";
-    position: fixed;
-    width: 280px;
-    height: 280px;
-    border: 32px solid rgba(244, 185, 66, 0.12);
-    border-radius: 50%;
-    top: -150px;
-    left: -150px;
-    pointer-events: none;
-    z-index: 0;
-}
-
-/* Premium Navy Arc - Bottom Right */
-body::after {
-    content: "";
-    position: fixed;
-    width: 320px;
-    height: 320px;
-    border: 38px solid rgba(23, 37, 84, 0.08);
-    border-radius: 50%;
-    bottom: -190px;
-    right: -190px;
-    pointer-events: none;
-    z-index: 0;
-}
-
-header,
-main,
-footer {
-    position: relative;
-    z-index: 1;
-}
+        @keyframes scan-laser {
+            0% { top: 10%; opacity: 0.8; }
+            50% { top: 90%; opacity: 1; }
+            100% { top: 10%; opacity: 0.8; }
+        }
     </style>
 </head>
+<body class="bg-bg text-navy font-sans flex flex-col min-h-screen">
 
-<body class="bg-slate-50 text-slate-900 flex flex-col min-h-screen">
-
-<!-- ================================================= -->
-<!-- TOP STATUS BAR -->
-<!-- ================================================= -->
-<header class="bg-white border-b border-slate-200 px-4 py-3.5 sticky top-0 z-30 shadow-sm flex items-center justify-between">
-    <!-- Left: Branding & Bus Number -->
-    <div class="flex items-center gap-3 min-w-0">
-        <div class="w-10 h-10 bg-brand/10 text-brand rounded-2xl flex items-center justify-center border border-brand/20 shrink-0 font-black text-base shadow-sm">
-            🚌
-        </div>
-        <div class="min-w-0">
-            <div class="flex items-center gap-2">
-                <h1 class="text-base font-black tracking-tight text-slate-900 leading-none">
-                    KAMBUS
-                </h1>
-                <span id="headerBusBadge" class="text-xs font-black text-brand bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-lg leading-none">
-                    Bus —
-                </span>
+    <header class="bg-surface border-b border-line px-4 py-3 sticky top-0 z-30 flex items-center justify-between">
+        <div class="flex items-center gap-2.5 min-w-0">
+            <div class="w-8 h-8 rounded bg-navy flex items-center justify-center shrink-0">
+                <img src="brand/mark-white.svg" alt="KAMBUS" class="w-5 h-5">
             </div>
-            <p id="headerDriverName" class="text-xs text-slate-500 truncate mt-1 font-semibold">
-                Driver
-            </p>
-        </div>
-    </div>
-
-    <!-- Right: Live Location Sending Status & Logout -->
-    <div class="flex items-center gap-3 shrink-0">
-        <div class="text-right">
-            <div class="flex items-center justify-end gap-2">
-                <span id="statusDot" class="w-2.5 h-2.5 rounded-full bg-slate-300"></span>
-                <span id="liveStatusText" class="text-xs font-black text-slate-700">
-                    Offline
-                </span>
-            </div>
-            <p id="lastUpdateElapsed" class="text-[11px] text-slate-400 font-semibold mt-0.5">
-                GPS not active
-            </p>
-        </div>
-
-        <!-- LOGOUT -->
-        <a
-                href="index.html"
-                id="driverLogoutBtn"
-                class="p-2 text-slate-400 hover:text-rose-600 transition flex items-center justify-center"
-                aria-label="Logout"
-                title="Logout"
-        >
-            <i class="fa-solid fa-right-from-bracket text-base"></i>
-        </a>
-    </div>
-</header>
-
-<!-- ================================================= -->
-<!-- SYSTEM ACTIVE ALERT BANNERS -->
-<!-- ================================================= -->
-
-<!-- 1. ACTIVE EMERGENCY SOS BANNER -->
-<div id="activeSosBanner" class="hidden bg-rose-600 text-white px-4 py-3.5 shadow-xl flex items-center justify-between gap-3 text-xs sm:text-sm font-black border-b border-rose-700">
-    <div class="flex items-center gap-2.5 min-w-0">
-        <span class="w-3 h-3 rounded-full bg-white animate-ping shrink-0"></span>
-        <span id="activeSosText" class="truncate">🚨 EMERGENCY SOS ACTIVE — Authorities Alerted</span>
-    </div>
-    <div class="flex items-center gap-2 shrink-0">
-        <a href="tel:112" class="px-3 py-1.5 bg-white text-rose-700 hover:bg-rose-50 rounded-xl text-xs font-black flex items-center gap-1.5 shadow-sm active:scale-95 transition">
-            <i class="fa-solid fa-phone"></i> Call 112
-        </a>
-        <button type="button" onclick="cancelEmergencySos()" class="px-2.5 py-1.5 bg-rose-700 hover:bg-rose-800 rounded-xl text-xs font-bold text-rose-100 active:scale-95 transition">
-            Clear
-        </button>
-    </div>
-</div>
-
-<!-- 2. ACTIVE DETOUR BANNER -->
-<div id="activeDetourBanner" class="hidden bg-amber-500 text-white px-4 py-3 shadow-md flex items-center justify-between gap-2 text-xs sm:text-sm font-extrabold border-b border-amber-600">
-    <div class="flex items-center gap-2 min-w-0">
-        <i class="fa-solid fa-route shrink-0 text-amber-100 text-base"></i>
-        <span id="activeDetourText" class="truncate">🚧 Active Detour: Road Construction (+10 min delay)</span>
-    </div>
-    <button type="button" onclick="clearDetourReport()" class="px-3 py-1.5 bg-amber-700 hover:bg-amber-800 rounded-xl text-xs font-bold text-amber-100 shrink-0 active:scale-95 transition">
-        Clear Detour
-    </button>
-</div>
-
-<!-- ================================================= -->
-<!-- MAIN CONTENT CONTAINER -->
-<!-- ================================================= -->
-<main class="flex-1 flex flex-col p-4 max-w-lg mx-auto w-full space-y-4 pb-8">
-
-    <!-- ================================================= -->
-    <!-- WAIT REQUEST ALERT CARD (Auto-accept by default) -->
-    <!-- ================================================= -->
-    <section id="waitRequestCard" class="hidden bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-3xl p-4 shadow-xl border border-amber-400 transition-all">
-        <div class="flex items-center justify-between gap-3">
-            <div class="min-w-0 flex-1">
+            <div class="min-w-0">
                 <div class="flex items-center gap-2">
-                    <span class="text-lg animate-spin" style="animation-duration: 4s;">⏳</span>
-                    <h2 id="waitStopTitle" class="text-sm sm:text-base font-black truncate uppercase tracking-wide">
-                        WAIT REQUEST — Stop
-                    </h2>
-                </div>
-                <div class="flex items-center gap-2 mt-1.5">
-                    <span id="waitCountdownBadge" class="text-xs font-black bg-white/20 backdrop-blur-sm px-2.5 py-1 rounded-xl">
-                        Auto-accepting in 00:10
-                    </span>
-                    <span id="waitStudentCount" class="text-xs font-bold text-amber-100 truncate">
-                        • 1 student waiting
+                    <span class="text-sm font-semibold tracking-tight leading-none text-navy">KAMBUS</span>
+                    <span id="headerBusBadge" class="text-xs font-mono font-medium text-ink-muted bg-bg border border-line px-1.5 py-0.5 rounded leading-none">
+                        Bus --
                     </span>
                 </div>
+                <p id="headerDriverName" class="text-xs text-ink-muted truncate font-normal mt-0.5">
+                    Driver
+                </p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-3 shrink-0">
+            <div class="text-right">
+                <div class="flex items-center justify-end gap-1.5">
+                    <span id="statusDot" class="w-2 h-2 rounded-full bg-line shrink-0"></span>
+                    <span id="liveStatusText" class="text-xs font-semibold text-navy">
+                        Offline
+                    </span>
+                </div>
+                <p id="lastUpdateElapsed" class="text-[11px] text-ink-muted tabular-nums mt-0.5">
+                    GPS not active
+                </p>
             </div>
 
-            <!-- Skip Button -->
-            <button
-                type="button"
-                id="skipWaitBtn"
-                class="shrink-0 bg-white/20 hover:bg-white/30 active:bg-white/40 border border-white/40 text-white font-black text-xs px-4 py-2.5 rounded-2xl transition flex items-center gap-2 active:scale-95"
-            >
-                <i class="fa-solid fa-forward-step text-xs"></i>
-                <span>SKIP</span>
+            <a href="index.html" id="driverLogoutBtn" class="w-8 h-8 rounded border border-line bg-surface hover:bg-bg text-ink-muted hover:text-danger transition-colors flex items-center justify-center" aria-label="Logout" title="Logout">
+                <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-logout"/></svg>
+            </a>
+        </div>
+    </header>
+
+    <div id="activeSosBanner" class="hidden bg-danger text-white px-4 py-3 flex items-center justify-between gap-3 text-xs font-semibold border-b border-danger/20">
+        <div class="flex items-center gap-2 min-w-0">
+            <span class="w-2 h-2 rounded-full bg-white animate-ping shrink-0"></span>
+            <span id="activeSosText" class="truncate">EMERGENCY SOS ACTIVE</span>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+            <a href="tel:112" class="px-2.5 py-1 bg-white text-danger rounded text-xs font-semibold flex items-center gap-1">
+                <svg class="w-3.5 h-3.5" aria-hidden="true"><use href="icons.svg#icon-phone"/></svg> Call 112
+            </a>
+            <button type="button" onclick="cancelEmergencySos()" class="px-2.5 py-1 bg-danger/80 hover:bg-danger text-white rounded text-xs font-semibold border border-white/20">
+                Clear
             </button>
         </div>
-    </section>
+    </div>
 
-    <!-- ================================================= -->
-    <!-- PERSISTENT ROUTE MAP (Always visible) -->
-    <!-- ================================================= -->
-    <div class="relative rounded-3xl overflow-hidden border border-slate-200 shadow-md bg-white h-64 sm:h-80 w-full shrink-0">
-        <div id="routeMap"></div>
-
-        <!-- Route Status Badge -->
-        <div id="routeStatusBadge" class="absolute top-3.5 left-3.5 z-[400] bg-slate-900/85 backdrop-blur-md text-white text-xs font-extrabold px-3 py-1.5 rounded-xl border border-white/15 shadow-md flex items-center gap-2 pointer-events-none">
-            <span id="routeStatusDot" class="w-2 h-2 rounded-full bg-indigo-400"></span>
-            <span id="routeStatusText">Route Preview</span>
+    <div id="activeDetourBanner" class="hidden bg-warn text-white px-4 py-3 flex items-center justify-between gap-2 text-xs font-semibold border-b border-warn/20">
+        <div class="flex items-center gap-2 min-w-0">
+            <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-route"/></svg>
+            <span id="activeDetourText" class="truncate">Active Detour</span>
         </div>
-
-        <!-- Recenter Map Button -->
-        <button
-            type="button"
-            id="recenterBtn"
-            class="absolute bottom-3.5 right-3.5 z-[400] px-3.5 py-2.5 bg-white/95 backdrop-blur-md border border-slate-200 text-brand font-black text-xs rounded-2xl shadow-lg flex items-center gap-2 hover:bg-white active:scale-95 transition"
-            aria-label="Recenter map"
-        >
-            <i class="fa-solid fa-location-crosshairs text-base text-brand"></i>
-            <span class="text-xs font-black text-slate-800">Recenter</span>
+        <button type="button" onclick="clearDetourReport()" class="px-2.5 py-1 bg-white text-warn rounded text-xs font-semibold shrink-0">
+            Clear Detour
         </button>
     </div>
 
-    <!-- ================================================= -->
-    <!-- PRE-TRIP VIEW (Visible before trip starts) -->
-    <!-- ================================================= -->
-    <div id="preTripView" class="space-y-4 flex-1 flex flex-col">
+    <main class="flex-1 flex flex-col p-4 max-w-lg mx-auto w-full space-y-4 pb-8">
 
-        <!-- Route Details Hero Card (Increased Size & Legibility) -->
-        <div class="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm space-y-3">
-            <div class="flex items-center justify-between">
-                <span class="text-[11px] font-black uppercase tracking-wider text-indigo-600 bg-indigo-50 border border-indigo-100 px-2.5 py-1 rounded-lg">
-                    ASSIGNED ROUTE
-                </span>
-                <span id="preTripStopCount" class="text-xs font-black text-slate-700 bg-slate-100 px-2.5 py-1 rounded-lg">
-                    — stops
-                </span>
+        <section id="waitRequestCard" class="hidden bg-surface border border-warn text-navy rounded p-4 space-y-2">
+            <div class="flex items-center justify-between gap-3">
+                <div class="min-w-0 flex-1">
+                    <div class="flex items-center gap-1.5">
+                        <svg class="w-4 h-4 text-warn animate-spin" aria-hidden="true"><use href="icons.svg#icon-clock"/></svg>
+                        <h2 id="waitStopTitle" class="text-xs font-semibold uppercase tracking-wider text-navy truncate">
+                            Wait Request
+                        </h2>
+                    </div>
+                    <div class="flex items-center gap-2 mt-1">
+                        <span id="waitCountdownBadge" class="text-xs font-mono font-medium text-warn bg-warn/10 border border-warn/20 px-2 py-0.5 rounded">
+                            Auto-accepting in 00:10
+                        </span>
+                        <span id="waitStudentCount" class="text-xs text-ink-muted truncate">
+                            1 student waiting
+                        </span>
+                    </div>
+                </div>
+
+                <button type="button" id="skipWaitBtn" class="shrink-0 bg-surface border border-line text-navy font-semibold text-xs px-3 py-1.5 rounded hover:bg-bg transition-colors flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5" aria-hidden="true"><use href="icons.svg#icon-forward-step"/></svg>
+                    <span>Skip</span>
+                </button>
             </div>
-            <h2 id="preTripRouteName" class="text-xl font-black text-slate-900 truncate">
-                Loading assigned route…
-            </h2>
-            <div class="flex items-center justify-between text-xs sm:text-sm text-slate-600 pt-3 border-t border-slate-100 font-semibold">
-                <span class="flex items-center gap-2">
-                    <i class="fa-solid fa-location-dot text-indigo-600 text-base"></i>
-                    First Stop: <strong id="preTripFirstStopName" class="text-slate-900 font-bold">—</strong>
-                </span>
-                <span class="text-emerald-700 font-black bg-emerald-50 px-2.5 py-1 rounded-xl border border-emerald-200 text-xs">
-                    Ready
-                </span>
+        </section>
+
+        <div class="relative rounded overflow-hidden border border-line bg-surface h-64 sm:h-80 w-full shrink-0">
+            <div id="routeMap"></div>
+
+            <div id="routeStatusBadge" class="absolute top-3 left-3 z-[400] bg-surface/95 text-navy text-xs font-semibold px-2.5 py-1 rounded border border-line flex items-center gap-1.5 pointer-events-none">
+                <span id="routeStatusDot" class="w-2 h-2 rounded-full bg-brand"></span>
+                <span id="routeStatusText">Route Preview</span>
             </div>
-        </div>
 
-        <!-- LARGE HIGH-VISIBILITY START TRIP CTA BUTTON -->
-        <button
-            type="button"
-            id="startTripBtn"
-            class="w-full py-5 min-h-[76px] bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 hover:from-emerald-500 hover:to-teal-500 active:from-emerald-700 active:to-teal-700 text-white font-black text-lg sm:text-xl rounded-3xl shadow-xl shadow-emerald-600/30 border border-emerald-500/40 transition-all flex items-center justify-center gap-3.5 active:scale-[0.98]"
-        >
-            <div class="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center shadow-inner">
-                <i id="startTripIcon" class="fa-solid fa-play text-lg ml-0.5 text-white"></i>
-            </div>
-            <span id="startTripText" class="tracking-wide uppercase font-black">
-                START MORNING TRIP
-            </span>
-        </button>
-
-        <!-- Driver Utility Actions (Scan Pass, Report Detour) -->
-        <div class="grid grid-cols-2 gap-3.5">
-            <button
-                type="button"
-                onclick="verifyStudentPass()"
-                class="p-4 bg-white hover:bg-slate-50 border border-slate-200 rounded-3xl flex items-center gap-3.5 shadow-sm text-slate-800 active:scale-95 transition"
-            >
-                <div class="w-12 h-12 rounded-2xl bg-brand/10 text-brand flex items-center justify-center shrink-0 border border-brand/20">
-                    <i class="fa-solid fa-qrcode text-xl"></i>
-                </div>
-                <div class="text-left min-w-0">
-                    <p class="text-sm font-black text-slate-900 truncate">Scan Pass</p>
-                    <p class="text-xs text-slate-500 font-medium truncate">Verify student</p>
-                </div>
-            </button>
-
-            <button
-                type="button"
-                onclick="reportDetour()"
-                class="p-4 bg-white hover:bg-slate-50 border border-slate-200 rounded-3xl flex items-center gap-3.5 shadow-sm text-slate-800 active:scale-95 transition"
-            >
-                <div class="w-12 h-12 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center shrink-0 border border-amber-200">
-                    <i class="fa-solid fa-route text-xl"></i>
-                </div>
-                <div class="text-left min-w-0">
-                    <p class="text-sm font-black text-slate-900 truncate">Report Detour</p>
-                    <p class="text-xs text-slate-500 font-medium truncate">Road diversion</p>
-                </div>
+            <button type="button" id="recenterBtn" class="absolute bottom-3 right-3 z-[400] px-2.5 py-1.5 bg-surface border border-line text-navy font-semibold text-xs rounded flex items-center gap-1.5 hover:bg-bg transition-colors" aria-label="Recenter map">
+                <svg class="w-3.5 h-3.5" aria-hidden="true"><use href="icons.svg#icon-location-crosshairs"/></svg>
+                <span>Recenter</span>
             </button>
         </div>
 
-    </div>
-
-    <!-- ================================================= -->
-    <!-- ACTIVE TRIP VIEW (Visible during trip) -->
-    <!-- ================================================= -->
-    <div id="activeTripView" class="hidden space-y-4 flex-1 flex flex-col">
-
-        <!-- Next Stop Hero Card (Large & Driver-Optimized) -->
-        <section class="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm space-y-2">
-            <div class="flex items-center justify-between text-xs font-black uppercase tracking-wider text-slate-400">
-                <span class="flex items-center gap-2 text-brand font-black text-xs">
-                    <i class="fa-solid fa-location-dot text-sm"></i> NEXT STOP
-                </span>
-                <span id="nextStopDistance" class="text-slate-900 font-black text-base sm:text-lg">
-                    — m
-                </span>
-            </div>
-
-            <div class="flex items-baseline justify-between gap-2 pt-1">
-                <h2 id="nextStopName" class="text-xl sm:text-2xl font-black text-slate-900 truncate">
-                    Finding next stop…
+        <div id="preTripView" class="space-y-4 flex-1 flex flex-col">
+            <div class="bg-surface border border-line rounded p-4 space-y-3">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold uppercase tracking-wider text-ink-muted">
+                        Assigned Route
+                    </span>
+                    <span id="preTripStopCount" class="text-xs font-mono font-medium text-ink-muted bg-bg border border-line px-2 py-0.5 rounded">
+                        -- stops
+                    </span>
+                </div>
+                <h2 id="preTripRouteName" class="text-lg font-semibold text-navy truncate">
+                    Loading assigned route...
                 </h2>
-                <span id="nextStopOrderBadge" class="text-xs font-extrabold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-lg shrink-0">
-                    Stop —
+                <div class="flex items-center justify-between text-xs text-ink-muted pt-2.5 border-t border-line font-medium">
+                    <span class="flex items-center gap-1.5">
+                        <svg class="w-3.5 h-3.5 text-navy" aria-hidden="true"><use href="icons.svg#icon-map-pin"/></svg>
+                        First Stop: <strong id="preTripFirstStopName" class="text-navy font-semibold">--</strong>
+                    </span>
+                    <span class="text-ok font-medium bg-ok/10 px-2 py-0.5 rounded border border-ok/20 text-xs">
+                        Ready
+                    </span>
+                </div>
+            </div>
+
+            <button type="button" id="startTripBtn" class="w-full py-3.5 bg-navy hover:bg-brand active:bg-brand text-white font-semibold text-base rounded transition-colors flex items-center justify-center gap-2">
+                <svg id="startTripIcon" class="w-4 h-4" aria-hidden="true"><use href="icons.svg#icon-play"/></svg>
+                <span id="startTripText" class="tracking-wide uppercase font-semibold">
+                    Start Morning Trip
                 </span>
-            </div>
+            </button>
 
-            <div class="flex items-center justify-between text-xs sm:text-sm pt-3 mt-3 border-t border-slate-100 font-extrabold">
-                <div class="flex items-center gap-2 text-emerald-700">
-                    <i class="fa-solid fa-bolt text-sm"></i>
-                    <span id="nextStopEta">ETA: ~— min</span>
-                </div>
-                <div id="nextStopStudentsContainer" class="flex items-center gap-1.5 text-slate-700">
-                    <i class="fa-solid fa-users text-sm text-slate-400"></i>
-                    <span id="nextStopStudents">👥 — expected</span>
-                </div>
-            </div>
-        </section>
+            <div class="grid grid-cols-2 gap-3">
+                <button type="button" onclick="verifyStudentPass()" class="p-3 bg-surface hover:bg-bg border border-line rounded flex items-center gap-3 text-navy transition-colors text-left">
+                    <div class="w-9 h-9 rounded bg-bg border border-line flex items-center justify-center shrink-0 text-navy">
+                        <svg class="w-4 h-4" aria-hidden="true"><use href="icons.svg#icon-qrcode"/></svg>
+                    </div>
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold text-navy truncate">Scan Pass</p>
+                        <p class="text-[11px] text-ink-muted truncate">Verify student</p>
+                    </div>
+                </button>
 
-        <!-- Split Metrics: College ETA & Today's Students -->
-        <div class="grid grid-cols-2 gap-3.5">
-            <div class="bg-white border border-slate-200 rounded-3xl p-4 shadow-sm flex flex-col justify-between">
-                <div class="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-slate-400">
-                    <span>🏫</span>
-                    <span>COLLEGE ETA</span>
-                </div>
-                <div class="mt-3">
-                    <div id="collegeClockEta" class="text-xl sm:text-2xl font-black text-slate-900 leading-none">
-                        --:-- AM
+                <button type="button" onclick="reportDetour()" class="p-3 bg-surface hover:bg-bg border border-line rounded flex items-center gap-3 text-navy transition-colors text-left">
+                    <div class="w-9 h-9 rounded bg-bg border border-line flex items-center justify-center shrink-0 text-warn">
+                        <svg class="w-4 h-4" aria-hidden="true"><use href="icons.svg#icon-route"/></svg>
                     </div>
-                    <div id="collegeDurationEta" class="text-xs sm:text-sm font-black text-emerald-600 mt-1.5">
-                        ~-- min
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold text-navy truncate">Report Detour</p>
+                        <p class="text-[11px] text-ink-muted truncate">Road diversion</p>
                     </div>
-                </div>
-            </div>
-
-            <div class="bg-white border border-slate-200 rounded-3xl p-4 shadow-sm flex flex-col justify-between">
-                <div class="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-slate-400">
-                    <span>👥</span>
-                    <span>TODAY</span>
-                </div>
-                <div class="mt-3">
-                    <div id="todayStudentsCount" class="text-xl sm:text-2xl font-black text-slate-900 leading-none">
-                        --
-                    </div>
-                    <div class="text-xs sm:text-sm font-bold text-slate-500 mt-1.5">
-                        expected
-                    </div>
-                </div>
+                </button>
             </div>
         </div>
 
-        <!-- Stop Progress Stepper -->
-        <section class="bg-white border border-slate-200 rounded-2xl p-3.5 shadow-sm">
-            <div class="flex items-center justify-between text-xs sm:text-sm font-extrabold">
-                <span id="progressPassedText" class="text-emerald-700 flex items-center gap-1.5">
-                    <i class="fa-solid fa-check"></i> 0 passed
-                </span>
-                <span id="progressNextText" class="text-brand flex items-center gap-1.5">
-                    ● Next Stop
-                </span>
-                <span id="progressRemainingText" class="text-slate-400 flex items-center gap-1.5">
-                    ○ 0 remaining
-                </span>
-            </div>
-        </section>
-
-        <!-- Persistent Quick Actions Row in Active Trip (Scan Pass, Detour, SOS) -->
-        <div class="grid grid-cols-3 gap-2.5 pt-1">
-            <button
-                type="button"
-                onclick="verifyStudentPass()"
-                class="py-3 px-2 bg-white hover:bg-slate-50 border border-slate-200 rounded-2xl flex flex-col sm:flex-row items-center justify-center gap-1.5 shadow-sm text-slate-800 text-xs font-black active:scale-95 transition"
-            >
-                <i class="fa-solid fa-qrcode text-brand text-base"></i>
-                <span>Scan Pass</span>
-            </button>
-
-            <button
-                type="button"
-                onclick="reportDetour()"
-                class="py-3 px-2 bg-white hover:bg-slate-50 border border-slate-200 rounded-2xl flex flex-col sm:flex-row items-center justify-center gap-1.5 shadow-sm text-slate-800 text-xs font-black active:scale-95 transition"
-            >
-                <i class="fa-solid fa-route text-amber-600 text-base"></i>
-                <span>Detour</span>
-            </button>
-
-            <button
-                type="button"
-                onclick="triggerEmergencySOS()"
-                class="py-3 px-2 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-2xl flex flex-col sm:flex-row items-center justify-center gap-1.5 shadow-sm text-rose-700 text-xs font-black active:scale-95 transition"
-            >
-                <i class="fa-solid fa-triangle-exclamation text-rose-600 text-base"></i>
-                <span>SOS</span>
-            </button>
-        </div>
-
-        <!-- Sticky Trip Action Bar (Trip Active & End Trip) -->
-        <div class="bg-slate-900 text-white rounded-3xl p-3.5 shadow-xl flex items-center justify-between gap-3 mt-auto">
-            <div class="flex items-center gap-2.5 pl-2">
-                <span class="w-3 h-3 bg-emerald-400 rounded-full animate-pulse"></span>
-                <span class="text-xs sm:text-sm font-black tracking-wider uppercase text-emerald-400">
-                    TRIP ACTIVE
-                </span>
-            </div>
-
-            <button
-                type="button"
-                id="endTripBtn"
-                class="bg-rose-600 hover:bg-rose-500 active:bg-rose-700 text-white text-xs sm:text-sm font-black px-5 py-3 rounded-2xl shadow transition active:scale-95 flex items-center gap-2"
-            >
-                <i class="fa-solid fa-stop text-xs"></i>
-                <span>END TRIP</span>
-            </button>
-        </div>
-
-    </div>
-
-</main>
-
-<!-- ================================================= -->
-<!-- EMERGENCY SOS FOOTER (Pre-Trip) -->
-<!-- ================================================= -->
-<footer id="preTripFooter" class="p-4 max-w-lg mx-auto w-full pt-0">
-    <button
-        type="button"
-        onclick="triggerEmergencySOS()"
-        class="w-full py-4 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-3xl font-black text-xs sm:text-sm transition flex items-center justify-center gap-2.5 active:scale-95 shadow-sm"
-    >
-        <i class="fa-solid fa-triangle-exclamation text-lg animate-pulse text-rose-600"></i>
-        <span>EMERGENCY SOS / BREAKDOWN</span>
-    </button>
-</footer>
-
-<!-- ================================================= -->
-<!-- MODAL 1: STUDENT PASS SCANNER & LOOKUP MODAL -->
-<!-- ================================================= -->
-<div id="passScannerModal" class="hidden fixed inset-0 z-[2000] bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="w-full max-w-sm rounded-3xl bg-white p-5 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto">
-        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-            <div class="flex items-center gap-2.5">
-                <div class="w-9 h-9 rounded-xl bg-brand/10 text-brand flex items-center justify-center border border-brand/20">
-                    <i class="fa-solid fa-qrcode text-base"></i>
+        <div id="activeTripView" class="hidden space-y-4 flex-1 flex flex-col">
+            <section class="bg-surface border border-line rounded p-4 space-y-2">
+                <div class="flex items-center justify-between text-xs uppercase tracking-wider text-ink-muted">
+                    <span class="flex items-center gap-1.5 text-navy font-semibold text-xs">
+                        <svg class="w-3.5 h-3.5" aria-hidden="true"><use href="icons.svg#icon-map-pin"/></svg> Next Stop
+                    </span>
+                    <span id="nextStopDistance" class="text-navy font-semibold font-mono text-sm tabular-nums">
+                        -- m
+                    </span>
                 </div>
-                <h3 class="text-base font-black text-slate-900">Scan Student Pass</h3>
+
+                <div class="flex items-baseline justify-between gap-2 pt-1">
+                    <h2 id="nextStopName" class="text-lg font-semibold text-navy truncate">
+                        Finding next stop...
+                    </h2>
+                    <span id="nextStopOrderBadge" class="text-xs font-mono font-medium text-ink-muted bg-bg border border-line px-2 py-0.5 rounded shrink-0">
+                        Stop --
+                    </span>
+                </div>
+
+                <div class="flex items-center justify-between text-xs pt-2.5 mt-2 border-t border-line font-medium">
+                    <div class="flex items-center gap-1.5 text-ok">
+                        <span id="nextStopEta" class="tabular-nums">ETA: ~-- min</span>
+                    </div>
+                    <div id="nextStopStudentsContainer" class="flex items-center gap-1.5 text-ink-muted">
+                        <svg class="w-3.5 h-3.5" aria-hidden="true"><use href="icons.svg#icon-users"/></svg>
+                        <span id="nextStopStudents" class="tabular-nums">-- expected</span>
+                    </div>
+                </div>
+            </section>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div class="bg-surface border border-line rounded p-3.5 flex flex-col justify-between">
+                    <div class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-ink-muted">
+                        <span>College ETA</span>
+                    </div>
+                    <div class="mt-2">
+                        <div id="collegeClockEta" class="text-lg font-semibold text-navy tabular-nums leading-tight">
+                            --:-- AM
+                        </div>
+                        <div id="collegeDurationEta" class="text-xs font-medium text-ok tabular-nums mt-0.5">
+                            ~-- min
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-surface border border-line rounded p-3.5 flex flex-col justify-between">
+                    <div class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-ink-muted">
+                        <span>Today</span>
+                    </div>
+                    <div class="mt-2">
+                        <div id="todayStudentsCount" class="text-lg font-semibold text-navy tabular-nums leading-tight">
+                            --
+                        </div>
+                        <div class="text-xs text-ink-muted mt-0.5">
+                            expected
+                        </div>
+                    </div>
+                </div>
             </div>
-            <button type="button" onclick="closePassScannerModal()" class="w-9 h-9 rounded-xl bg-slate-100 text-slate-500 flex items-center justify-center hover:bg-slate-200">
-                <i class="fa-solid fa-xmark text-base"></i>
-            </button>
+
+            <section class="bg-surface border border-line rounded p-3">
+                <div class="flex items-center justify-between text-xs font-medium">
+                    <span id="progressPassedText" class="text-ok flex items-center gap-1">
+                        <svg class="w-3 h-3" aria-hidden="true"><use href="icons.svg#icon-check"/></svg> 0 passed
+                    </span>
+                    <span id="progressNextText" class="text-navy font-semibold flex items-center gap-1">
+                        Next Stop
+                    </span>
+                    <span id="progressRemainingText" class="text-ink-muted flex items-center gap-1">
+                        0 remaining
+                    </span>
+                </div>
+            </section>
+
+            <div class="grid grid-cols-3 gap-2 pt-1">
+                <button type="button" onclick="verifyStudentPass()" class="py-2.5 px-2 bg-surface hover:bg-bg border border-line rounded flex flex-col items-center justify-center gap-1 text-navy text-xs font-semibold transition-colors">
+                    <svg class="w-4 h-4" aria-hidden="true"><use href="icons.svg#icon-qrcode"/></svg>
+                    <span>Scan Pass</span>
+                </button>
+
+                <button type="button" onclick="reportDetour()" class="py-2.5 px-2 bg-surface hover:bg-bg border border-line rounded flex flex-col items-center justify-center gap-1 text-navy text-xs font-semibold transition-colors">
+                    <svg class="w-4 h-4 text-warn" aria-hidden="true"><use href="icons.svg#icon-route"/></svg>
+                    <span>Detour</span>
+                </button>
+
+                <button type="button" onclick="triggerEmergencySOS()" class="py-2.5 px-2 bg-danger hover:opacity-90 rounded flex flex-col items-center justify-center gap-1 text-white text-xs font-semibold transition-opacity">
+                    <svg class="w-4 h-4 shrink-0 text-white" aria-hidden="true"><use href="icons.svg#icon-alert"/></svg>
+                    <span>SOS</span>
+                </button>
+            </div>
+
+            <div class="bg-surface border border-line rounded p-3.5 flex items-center justify-between gap-3 mt-auto">
+                <div class="flex items-center gap-2">
+                    <span class="w-2 h-2 bg-ok rounded-full animate-pulse"></span>
+                    <span class="text-xs font-semibold tracking-wider uppercase text-ok">
+                        Trip Active
+                    </span>
+                </div>
+
+                <button type="button" id="endTripBtn" class="bg-danger hover:opacity-90 text-white text-xs font-semibold px-4 py-2 rounded transition-opacity flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5" aria-hidden="true"><use href="icons.svg#icon-stop"/></svg>
+                    <span>End Trip</span>
+                </button>
+            </div>
         </div>
 
-        <!-- Camera Scanner Viewfinder -->
-        <div class="relative w-full h-48 bg-slate-950 rounded-2xl overflow-hidden flex flex-col items-center justify-center text-white text-center p-3 border border-slate-200 shadow-inner">
-            <video id="scannerVideo" class="hidden absolute inset-0 w-full h-full object-cover" autoplay playsinline muted></video>
-            <div class="scanner-laser hidden" id="scannerLaser"></div>
-            
-            <div id="scannerPlaceholder" class="space-y-2.5 z-10 p-2">
-                <i class="fa-solid fa-camera text-3xl text-slate-400"></i>
-                <p class="text-xs text-slate-300 font-semibold">Position Student QR code in front of camera</p>
-                <div class="flex gap-2 justify-center pt-1">
-                    <button type="button" onclick="startCameraScanner()" class="px-3.5 py-1.5 bg-brand hover:bg-brandDark text-white text-xs font-black rounded-xl shadow active:scale-95 transition">
-                        <i class="fa-solid fa-video mr-1"></i> Start Camera
+    </main>
+
+    <footer id="preTripFooter" class="p-4 max-w-lg mx-auto w-full pt-0">
+        <button type="button" onclick="triggerEmergencySOS()" class="w-full py-3 bg-danger hover:opacity-90 text-white rounded font-semibold text-xs transition-opacity flex items-center justify-center gap-2">
+            <svg class="w-4 h-4 shrink-0 text-white" aria-hidden="true"><use href="icons.svg#icon-alert"/></svg>
+            <span>Emergency SOS / Breakdown</span>
+        </button>
+    </footer>
+
+    <div id="passScannerModal" class="hidden fixed inset-0 z-[2000] bg-navy/60 flex items-center justify-center p-4">
+        <div class="w-full max-w-sm rounded bg-surface border border-line p-5 space-y-4 max-h-[92vh] overflow-y-auto">
+            <div class="flex items-center justify-between border-b border-line pb-3">
+                <div class="flex items-center gap-2">
+                    <svg class="w-4 h-4 text-navy" aria-hidden="true"><use href="icons.svg#icon-qrcode"/></svg>
+                    <h3 class="text-sm font-semibold text-navy">Scan Student Pass</h3>
+                </div>
+                <button type="button" onclick="closePassScannerModal()" class="w-7 h-7 rounded border border-line bg-bg text-ink-muted flex items-center justify-center hover:text-navy">
+                    <svg class="w-3.5 h-3.5" aria-hidden="true"><use href="icons.svg#icon-xmark"/></svg>
+                </button>
+            </div>
+
+            <div class="relative w-full h-48 bg-navy rounded overflow-hidden flex flex-col items-center justify-center text-white text-center p-3 border border-line">
+                <video id="scannerVideo" class="hidden absolute inset-0 w-full h-full object-cover" autoplay playsinline muted></video>
+                <div class="scanner-laser hidden" id="scannerLaser"></div>
+
+                <div id="scannerPlaceholder" class="space-y-2 z-10 p-2">
+                    <svg class="w-8 h-8 text-tint mx-auto" aria-hidden="true"><use href="icons.svg#icon-camera"/></svg>
+                    <p class="text-xs text-white/80">Position student QR code in front of camera</p>
+                    <div class="flex gap-2 justify-center pt-1">
+                        <button type="button" onclick="startCameraScanner()" class="px-3 py-1 bg-brand text-white text-xs font-semibold rounded transition-colors hover:bg-navy">
+                            Start Camera
+                        </button>
+                        <label class="px-3 py-1 bg-surface/20 hover:bg-surface/30 text-white text-xs font-semibold rounded cursor-pointer transition-colors">
+                            Upload
+                            <input type="file" id="qrFileInput" accept="image/*" class="hidden" onchange="handleQrFileUpload(event)">
+                        </label>
+                    </div>
+                </div>
+
+                <div class="absolute inset-x-8 inset-y-5 border border-tint/50 border-dashed rounded pointer-events-none"></div>
+            </div>
+
+            <form onsubmit="handleManualPassLookup(event)" class="space-y-2">
+                <label class="text-[11px] font-semibold text-ink-muted uppercase tracking-wider">Or Enter Roll Number</label>
+                <div class="flex gap-2">
+                    <input type="text" id="manualRollInput" placeholder="e.g. 21KIT123"
+                           class="flex-1 px-3 py-2 text-xs font-mono uppercase border border-line rounded bg-bg text-navy focus:border-brand focus:outline-none">
+                    <button type="submit" id="verifyPassSubmitBtn" class="px-4 py-2 bg-navy hover:bg-brand text-white text-xs font-semibold rounded transition-colors">
+                        Verify
                     </button>
-                    <label class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl shadow cursor-pointer active:scale-95 transition">
-                        <i class="fa-solid fa-image mr-1"></i> Upload
-                        <input type="file" id="qrFileInput" accept="image/*" class="hidden" onchange="handleQrFileUpload(event)">
-                    </label>
+                </div>
+            </form>
+
+            <div id="passResultCard" class="hidden rounded border border-ok/30 bg-ok/10 p-3.5 space-y-2">
+                <div class="flex items-center justify-between">
+                    <span id="passBadgeStatus" class="text-[11px] font-semibold uppercase text-ok bg-ok/10 border border-ok/30 px-2 py-0.5 rounded">
+                        Pass Valid & Active
+                    </span>
+                    <span id="passVerifiedTime" class="text-[11px] text-ok tabular-nums">Just now</span>
+                </div>
+                <div>
+                    <h4 id="passStudentName" class="text-sm font-semibold text-navy">Student Name</h4>
+                    <p id="passStudentRoll" class="text-xs text-ink-muted font-mono mt-0.5">Roll: 21KIT123</p>
+                </div>
+                <div class="flex justify-between text-xs text-ink-muted pt-2 border-t border-ok/20 font-medium">
+                    <span>Stop: <strong id="passStopName" class="text-navy font-semibold">Stop 1</strong></span>
+                    <span>Bus: <strong id="passBusNum" class="text-navy font-semibold">Bus 4</strong></span>
                 </div>
             </div>
-            
-            <div class="absolute inset-x-8 inset-y-5 border-2 border-brand/70 border-dashed rounded-xl pointer-events-none"></div>
-        </div>
 
-        <!-- Manual Roll Number Search Form -->
-        <form onsubmit="handleManualPassLookup(event)" class="space-y-2">
-            <label class="text-[11px] font-black text-slate-500 uppercase tracking-wider">Or Enter Roll Number</label>
-            <div class="flex gap-2">
-                <input
-                    type="text"
-                    id="manualRollInput"
-                    placeholder="e.g. 21KIT123"
-                    class="flex-1 px-3.5 py-2.5 text-xs font-bold border border-slate-200 rounded-2xl bg-slate-50 focus:outline-none focus:ring-2 focus:ring-brand font-mono uppercase"
-                >
-                <button type="submit" id="verifyPassSubmitBtn" class="px-4 py-2.5 bg-brand hover:bg-brandDark text-white text-xs font-black rounded-2xl shadow active:scale-95 transition">
-                    Verify
-                </button>
+            <div id="passErrorCard" class="hidden rounded border border-danger/30 bg-danger/10 p-3.5 space-y-1 text-xs text-danger">
+                <div class="flex items-center gap-1.5 font-semibold text-sm">
+                    <svg class="w-4 h-4 text-danger" aria-hidden="true"><use href="icons.svg#icon-alert"/></svg>
+                    <span id="passErrorTitle">Invalid Pass</span>
+                </div>
+                <p id="passErrorMessage" class="mt-1">Student not assigned to this bus.</p>
             </div>
-        </form>
-
-        <!-- Verification Result Card (Success) -->
-        <div id="passResultCard" class="hidden rounded-2xl border border-emerald-200 bg-emerald-50/90 p-4 space-y-2.5">
-            <div class="flex items-center justify-between">
-                <span id="passBadgeStatus" class="text-[11px] font-black tracking-wider uppercase text-emerald-800 bg-emerald-100 border border-emerald-200 px-2.5 py-1 rounded-lg">
-                    ✓ PASS VALID & ACTIVE
-                </span>
-                <span id="passVerifiedTime" class="text-[11px] text-emerald-700 font-bold">Just now</span>
-            </div>
-            <div>
-                <h4 id="passStudentName" class="text-base font-black text-slate-900">Student Name</h4>
-                <p id="passStudentRoll" class="text-xs text-slate-700 font-mono font-bold mt-0.5">Roll: 21KIT123 • CSE</p>
-            </div>
-            <div class="flex justify-between text-xs text-slate-600 pt-2.5 border-t border-emerald-200/80 font-bold">
-                <span>📍 Stop: <strong id="passStopName" class="text-slate-900 font-black">Stop 1</strong></span>
-                <span>🚌 Bus: <strong id="passBusNum" class="text-slate-900 font-black">Bus 4</strong></span>
-            </div>
-        </div>
-
-        <!-- Verification Error Card -->
-        <div id="passErrorCard" class="hidden rounded-2xl border border-rose-200 bg-rose-50/90 p-4 space-y-1 text-xs text-rose-800">
-            <div class="flex items-center gap-2 font-black text-rose-900 text-sm">
-                <i class="fa-solid fa-circle-xmark text-rose-600"></i>
-                <span id="passErrorTitle">Invalid Pass</span>
-            </div>
-            <p id="passErrorMessage" class="font-medium mt-1">Student not assigned to this bus.</p>
         </div>
     </div>
-</div>
 
-<!-- ================================================= -->
-<!-- MODAL 2: REPORT DETOUR MODAL -->
-<!-- ================================================= -->
-<div id="detourModal" class="hidden fixed inset-0 z-[2000] bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="w-full max-w-sm rounded-3xl bg-white p-5 shadow-2xl space-y-4">
-        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-            <div class="flex items-center gap-2.5">
-                <div class="w-9 h-9 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center border border-amber-200">
-                    <i class="fa-solid fa-route text-base"></i>
+    <div id="detourModal" class="hidden fixed inset-0 z-[2000] bg-navy/60 flex items-center justify-center p-4">
+        <div class="w-full max-w-sm rounded bg-surface border border-line p-5 space-y-4">
+            <div class="flex items-center justify-between border-b border-line pb-3">
+                <div class="flex items-center gap-2">
+                    <svg class="w-4 h-4 text-warn" aria-hidden="true"><use href="icons.svg#icon-route"/></svg>
+                    <h3 class="text-sm font-semibold text-navy">Report Route Detour</h3>
                 </div>
-                <h3 class="text-base font-black text-slate-900">Report Route Detour</h3>
+                <button type="button" onclick="closeDetourModal()" class="w-7 h-7 rounded border border-line bg-bg text-ink-muted flex items-center justify-center hover:text-navy">
+                    <svg class="w-3.5 h-3.5" aria-hidden="true"><use href="icons.svg#icon-xmark"/></svg>
+                </button>
             </div>
-            <button type="button" onclick="closeDetourModal()" class="w-9 h-9 rounded-xl bg-slate-100 text-slate-500 flex items-center justify-center hover:bg-slate-200">
-                <i class="fa-solid fa-xmark text-base"></i>
+
+            <div class="space-y-2">
+                <label class="text-xs font-semibold text-ink-muted uppercase tracking-wider">Reason for Detour</label>
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <button type="button" class="detourReasonBtn py-2 px-2.5 rounded border border-warn bg-warn/10 text-warn font-semibold text-left" onclick="selectDetourReason(this, 'Road Construction')">
+                        Road Work
+                    </button>
+                    <button type="button" class="detourReasonBtn py-2 px-2.5 rounded border border-line bg-bg text-ink-muted font-medium text-left" onclick="selectDetourReason(this, 'Heavy Traffic')">
+                        Traffic Jam
+                    </button>
+                    <button type="button" class="detourReasonBtn py-2 px-2.5 rounded border border-line bg-bg text-ink-muted font-medium text-left" onclick="selectDetourReason(this, 'Waterlogging')">
+                        Weather
+                    </button>
+                    <button type="button" class="detourReasonBtn py-2 px-2.5 rounded border border-line bg-bg text-ink-muted font-medium text-left" onclick="selectDetourReason(this, 'Road Blocked')">
+                        Road Closed
+                    </button>
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                <label class="text-xs font-semibold text-ink-muted uppercase tracking-wider">Estimated Delay</label>
+                <div class="grid grid-cols-4 gap-2 text-xs text-center font-semibold">
+                    <button type="button" class="detourDelayBtn py-1.5 rounded border border-line bg-bg text-ink-muted" onclick="selectDetourDelay(this, 5)">+5m</button>
+                    <button type="button" class="detourDelayBtn py-1.5 rounded border border-warn bg-warn/10 text-warn font-semibold" onclick="selectDetourDelay(this, 10)">+10m</button>
+                    <button type="button" class="detourDelayBtn py-1.5 rounded border border-line bg-bg text-ink-muted" onclick="selectDetourDelay(this, 15)">+15m</button>
+                    <button type="button" class="detourDelayBtn py-1.5 rounded border border-line bg-bg text-ink-muted" onclick="selectDetourDelay(this, 20)">+20m</button>
+                </div>
+            </div>
+
+            <button type="button" id="submitDetourBtn" onclick="submitDetourReport()" class="w-full py-2.5 bg-navy hover:bg-brand text-white text-xs font-semibold rounded transition-colors">
+                Broadcast Detour to Students & Admin
             </button>
         </div>
-
-        <div class="space-y-2">
-            <label class="text-xs font-black text-slate-600 uppercase tracking-wider">Reason for Detour</label>
-            <div class="grid grid-cols-2 gap-2 text-xs">
-                <button type="button" class="detourReasonBtn py-2.5 px-3 rounded-2xl border border-amber-300 bg-amber-50 text-amber-900 font-black text-left" onclick="selectDetourReason(this, 'Road Construction')">
-                    🚧 Road Work
-                </button>
-                <button type="button" class="detourReasonBtn py-2.5 px-3 rounded-2xl border border-slate-200 bg-slate-50 text-slate-700 font-bold text-left" onclick="selectDetourReason(this, 'Heavy Traffic')">
-                    🚗 Traffic Jam
-                </button>
-                <button type="button" class="detourReasonBtn py-2.5 px-3 rounded-2xl border border-slate-200 bg-slate-50 text-slate-700 font-bold text-left" onclick="selectDetourReason(this, 'Waterlogging')">
-                    🌧️ Weather
-                </button>
-                <button type="button" class="detourReasonBtn py-2.5 px-3 rounded-2xl border border-slate-200 bg-slate-50 text-slate-700 font-bold text-left" onclick="selectDetourReason(this, 'Road Blocked')">
-                    ⚠️ Road Closed
-                </button>
-            </div>
-        </div>
-
-        <div class="space-y-2">
-            <label class="text-xs font-black text-slate-600 uppercase tracking-wider">Estimated Delay</label>
-            <div class="grid grid-cols-4 gap-2 text-xs text-center font-black">
-                <button type="button" class="detourDelayBtn py-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-700" onclick="selectDetourDelay(this, 5)">+5m</button>
-                <button type="button" class="detourDelayBtn py-2 rounded-xl border border-amber-300 bg-amber-50 text-amber-900 font-black" onclick="selectDetourDelay(this, 10)">+10m</button>
-                <button type="button" class="detourDelayBtn py-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-700" onclick="selectDetourDelay(this, 15)">+15m</button>
-                <button type="button" class="detourDelayBtn py-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-700" onclick="selectDetourDelay(this, 20)">+20m</button>
-            </div>
-        </div>
-
-        <button type="button" id="submitDetourBtn" onclick="submitDetourReport()" class="w-full py-3.5 bg-amber-600 hover:bg-amber-700 text-white text-xs sm:text-sm font-black rounded-2xl shadow transition active:scale-95">
-            Broadcast Detour to Students & Admin
-        </button>
     </div>
-</div>
 
-<!-- ================================================= -->
-<!-- MODAL 3: EMERGENCY SOS / BREAKDOWN MODAL -->
-<!-- ================================================= -->
-<div id="sosModal" class="hidden fixed inset-0 z-[2100] bg-slate-900/75 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="w-full max-w-sm rounded-3xl bg-white p-5 shadow-2xl space-y-4 border border-rose-200">
-        <div class="flex items-center justify-between border-b border-rose-100 pb-3">
-            <div class="flex items-center gap-2.5">
-                <div class="w-9 h-9 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center border border-rose-200">
-                    <i class="fa-solid fa-triangle-exclamation text-base"></i>
+    <div id="sosModal" class="hidden fixed inset-0 z-[2100] bg-navy/70 flex items-center justify-center p-4">
+        <div class="w-full max-w-sm rounded bg-surface border border-line p-5 space-y-4">
+            <div class="flex items-center justify-between border-b border-line pb-3">
+                <div class="flex items-center gap-2 text-danger">
+                    <svg class="w-4 h-4" aria-hidden="true"><use href="icons.svg#icon-alert"/></svg>
+                    <h3 class="text-sm font-semibold">Emergency SOS / Breakdown</h3>
                 </div>
-                <h3 class="text-base font-black text-rose-900">Emergency SOS / Breakdown</h3>
+                <button type="button" onclick="closeSosModal()" class="w-7 h-7 rounded border border-line bg-bg text-ink-muted flex items-center justify-center hover:text-navy">
+                    <svg class="w-3.5 h-3.5" aria-hidden="true"><use href="icons.svg#icon-xmark"/></svg>
+                </button>
             </div>
-            <button type="button" onclick="closeSosModal()" class="w-9 h-9 rounded-xl bg-slate-100 text-slate-500 flex items-center justify-center hover:bg-slate-200">
-                <i class="fa-solid fa-xmark text-base"></i>
+
+            <div class="space-y-2">
+                <label class="text-xs font-semibold text-ink-muted uppercase tracking-wider">Select Incident Type</label>
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <button type="button" class="sosTypeBtn py-2 px-2.5 rounded border border-danger bg-danger/10 text-danger font-semibold text-left" onclick="selectSosType(this, 'Vehicle Breakdown')">
+                        Breakdown
+                    </button>
+                    <button type="button" class="sosTypeBtn py-2 px-2.5 rounded border border-line bg-bg text-ink-muted font-medium text-left" onclick="selectSosType(this, 'Medical Emergency')">
+                        Medical
+                    </button>
+                    <button type="button" class="sosTypeBtn py-2 px-2.5 rounded border border-line bg-bg text-ink-muted font-medium text-left" onclick="selectSosType(this, 'Accident')">
+                        Accident
+                    </button>
+                    <button type="button" class="sosTypeBtn py-2 px-2.5 rounded border border-line bg-bg text-ink-muted font-medium text-left" onclick="selectSosType(this, 'Security Alert')">
+                        Security
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-bg border border-line rounded p-3 space-y-2 text-xs">
+                <div class="flex items-center justify-between">
+                    <span class="text-ink-muted">College Transport Cell</span>
+                    <a href="tel:08702564888" class="font-mono font-semibold text-navy flex items-center gap-1">
+                        <svg class="w-3 h-3" aria-hidden="true"><use href="icons.svg#icon-phone"/></svg> 0870-2564888
+                    </a>
+                </div>
+                <div class="flex items-center justify-between border-t border-line pt-2">
+                    <span class="text-ink-muted">Police / Emergency</span>
+                    <a href="tel:112" class="font-mono font-semibold text-danger flex items-center gap-1">
+                        <svg class="w-3 h-3" aria-hidden="true"><use href="icons.svg#icon-phone"/></svg> 112
+                    </a>
+                </div>
+            </div>
+
+            <button type="button" id="submitSosBtn" onclick="submitEmergencySos()" class="w-full py-3 bg-danger hover:opacity-90 text-white text-xs font-semibold rounded transition-opacity flex items-center justify-center gap-2">
+                <svg class="w-4 h-4" aria-hidden="true"><use href="icons.svg#icon-alert"/></svg>
+                <span>Transmit Emergency SOS</span>
             </button>
         </div>
-
-        <div class="space-y-2">
-            <label class="text-xs font-black text-slate-600 uppercase tracking-wider">Select Incident Type</label>
-            <div class="grid grid-cols-2 gap-2 text-xs">
-                <button type="button" class="sosTypeBtn py-2.5 px-3 rounded-2xl border border-rose-300 bg-rose-50 text-rose-900 font-black text-left" onclick="selectSosType(this, 'Vehicle Breakdown')">
-                    🔧 Breakdown
-                </button>
-                <button type="button" class="sosTypeBtn py-2.5 px-3 rounded-2xl border border-slate-200 bg-slate-50 text-slate-700 font-bold text-left" onclick="selectSosType(this, 'Medical Emergency')">
-                    🚑 Medical
-                </button>
-                <button type="button" class="sosTypeBtn py-2.5 px-3 rounded-2xl border border-slate-200 bg-slate-50 text-slate-700 font-bold text-left" onclick="selectSosType(this, 'Accident')">
-                    💥 Accident
-                </button>
-                <button type="button" class="sosTypeBtn py-2.5 px-3 rounded-2xl border border-slate-200 bg-slate-50 text-slate-700 font-bold text-left" onclick="selectSosType(this, 'Security Alert')">
-                    🛡️ Security
-                </button>
-            </div>
-        </div>
-
-        <!-- Emergency Phone Links -->
-        <div class="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 space-y-2 text-xs">
-            <div class="flex items-center justify-between font-bold">
-                <span class="text-slate-600">College Transport Cell</span>
-                <a href="tel:08702564888" class="font-black text-brand flex items-center gap-1.5 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-100">
-                    <i class="fa-solid fa-phone text-xs"></i> 0870-2564888
-                </a>
-            </div>
-            <div class="flex items-center justify-between border-t border-slate-200 pt-2 font-bold">
-                <span class="text-slate-600">Police / Emergency</span>
-                <a href="tel:112" class="font-black text-rose-600 flex items-center gap-1.5 bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-100">
-                    <i class="fa-solid fa-phone text-xs"></i> 112
-                </a>
-            </div>
-        </div>
-
-        <button type="button" id="submitSosBtn" onclick="submitEmergencySos()" class="w-full py-4 bg-rose-600 hover:bg-rose-700 text-white text-xs sm:text-sm font-black rounded-2xl shadow-xl shadow-rose-600/30 transition flex items-center justify-center gap-2 active:scale-95">
-            <i class="fa-solid fa-triangle-exclamation"></i>
-            <span>TRANSMIT EMERGENCY SOS</span>
-        </button>
     </div>
-</div>
 
-<!-- Leaflet JS -->
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-<!-- KAMBUS System Scripts -->
-<script src="notifications.js"></script>
-<script src="notification-center.js"></script>
-<script src="voiceAnnouncements.js"></script>
-<script src="driver.js"></script>
+    <script src="vendor/leaflet/leaflet.js"></script>
+    <script src="kambus-ui.js"></script>
+    <script src="notification-center.js"></script>
+    <script src="voiceAnnouncements.js"></script>
+    <script src="driver.js"></script>
 
 </body>
 </html>

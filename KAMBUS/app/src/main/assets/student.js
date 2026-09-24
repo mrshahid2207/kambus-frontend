@@ -113,20 +113,13 @@ function setEtaBanner(status, eta, isLive = false) {
     statusElement.textContent = status;
     etaElement.textContent = eta;
 
-    etaElement.className = isLive
-        ? "text-emerald-600 font-bold ml-1 text-xs"
-        : "text-slate-500 font-bold ml-1 text-xs";
+    etaElement.className = isLive ? "text-ok font-semibold ml-1 text-xs" : "text-ink-muted font-semibold ml-1 text-xs";
 
     if (dotElement) {
         if (isLive) {
-            dotElement.innerHTML = `
-                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-            `;
+            dotElement.innerHTML = `<span class="relative inline-flex rounded-full h-2 w-2 bg-ok animate-pulse"></span>`;
         } else {
-            dotElement.innerHTML = `
-                <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-slate-400"></span>
-            `;
+            dotElement.innerHTML = `<span class="relative inline-flex rounded-full h-2 w-2 bg-line"></span>`;
         }
     }
 }
@@ -186,7 +179,7 @@ function updateEtaBanner(location) {
     }
 
     if (!lastKnownLocation) {
-        setEtaBanner("🚌 Bus on the way", "ETA calculating...", true);
+        setEtaBanner("Bus on the way", "ETA calculating...", true);
         updateMyStopLive("ETA calculating...");
         return;
     }
@@ -215,13 +208,13 @@ function updateEtaBanner(location) {
         if (Number.isFinite(remainingSeconds) && remainingSeconds > 0) {
             const remainingMinutes = Math.max(1, Math.ceil(remainingSeconds / 60));
             setEtaBanner(
-                `🛑 Bus waiting at ${assignedStop.name}`,
+                `Bus waiting at ${assignedStop.name}`,
                 `Resuming in ~${remainingMinutes} min`,
                 true
             );
             updateMyStopLive(`Waiting • ~${remainingMinutes} min`);
         } else {
-            setEtaBanner(`🛑 Bus waiting at ${assignedStop.name}`, "Resuming soon", true);
+            setEtaBanner(`Bus waiting at ${assignedStop.name}`, "Resuming soon", true);
             updateMyStopLive("Resuming soon");
         }
         return;
@@ -254,7 +247,7 @@ function updateEtaBanner(location) {
             return;
         }
 
-        setEtaBanner("📍 Location updating", "ETA temporarily unavailable");
+        setEtaBanner("Location updating", "ETA temporarily unavailable");
         updateMyStopLive("Updating location…");
         return;
     }
@@ -316,13 +309,13 @@ function updateEtaBanner(location) {
 
 function initializeMap() {
     if (typeof L === "undefined") {
-        console.error("❌ Leaflet library (L) is not loaded or unavailable. Check network or Leaflet script inclusion.");
+        console.error("[ERROR] Leaflet library (L) is not loaded or unavailable. Check network or Leaflet script inclusion.");
         return false;
     }
 
     const mapElement = document.getElementById("map");
     if (!mapElement) {
-        console.error("❌ Map container element '#map' not found in DOM.");
+        console.error("[ERROR] Map container element '#map' not found in DOM.");
         return false;
     }
 
@@ -335,7 +328,7 @@ function initializeMap() {
         const height = mapElement.offsetHeight;
         const width = mapElement.offsetWidth;
         if (height === 0 || width === 0) {
-            console.warn(`⚠️ Map container has zero initial dimensions (width: ${width}px, height: ${height}px). Sizing will refresh on layout.`);
+            console.warn(`[WARN] Map container has zero initial dimensions (width: ${width}px, height: ${height}px). Sizing will refresh on layout.`);
         }
 
         map = L.map("map", {
@@ -349,13 +342,13 @@ function initializeMap() {
         }).addTo(map);
 
         tileLayer.on("tileerror", function (error) {
-            console.error("❌ Leaflet tile loading error:", error);
+            console.error("[ERROR] Leaflet tile loading error:", error);
         });
 
         routeStopsGroup = L.layerGroup().addTo(map);
 
         routePolylineLayer = L.geoJSON(null, {
-            style: { color: "#4F46E5", weight: 5, opacity: 0.85 }
+            style: { color: "#4A6F79", weight: 5, opacity: 0.85 }
         }).addTo(map);
 
         updateCollegeMarker();
@@ -363,11 +356,9 @@ function initializeMap() {
         setTimeout(() => {
             if (map) map.invalidateSize();
         }, 200);
-
-        console.log("🗺️ Leaflet map initialized successfully.");
-        return true;
+return true;
     } catch (error) {
-        console.error("❌ Fatal error during Leaflet map initialization:", error);
+        console.error("[ERROR] Fatal error during Leaflet map initialization:", error);
         return false;
     }
 }
@@ -388,26 +379,23 @@ function updateCollegeMarker() {
         className: "",
         html: `
             <div style="
-                width: 34px; height: 34px;
-                border-radius: 10px;
-                background: #059669;
+                width: 32px; height: 32px; border-radius: 4px;
+                background: var(--navy);
                 color: #ffffff;
-                border: 3px solid #ffffff;
+                border: 2px solid #ffffff;
                 display: flex; align-items: center; justify-content: center;
-                font-size: 15px;
-                box-shadow: 0 3px 8px rgba(0,0,0,0.25);
             ">
-                🏫
+                <svg style="width:16px;height:16px;color:#ffffff;" aria-hidden="true"><use href="icons.svg#icon-user-graduate"/></svg>
             </div>
         `,
-        iconSize: [34, 34],
-        iconAnchor: [17, 17]
+        iconSize: [32, 32],
+        iconAnchor: [16, 16]
     });
 
     collegeMarker = L.marker([COLLEGE_LOCATION.latitude, COLLEGE_LOCATION.longitude], {
         icon: collegeIcon,
         zIndexOffset: 200
-    }).addTo(map).bindPopup(`<strong>🏫 ${COLLEGE_LOCATION.name}</strong>`);
+    }).addTo(map).bindPopup(`<strong>${COLLEGE_LOCATION.name}</strong>`);
 }
 
 // ========================================================================
@@ -416,39 +404,35 @@ function updateCollegeMarker() {
 
 async function loadRouteStops() {
     const token = getToken();
-    if (!token) return false;
+    if (!token) return;
 
     try {
         const response = await fetch(`${API_BASE}/student/my-route-stops`, {
-            method: "GET",
             headers: {
-                "Accept": "application/json",
-                "Authorization": `Bearer ${token}`
+                "Authorization": `Bearer ${token}`,
+                "Accept": "application/json"
             }
         });
 
         if (!response.ok) {
-            console.warn(`⚠️ Route stops unavailable or not assigned yet (HTTP ${response.status})`);
-            return false;
+            console.warn(`Route stops unavailable or not assigned yet (HTTP ${response.status})`);
+            routeStops = [];
+            return;
         }
 
         const data = await response.json();
         routeStops = Array.isArray(data.stops) ? data.stops : [];
         renderRouteStops();
         fetchAndDrawStudentRoute(true);
-        return true;
     } catch (error) {
-        console.error("❌ Failed to load route stops from API:", error);
-        return false;
+        console.error("Failed to load route stops from API:", error);
     }
 }
 
 function renderRouteStops() {
-    if (!map) return;
     if (routeStopsGroup) {
         routeStopsGroup.clearLayers();
     }
-    // Student Dashboard displays only the student's own assigned stop, college, and live bus
 }
 
 // ========================================================================
@@ -465,55 +449,45 @@ async function fetchAndDrawStudentRoute(force = false) {
     }
 
     isStudentRouteFetchInFlight = true;
+    lastStudentRouteFetchAt = now;
 
     try {
-        // Sort stops by stop_order strictly
         const sortedStops = [...routeStops]
             .filter(s => Number.isFinite(Number(s.latitude)) && Number.isFinite(Number(s.longitude)))
-            .sort((a, b) => (Number(a.stop_order) || 0) - (Number(b.stop_order) || 0));
+            .sort((a, b) => Number(a.stop_order || 0) - Number(b.stop_order || 0));
 
-        const waypoints = sortedStops.map(s => ({
-            latitude: Number(s.latitude),
-            longitude: Number(s.longitude)
-        }));
-
-        if (COLLEGE_LOCATION && Number.isFinite(COLLEGE_LOCATION.latitude) && Number.isFinite(COLLEGE_LOCATION.longitude)) {
-            waypoints.push({
+        const waypoints = [
+            ...sortedStops.map(s => ({
+                latitude: Number(s.latitude),
+                longitude: Number(s.longitude)
+            })),
+            {
                 latitude: COLLEGE_LOCATION.latitude,
                 longitude: COLLEGE_LOCATION.longitude
-            });
-        }
+            }
+        ];
 
         if (waypoints.length < 2) return;
 
-        // IMPORTANT: OSRM uses longitude,latitude format
         const coordString = waypoints
-            .map(p => `${p.longitude},${p.latitude}`)
+            .map(pt => `${pt.longitude},${pt.latitude}`)
             .join(";");
 
         const url = `https://router.project-osrm.org/route/v1/driving/${coordString}?overview=full&geometries=geojson&steps=false`;
-
         const response = await fetch(url);
-        if (!response.ok) throw new Error(`OSRM HTTP error: ${response.status}`);
+        if (!response.ok) throw new Error(`OSRM routing HTTP error ${response.status}`);
 
         const data = await response.json();
         if (!data.routes || !data.routes.length) throw new Error("No road route found in OSRM response");
 
-        const routeGeoJson = {
-            type: "Feature",
-            geometry: data.routes[0].geometry
-        };
+        const geoJsonRoute = data.routes[0].geometry;
 
         if (routePolylineLayer) {
             routePolylineLayer.clearLayers();
-            routePolylineLayer.addData(routeGeoJson);
+            routePolylineLayer.addData(geoJsonRoute);
         }
-
-        lastStudentRouteFetchAt = Date.now();
-        console.log("🛣️ Student OSRM Road Route successfully rendered.");
     } catch (error) {
-        console.warn("⚠️ Student road routing notice:", error.message);
-        // Do not crash the map or clear the previously-drawn line; leave last successful line
+        console.warn("Student road routing notice:", error.message);
     } finally {
         isStudentRouteFetchInFlight = false;
     }
@@ -523,24 +497,21 @@ async function fetchAndDrawStudentRoute(force = false) {
 // ASSIGNED STOP MARKER
 // ========================================================================
 
-const myStopIcon = L.divIcon({
+const stopIcon = L.divIcon({
     className: "",
     html: `
         <div style="
-            width: 36px; height: 36px;
-            border-radius: 50%;
-            background: #4F46E5;
+            width: 32px; height: 32px; border-radius: 4px;
+            background: var(--navy);
             color: #ffffff;
-            border: 3px solid #ffffff;
+            border: 2px solid #ffffff;
             display: flex; align-items: center; justify-content: center;
-            font-size: 16px;
-            box-shadow: 0 3px 10px rgba(79, 70, 229, 0.4);
         ">
-            📍
+            <svg style="width:16px;height:16px;color:#ffffff;" aria-hidden="true"><use href="icons.svg#icon-map-pin"/></svg>
         </div>
     `,
-    iconSize: [36, 36],
-    iconAnchor: [18, 18]
+    iconSize: [32, 32],
+    iconAnchor: [16, 16]
 });
 
 function updateStopMarker() {
@@ -552,31 +523,30 @@ function updateStopMarker() {
     }
 
     const isTemp = assignedStop.is_temporary === true;
-    const titleText = isTemp ? "📍 Temporary Pickup Stop" : "📍 Your Assigned Stop";
+    const titleText = isTemp ? "Temporary Pickup Stop" : "Your Assigned Stop";
     const bgStyle = isTemp
-        ? "background: #6366f1; border: 3px solid #ffffff; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.5);"
-        : "background: #4F46E5; border: 3px solid #ffffff; box-shadow: 0 3px 10px rgba(79, 70, 229, 0.4);";
+        ? "background: var(--warn); border: 2px solid #ffffff;"
+        : "background: var(--brand); border: 2px solid #ffffff;";
 
     const customIcon = L.divIcon({
         className: "",
         html: `
             <div style="
-                width: 38px; height: 38px;
-                border-radius: 50%;
+                width: 32px; height: 32px;
+                border-radius: 4px;
                 ${bgStyle}
                 color: #ffffff;
                 display: flex; align-items: center; justify-content: center;
-                font-size: 18px;
             ">
-                📍
+                <svg style="width:16px;height:16px;color:#ffffff;" aria-hidden="true"><use href="icons.svg#icon-map-pin"/></svg>
             </div>
         `,
-        iconSize: [38, 38],
-        iconAnchor: [19, 19]
+        iconSize: [32, 32],
+        iconAnchor: [16, 16]
     });
 
     const dateRangeInfo = isTemp && assignedStop.temporary_start_date
-        ? `<br><small style="color:#6366f1;font-weight:bold;">${assignedStop.temporary_start_date} → ${assignedStop.temporary_end_date}</small>`
+        ? `<br><small style="color:#4A6F79;font-weight:bold;">${assignedStop.temporary_start_date} → ${assignedStop.temporary_end_date}</small>`
         : "";
 
     stopMarker = L.marker([assignedStop.latitude, assignedStop.longitude], {
@@ -600,7 +570,7 @@ const busIcon = L.divIcon({
         <div style="
             width:42px;
             height:42px;
-            background:#4F46E5;
+            background:#256B4C;
             border:4px solid white;
             border-radius:50%;
             display:flex;
@@ -608,7 +578,7 @@ const busIcon = L.divIcon({
             justify-content:center;
             box-shadow:0 3px 10px rgba(0,0,0,0.25);
         ">
-            <span style="color:white;font-size:19px;">🚌</span>
+            <svg style="width:16px;height:16px;color:white;" aria-hidden="true"><use href="icons.svg#icon-bus"/></svg>
         </div>
     `,
     iconSize: [42, 42],
@@ -644,7 +614,7 @@ function updateBusOnMap(data) {
 
         busMarker.bindPopup(`
             <div style="text-align:center">
-                <strong>🚌 Assigned Bus</strong><br>
+                <strong>Assigned Bus</strong><br>
                 Bus: ${studentAssignment?.bus_number || data.bus_id || "Active"}<br>
                 Speed: ${data.speed !== null && data.speed !== undefined ? data.speed : "—"} km/h
             </div>
@@ -686,11 +656,11 @@ function updateBusOnMap(data) {
 
     busMarker.setPopupContent(`
         <div style="text-align:center">
-            <strong>🚌 Assigned Bus</strong><br>
+            <strong>Assigned Bus</strong><br>
             Bus: ${studentAssignment?.bus_number || data.bus_id || "Active"}<br>
             Speed: ${data.speed !== null && data.speed !== undefined ? data.speed : "—"} km/h<br>
             <small>Updated: ${data.timestamp ? new Date(data.timestamp).toLocaleTimeString() : "Live"}</small>
-            ${data.is_waiting ? "<br><strong class=\"text-rose-600\">🛑 Waiting at stop</strong>" : ""}
+            ${data.is_waiting ? "<br><strong class=\"text-danger\">Waiting at stop</strong>" : ""}
         </div>
     `);
 }
@@ -718,12 +688,12 @@ async function fetchBusLocation() {
         const data = await response.json();
 
         if (!response.ok) {
-            console.warn(`⚠️ Bus location fetch status HTTP ${response.status}:`, data);
+            console.warn(`[WARN] Bus location fetch status HTTP ${response.status}:`, data);
             updateEtaBanner(null);
             return;
         }
 
-        // ── Trip-active guard ─────────────────────────────────────────────
+        // -- Trip-active guard ---------------------------------------------
         // The backend sets is_active / active_trip / trip_status on the
         // /buses/{id}/location endpoint. If the trip has ended, remove the
         // marker immediately and do not pass stale coords to updateBusOnMap.
@@ -739,7 +709,7 @@ async function fetchBusLocation() {
             setEtaBanner("Trip ended", "Bus is not travelling");
             return;
         }
-        // ─────────────────────────────────────────────────────────────────
+        // -----------------------------------------------------------------
 
         const rawSpeed = data.speed;
         const parsedSpeed =
@@ -771,7 +741,7 @@ async function fetchBusLocation() {
         updateBusOnMap(locationData);
         updateEtaBanner(locationData);
     } catch (error) {
-        console.error("❌ Failed to fetch live bus location:", error);
+        console.error("[ERROR] Failed to fetch live bus location:", error);
         updateEtaBanner(null);
     }
 }
@@ -799,7 +769,7 @@ async function loadActiveAlternativeAllotment() {
         const data = await response.json().catch(() => ({}));
 
         if (!response.ok) {
-            console.warn("⚠️ Alternative bus status unavailable:", data);
+            console.warn("[WARN] Alternative bus status unavailable:", data);
             activeAlternativeAllotment = null;
             return null;
         }
@@ -808,7 +778,7 @@ async function loadActiveAlternativeAllotment() {
         updateMissedBusButtonUI();
         return activeAlternativeAllotment;
     } catch (error) {
-        console.warn("⚠️ Failed to load alternative bus allotment:", error);
+        console.warn("[WARN] Failed to load alternative bus allotment:", error);
         activeAlternativeAllotment = null;
         updateMissedBusButtonUI();
         return null;
@@ -834,7 +804,7 @@ async function loadStudentBus() {
         const data = await response.json();
 
         if (!response.ok || !data.bus_id) {
-            console.error("❌ Student bus unavailable:", data);
+            console.error("[ERROR] Student bus unavailable:", data);
             setEtaBanner("Bus unavailable", "ETA unavailable");
             return false;
         }
@@ -906,7 +876,7 @@ async function loadStudentBus() {
 
         return true;
     } catch (error) {
-        console.error("❌ Failed to load assigned bus from API:", error);
+        console.error("[ERROR] Failed to load assigned bus from API:", error);
         setEtaBanner("Bus unavailable", "ETA unavailable");
         return false;
     }
@@ -1010,11 +980,11 @@ async function loadMyStop(showLoading = true) {
         const myStopTag = document.querySelector("#myStopCard p.tracking-wider");
         if (myStopTag) {
             if (isTemp) {
-                myStopTag.innerHTML = `📍 TEMPORARY STOP`;
-                myStopTag.className = "text-[9px] font-bold tracking-wider text-purple-600 uppercase";
+                myStopTag.textContent = "TEMPORARY STOP";
+                myStopTag.className = "text-[9px] font-bold tracking-wider text-brand uppercase";
             } else {
-                myStopTag.innerHTML = `📍 MY STOP`;
-                myStopTag.className = "text-[9px] font-bold tracking-wider text-indigo-600 uppercase";
+                myStopTag.textContent = "MY STOP";
+                myStopTag.className = "text-[9px] font-bold tracking-wider text-brand uppercase";
             }
         }
 
@@ -1037,7 +1007,7 @@ async function loadMyStop(showLoading = true) {
         updateStopMarker();
         return true;
     } catch (error) {
-        console.error("❌ Unable to load assigned stop from API:", error);
+        console.error("[ERROR] Unable to load assigned stop from API:", error);
         assignedStop = null;
 
         setMyStopState(
@@ -1170,8 +1140,12 @@ async function startLiveTracking() {
         if (refreshed && busTripActive) {
             await fetchBusLocation();
         }
-        checkDriverComplaintPoll();
+        await checkActiveDriverAlerts();
     }, 5000);
+}
+
+function checkDriverComplaintPoll() {
+    checkActiveDriverAlerts();
 }
 
 // ========================================================================
@@ -1203,7 +1177,7 @@ async function loadTravelStatus() {
         const data = await response.json();
 
         if (!response.ok) {
-            console.error("❌ Travel status error:", data);
+            console.error("[ERROR] Travel status error:", data);
             return;
         }
 
@@ -1211,7 +1185,7 @@ async function loadTravelStatus() {
         studentTravellingToday = data.status !== "not_travelling";
         updateTravelStatusUI(data.status);
     } catch (error) {
-        console.error("❌ Failed to load travel status from API:", error);
+        console.error("[ERROR] Failed to load travel status from API:", error);
         travelStatusKnown = false;
         studentTravellingToday = false;
         updateTravelStatusUI("not_travelling");
@@ -1236,12 +1210,18 @@ function updateWaitRequestButton() {
     btn.classList.toggle("cursor-not-allowed", !canRequestWait);
 
     if (canRequestWait) {
-        btn.className = "py-2.5 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 font-semibold text-xs rounded-xl transition flex items-center justify-center gap-2";
-        if (icon) icon.className = "fa-solid fa-hourglass-start text-amber-600";
+        btn.className = "py-2.5 px-3 bg-surface hover:bg-bg border border-line rounded text-xs font-semibold text-navy flex items-center justify-center gap-1.5 transition-colors";
+        if (icon) {
+            icon.className = "w-3.5 h-3.5 text-warn shrink-0";
+            icon.innerHTML = '<use href="icons.svg#icon-clock"/>';
+        }
         if (text) text.innerText = "Request Wait";
     } else {
-        btn.className = "py-2.5 bg-slate-100 text-slate-500 border border-slate-200 font-semibold text-xs rounded-xl cursor-not-allowed flex items-center justify-center gap-2 opacity-60";
-        if (icon) icon.className = "fa-solid fa-lock text-slate-400";
+        btn.className = "py-2.5 px-3 bg-bg text-ink-muted border border-line font-semibold text-xs rounded cursor-not-allowed flex items-center justify-center gap-1.5 opacity-60";
+        if (icon) {
+            icon.className = "w-3.5 h-3.5 text-ink-muted shrink-0";
+            icon.innerHTML = '<use href="icons.svg#icon-lock"/>';
+        }
         if (text) text.innerText = studentTravellingToday ? "Checking status..." : "Wait Unavailable";
     }
 }
@@ -1302,8 +1282,9 @@ function updateTravelStatusUI(status) {
         travelStatusKnown = true;
 
         btn.disabled = true;
-        btn.className = "py-2.5 bg-rose-50 border border-rose-200 text-rose-700 font-semibold text-xs rounded-xl flex items-center justify-center gap-2";
-        icon.className = "fa-solid fa-circle-check text-rose-600";
+        btn.className = "py-2.5 px-3 bg-danger/10 border border-danger/20 text-danger font-semibold text-xs rounded flex items-center justify-center gap-1.5";
+        icon.className = "w-3.5 h-3.5 text-danger shrink-0";
+        icon.innerHTML = '<use href="icons.svg#icon-check"/>';
         text.innerText = "Status: Skipped Today";
 
         updateWaitRequestButton();
@@ -1317,8 +1298,9 @@ function updateTravelStatusUI(status) {
     travelStatusKnown = true;
 
     btn.disabled = false;
-    btn.className = "py-2.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 font-medium text-xs rounded-xl flex items-center justify-center gap-2";
-    icon.className = "fa-solid fa-user-slash text-slate-500";
+    btn.className = "py-2.5 px-3 bg-surface hover:bg-bg border border-line text-navy font-semibold text-xs rounded flex items-center justify-center gap-1.5 transition-colors";
+    icon.className = "w-3.5 h-3.5 text-ink-muted shrink-0";
+    icon.innerHTML = '<use href="icons.svg#icon-xmark"/>';
     text.innerText = "Not Travelling";
 
     updateWaitRequestButton();
@@ -1410,8 +1392,7 @@ function initNotificationWebSocket() {
         notificationSocket = new WebSocket(`${WS_BASE}/ws/notifications?token=${encodeURIComponent(token)}`);
 
         notificationSocket.onopen = () => {
-            console.log("⚡ Real-time notification channel connected.");
-            if (wsReconnectTimer) {
+if (wsReconnectTimer) {
                 clearTimeout(wsReconnectTimer);
                 wsReconnectTimer = null;
             }
@@ -1424,11 +1405,10 @@ function initNotificationWebSocket() {
 
                 // 1. EMERGENCY SOS ALERT FROM DRIVER
                 if (data.type === "emergency_sos") {
-                    console.log("🚨 Emergency SOS received via WebSocket:", data);
-                    if (typeof KambusNotify !== "undefined") {
+if (typeof KambusNotify !== "undefined") {
                         KambusNotify.notify({
                             type: "error",
-                            title: data.title || "🚨 Emergency SOS Alert",
+                            title: data.title || "Emergency SOS Alert",
                             message: data.message || "Bus driver reported an emergency. Transport cell alerted.",
                             duration: 9000
                         });
@@ -1440,11 +1420,10 @@ function initNotificationWebSocket() {
 
                 // 2. ROUTE DETOUR ALERT FROM DRIVER
                 if (data.type === "detour_alert") {
-                    console.log("🚧 Detour Alert received via WebSocket:", data);
-                    if (typeof KambusNotify !== "undefined") {
+if (typeof KambusNotify !== "undefined") {
                         KambusNotify.notify({
                             type: "warning",
-                            title: data.title || "⚠️ Route Detour Alert",
+                            title: data.title || "Route Detour Alert",
                             message: data.message || "Your bus has taken a route detour.",
                             duration: 7000
                         });
@@ -1522,8 +1501,7 @@ function initNotificationWebSocket() {
         };
 
         notificationSocket.onclose = () => {
-            console.log("WebSocket disconnected. Reconnecting in 4s...");
-            notificationSocket = null;
+notificationSocket = null;
             if (!wsReconnectTimer) {
                 wsReconnectTimer = setTimeout(initNotificationWebSocket, 4000);
             }
@@ -1832,7 +1810,7 @@ async function submitDriverComplaint(reason) {
             });
         }
     } catch (error) {
-        console.error("❌ Driver complaint submission failed:", error);
+        console.error("[ERROR] Driver complaint submission failed:", error);
         if (typeof KambusNotify !== "undefined") {
             KambusNotify.notify({
                 type: "error",
@@ -1915,7 +1893,7 @@ async function submitOtherDriverComplaint() {
             });
         }
     } catch (error) {
-        console.error("❌ Driver complaint submission failed:", error);
+        console.error("[ERROR] Driver complaint submission failed:", error);
         if (errorElement) {
             errorElement.textContent = error.message || "Failed to submit report.";
             errorElement.classList.remove("hidden");
@@ -1969,12 +1947,9 @@ function updateMissedBusButtonUI() {
 
     button.classList.remove("hidden");
     button.disabled = false;
-    button.className = "py-2.5 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-800 font-semibold text-xs rounded-xl transition flex items-center justify-center gap-2";
-    button.innerHTML = `<i class="fa-solid fa-bus-slash text-rose-600"></i><span>Missed Bus</span>`;
-    if (subtitle) {
-        subtitle.textContent = "Find the best available bus automatically";
-        subtitle.classList.remove("hidden");
-    }
+    button.className = "py-2.5 px-3 bg-surface hover:bg-bg border border-line rounded text-xs font-semibold text-navy flex items-center justify-center gap-1.5 transition-colors";
+    button.innerHTML = `<svg class="w-3.5 h-3.5 text-ink-muted shrink-0" aria-hidden="true"><use href="icons.svg#icon-bus-slash"/></svg><span>Missed Bus</span>`;
+    if (subtitle) subtitle.classList.add("hidden");
 }
 
 function openMissedBusModal() {
@@ -2031,7 +2006,7 @@ async function requestAlternativeBus() {
     const submit = document.getElementById("confirmMissedBusBtn");
     if (submit) {
         submit.disabled = true;
-        submit.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i><span>Finding bus…</span>`;
+        submit.innerHTML = `<svg class="w-4 h-4 shrink-0 animate-spin" aria-hidden="true"><use href="icons.svg#icon-spinner"/></svg><span>Finding bus…</span>`;
     }
 
     try {
@@ -2070,13 +2045,13 @@ async function requestAlternativeBus() {
         // Refresh the dashboard so the map and header immediately use the alternative bus.
         await loadStudentBus();
     } catch (error) {
-        console.error("❌ Missed bus allotment failed:", error);
+        console.error("[ERROR] Missed bus allotment failed:", error);
         featureNotify("error", "Unable to allot a bus", error.message || "Please try again.");
     } finally {
         studentFeatureSubmitting = false;
         if (submit) {
             submit.disabled = false;
-            submit.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles"></i><span>Find My Alternative Bus</span>`;
+            submit.innerHTML = `<svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-wand"/></svg><span>Find My Alternative Bus</span>`;
         }
     }
 }
@@ -2127,7 +2102,7 @@ function resetTemporaryStopRouteCheck() {
     if (submit) {
         submit.disabled = true;
         submit.classList.add("opacity-50", "cursor-not-allowed");
-        submit.innerHTML = `<i class="fa-solid fa-lock"></i><span>Step 2: Complete Step 1 First</span>`;
+        submit.innerHTML = `<svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-lock"/></svg><span>Step 2: Complete Step 1 First</span>`;
     }
 }
 
@@ -2143,11 +2118,11 @@ function setTemporaryStopInputMode(mode) {
     pinCoordinates?.classList.toggle("hidden", mode !== "pin");
     checkPinButton?.classList.toggle("hidden", mode !== "pin");
     if (registeredButton) registeredButton.className = mode === "registered"
-        ? "py-2 rounded-xl bg-indigo-600 text-white font-bold text-xs"
-        : "py-2 rounded-xl bg-slate-100 text-slate-700 font-bold text-xs";
+        ? "py-2 rounded bg-navy text-white font-bold text-xs"
+        : "py-2 rounded bg-surface border border-line text-ink font-bold text-xs";
     if (pinButton) pinButton.className = mode === "pin"
-        ? "py-2 rounded-xl bg-indigo-600 text-white font-bold text-xs"
-        : "py-2 rounded-xl bg-slate-100 text-slate-700 font-bold text-xs";
+        ? "py-2 rounded bg-navy text-white font-bold text-xs"
+        : "py-2 rounded bg-surface border border-line text-ink font-bold text-xs";
     resetTemporaryStopRouteCheck();
 }
 window.setTemporaryStopInputMode = setTemporaryStopInputMode;
@@ -2176,7 +2151,7 @@ function renderTemporaryCurrentRoute() {
     ).join("")}`;
 }
 
-// ── All Bus Routes Reference Panel (read-only, lazy-loaded) ───────────
+// -- All Bus Routes Reference Panel (read-only, lazy-loaded) -----------
 let allBusRoutesPanelLoaded = false;
 
 async function loadAllBusRoutesPanel() {
@@ -2187,7 +2162,7 @@ async function loadAllBusRoutesPanel() {
 
     const token = getToken();
     if (!token) {
-        container.innerHTML = `<div class="text-rose-500 font-semibold">Session expired — please log in again.</div>`;
+        container.innerHTML = `<div class="text-danger font-semibold">Session expired — please log in again.</div>`;
         return;
     }
 
@@ -2210,18 +2185,18 @@ async function loadAllBusRoutesPanel() {
             const stopNames = (bus.stops || [])
                 .sort((a, b) => (a.stop_order || 0) - (b.stop_order || 0))
                 .map(s => escapeTemporaryStopText(s.name));
-            return `<div class="rounded-lg border border-slate-200 bg-white p-2">
-                <div class="font-bold text-slate-800 text-[11px]">🚌 Bus ${escapeTemporaryStopText(bus.bus_number)}
-                    <span class="font-semibold text-slate-500">· ${escapeTemporaryStopText(bus.route_name || "No route")}</span>
+            return `<div class="rounded border border-line bg-surface p-2">
+                <div class="font-bold text-navy text-[11px]">Bus ${escapeTemporaryStopText(bus.bus_number)}
+                    <span class="font-semibold text-ink-muted">· ${escapeTemporaryStopText(bus.route_name || "No route")}</span>
                 </div>
-                <div class="text-[10px] text-slate-500 mt-0.5 leading-relaxed">${stopNames.join(" → ") || "No stops"}</div>
+                <div class="text-[10px] text-ink-muted mt-0.5 leading-relaxed">${stopNames.join(" -> ") || "No stops"}</div>
             </div>`;
         }).join("");
 
         allBusRoutesPanelLoaded = true;
     } catch (error) {
-        console.error("❌ Failed to load all bus routes:", error);
-        container.innerHTML = `<div class="text-rose-500 font-semibold">${escapeTemporaryStopText(error.message)}</div>`;
+        console.error("[ERROR] Failed to load all bus routes:", error);
+        container.innerHTML = `<div class="text-danger font-semibold">${escapeTemporaryStopText(error.message)}</div>`;
     }
 }
 window.loadAllBusRoutesPanel = loadAllBusRoutesPanel;
@@ -2231,7 +2206,7 @@ function enableTemporaryStopSubmit(label) {
     if (!submit) return;
     submit.disabled = false;
     submit.classList.remove("opacity-50", "cursor-not-allowed");
-    submit.innerHTML = `<i class="fa-solid fa-check"></i><span>${escapeTemporaryStopText(label)}</span>`;
+    submit.innerHTML = `<svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-check"/></svg><span>${escapeTemporaryStopText(label)}</span>`;
 }
 
 function renderTemporaryStopCandidates(candidates) {
@@ -2241,9 +2216,7 @@ function renderTemporaryStopCandidates(candidates) {
     if (!candidates.length) {
         // No bus currently passes through this location — make this clear
         // instead of leaving the Confirm button silently disabled.
-        container.innerHTML = `<div class="rounded-xl border border-rose-200 bg-rose-50 p-2.5 text-xs font-semibold text-rose-800">
-            No bus is currently available for this location. You cannot submit a temporary stop change here.
-        </div>`;
+        container.innerHTML = `<div class="flex items-center justify-center gap-2 py-2 px-3 rounded text-xs font-semibold mx-auto w-full text-center border border-danger/20 bg-danger/10 text-danger"><svg class="w-4 h-4 shrink-0 text-danger" aria-hidden="true"><use href="icons.svg#icon-xmark"/></svg><span>No bus is currently available for this location. You cannot submit a temporary stop change here.</span></div>`;
         return;
     }
 
@@ -2251,10 +2224,10 @@ function renderTemporaryStopCandidates(candidates) {
     container.innerHTML = candidates.map(candidate => {
         const eta = Number.isFinite(Number(candidate.eta_minutes)) ? `ETA ~${candidate.eta_minutes} min` : "Live ETA unavailable";
         const occupancy = candidate.capacity == null ? `Occupancy: ${candidate.occupancy ?? "unavailable"}` : `Occupancy: ${candidate.occupancy ?? "—"}/${candidate.capacity}`;
-        const approximate = candidate.is_approximate_match ? `<br><span class="text-indigo-700">${escapeTemporaryStopText(candidate.match_description)}</span>` : "";
-        return `<label class="block rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-xs text-slate-700">
+        const approximate = candidate.is_approximate_match ? `<br><span class="text-ink-muted">${escapeTemporaryStopText(candidate.match_description)}</span>` : "";
+        return `<label class="block rounded border border-line bg-bg py-2 px-2.5 text-xs text-navy">
             <input type="radio" name="temporaryCandidateBus" value="${Number(candidate.bus_id)}" ${candidate.is_recommended ? "checked" : ""}>
-            <span class="font-bold text-slate-900">${escapeTemporaryStopText(candidate.bus_number)}</span>${candidate.is_own_bus ? " <span class=\"text-emerald-700 font-bold\">• Your Assigned Bus</span>" : ""}${candidate.is_recommended ? " <span class=\"text-indigo-700\">• Recommended</span>" : ""}
+            <span class="font-bold text-navy">${escapeTemporaryStopText(candidate.bus_number)}</span>${candidate.is_own_bus ? " <span class=\"text-ok font-semibold\">• Your Assigned Bus</span>" : ""}${candidate.is_recommended ? " <span class=\"text-brand font-semibold\">• Recommended</span>" : ""}
             <div class="mt-1">${escapeTemporaryStopText(candidate.route_name)} · ${escapeTemporaryStopText(candidate.driver_name)} (${escapeTemporaryStopText(candidate.driver_phone)})</div>
             <div class="mt-0.5">${eta} · ${occupancy}</div>${approximate}
         </label>`;
@@ -2284,17 +2257,19 @@ async function checkTemporaryStopRoute() {
         temporaryStopRouteCheck = data;
         const result = document.getElementById("temporaryRouteCheckResult");
         if (result) {
-            result.className = data.on_route
-                ? "rounded-xl border border-emerald-200 bg-emerald-50 p-2.5 text-xs font-semibold text-emerald-800"
-                : data.candidate_buses?.length
-                    ? "rounded-xl border border-amber-200 bg-amber-50 p-2.5 text-xs font-semibold text-amber-800"
-                    : "rounded-xl border border-rose-200 bg-rose-50 p-2.5 text-xs font-semibold text-rose-800";
-            result.textContent = data.message;
+            result.classList.remove("hidden");
+            if (data.on_route) {
+                result.className = "flex items-center justify-center gap-2 py-2 px-3 rounded text-xs font-semibold mx-auto w-full text-center border border-ok/20 bg-ok/10 text-ok";
+                result.innerHTML = `<svg class="w-4 h-4 shrink-0 text-ok" aria-hidden="true"><use href="icons.svg#icon-check"/></svg><span>${escapeTemporaryStopText(data.message || "Selected stop is on your assigned bus route")}</span>`;
+            } else {
+                result.className = "flex items-center justify-center gap-2 py-2 px-3 rounded text-xs font-semibold mx-auto w-full text-center border border-danger/20 bg-danger/10 text-danger";
+                result.innerHTML = `<svg class="w-4 h-4 shrink-0 text-danger" aria-hidden="true"><use href="icons.svg#icon-xmark"/></svg><span>${escapeTemporaryStopText(data.message || "Selected stop is not on your assigned bus route")}</span>`;
+            }
         }
         if (data.on_route) enableTemporaryStopSubmit("Confirm Stop");
         else renderTemporaryStopCandidates(data.candidate_buses || []);
     } catch (error) {
-        console.error("❌ Temporary stop route check failed:", error);
+        console.error("[ERROR] Temporary stop route check failed:", error);
         featureNotify("error", "Route check failed", error.message || "Please try again.");
     }
 }
@@ -2338,8 +2313,8 @@ function initTempStopPickerMap() {
                 if (!stop.latitude || !stop.longitude) return;
                 const circle = L.circleMarker([stop.latitude, stop.longitude], {
                     radius: 7,
-                    color: "#6366f1",
-                    fillColor: "#e0e7ff",
+                    color: "#4A6F79",
+                    fillColor: "#85ADBB",
                     fillOpacity: 0.8,
                     weight: 2
                 }).addTo(tempStopPickerMap);
@@ -2376,7 +2351,7 @@ function placeTempStopMarker(lat, lng, addressHint) {
     if (!tempStopPickerMarker) {
         const icon = L.divIcon({
             className: "",
-            html: `<div style="width:28px;height:28px;background:#6366f1;border:3px solid #fff;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 2px 6px #0004;"></div>`,
+            html: `<div style="width:28px;height:28px;background:var(--navy);border:2px solid #FFFFFF;border-radius:50% 50% 50% 0;transform:rotate(-45deg);"></div>`,
             iconSize: [28, 28],
             iconAnchor: [14, 28]
         });
@@ -2398,7 +2373,7 @@ function placeTempStopMarker(lat, lng, addressHint) {
         tempStopPickerAddress = addressHint;
         if (addrEl) addrEl.textContent = addressHint;
     } else {
-        if (addrEl) addrEl.textContent = `${lat.toFixed(5)}, ${lng.toFixed(5)} (loading address…)`;
+        if (addrEl) addrEl.textContent = "Selected Map Location (resolving address…)";
         // Best-effort reverse geocode via Nominatim
         fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`, {
             headers: { "User-Agent": "KAMBUS-App/1.0" }
@@ -2408,7 +2383,7 @@ function placeTempStopMarker(lat, lng, addressHint) {
             .then(data => {
                 const name = data?.display_name
                     ? data.display_name.split(",").slice(0, 3).join(", ")
-                    : `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+                    : "Selected Map Location";
                 tempStopPickerAddress = name;
                 if (addrEl) addrEl.textContent = name;
             });
@@ -2464,13 +2439,13 @@ function renderTemporaryStopStatus() {
         if (tempBtnText) tempBtnText.textContent = "Temporary Stop (Active)";
 
         if (statusBox) {
-            statusBox.className = "rounded-xl border border-purple-200 bg-purple-50 p-2.5 text-xs text-purple-900";
+            statusBox.className = "rounded border border-ok/20 bg-ok/10 p-2 text-xs text-ok";
             statusBox.innerHTML = `
                 <div class="font-bold flex items-center justify-between">
-                    <span>📍 Temporary Stop Active</span>
-                    <span class="text-[10px] text-purple-700">${temporaryStopChange.start_date} → ${temporaryStopChange.end_date}</span>
+                    <span>Temporary Stop Active</span>
+                    <span class="text-[10px] text-ok">${temporaryStopChange.start_date} → ${temporaryStopChange.end_date}</span>
                 </div>
-                <div class="mt-0.5 font-semibold text-purple-900 truncate">${temporaryStopChange.temporary_stop_name || "Custom pickup location"}</div>
+                <div class="mt-0.5 font-semibold text-ok font-semibold truncate">${temporaryStopChange.temporary_stop_name || "Custom pickup location"}</div>
             `;
             statusBox.classList.remove("hidden");
         }
@@ -2482,13 +2457,13 @@ function renderTemporaryStopStatus() {
         if (tempBtnText) tempBtnText.textContent = "Temporary Stop (Scheduled)";
 
         if (statusBox) {
-            statusBox.className = "rounded-xl border border-amber-200 bg-amber-50 p-2.5 text-xs text-amber-900";
+            statusBox.className = "rounded border border-warn/20 bg-warn/10 p-2 text-xs text-warn";
             statusBox.innerHTML = `
                 <div class="font-bold flex items-center justify-between">
-                    <span>⏳ Temporary Stop Scheduled</span>
-                    <span class="text-[10px] text-amber-700">${temporaryStopChange.start_date} → ${temporaryStopChange.end_date}</span>
+                    <span>Temporary Stop Scheduled</span>
+                    <span class="text-[10px] text-warn">${temporaryStopChange.start_date} → ${temporaryStopChange.end_date}</span>
                 </div>
-                <div class="mt-0.5 font-semibold text-amber-900 truncate">${temporaryStopChange.temporary_stop_name || "Custom pickup location"}</div>
+                <div class="mt-0.5 font-semibold text-warn font-semibold truncate">${temporaryStopChange.temporary_stop_name || "Custom pickup location"}</div>
             `;
             statusBox.classList.remove("hidden");
         }
@@ -2499,7 +2474,7 @@ function renderTemporaryStopStatus() {
         if (cancelBtn) cancelBtn.classList.remove("hidden");
         if (tempBtnText) tempBtnText.textContent = "Temporary Stop (Pending)";
         if (statusBox) {
-            statusBox.className = "rounded-xl border border-amber-200 bg-amber-50 p-2.5 text-xs text-amber-900";
+            statusBox.className = "rounded border border-warn/20 bg-warn/10 p-2 text-xs text-warn";
             statusBox.innerHTML = `<div class="font-bold">Requires Admin Confirmation</div>
                 <div class="mt-0.5 font-semibold truncate">${temporaryStopChange.temporary_stop_name || "Temporary pickup location"}</div>`;
             statusBox.classList.remove("hidden");
@@ -2539,7 +2514,7 @@ async function loadTemporaryStopChange() {
         renderTemporaryStopStatus();
         return temporaryStopChange;
     } catch (error) {
-        console.warn("⚠️ Failed to load temporary stop change:", error);
+        console.warn("[WARN] Failed to load temporary stop change:", error);
         temporaryStopChange = null;
         renderTemporaryStopStatus();
         return null;
@@ -2581,7 +2556,7 @@ async function submitTemporaryStopChange() {
     studentFeatureSubmitting = true;
     if (submit) {
         submit.disabled = true;
-        submit.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i><span>Saving…</span>`;
+        submit.innerHTML = `<svg class="w-4 h-4 shrink-0 animate-spin" aria-hidden="true"><use href="icons.svg#icon-spinner"/></svg><span>Saving…</span>`;
     }
 
     try {
@@ -2627,13 +2602,13 @@ async function submitTemporaryStopChange() {
         await loadMyStop(true);
         await loadTemporaryStopChange();
     } catch (error) {
-        console.error("❌ Temporary stop change failed:", error);
+        console.error("[ERROR] Temporary stop change failed:", error);
         featureNotify("error", "Unable to change stop", error.message || "Please try again.");
     } finally {
         studentFeatureSubmitting = false;
         if (submit) {
             submit.disabled = false;
-            submit.innerHTML = `<i class="fa-solid fa-lock"></i><span>Step 2: Complete Step 1 First</span>`;
+            submit.innerHTML = `<svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-lock"/></svg><span>Step 2: Complete Step 1 First</span>`;
         }
     }
 }
@@ -2678,7 +2653,7 @@ async function cancelTemporaryStopChange() {
         featureNotify("success", "Temporary stop cancelled", "Your original stop is active again.");
         await loadMyStop(true);
     } catch (error) {
-        console.error("❌ Temporary stop cancellation failed:", error);
+        console.error("[ERROR] Temporary stop cancellation failed:", error);
         featureNotify("error", "Unable to cancel", error.message || "Please try again.");
     } finally {
         studentFeatureSubmitting = false;
@@ -2691,9 +2666,7 @@ window.cancelTemporaryStopChange = cancelTemporaryStopChange;
 // ========================================================================
 
 document.addEventListener("DOMContentLoaded", () => {
-    console.log("🎓 KAMBUS Student Dashboard loaded");
-
-    // 1. Initialize Map
+// 1. Initialize Map
     initializeMap();
 
     // 2. Bind Stop Action Buttons

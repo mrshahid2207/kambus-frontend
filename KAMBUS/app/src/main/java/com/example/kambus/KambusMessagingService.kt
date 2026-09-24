@@ -5,6 +5,7 @@ import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 
 class KambusMessagingService : FirebaseMessagingService() {
+    @Suppress("DEPRECATION")
     override fun onNewToken(token: String) {
         super.onNewToken(token)
         getSharedPreferences("kambus", MODE_PRIVATE).edit().putString("fcm_token", token).apply()

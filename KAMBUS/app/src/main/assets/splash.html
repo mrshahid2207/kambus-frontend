@@ -4,192 +4,61 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>KAMBUS</title>
-
+    <meta name="theme-color" content="#173541">
+    <meta name="description" content="KAMBUS, live bus tracking for KITSW.">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="favicon.ico" sizes="48x48">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="manifest" href="site.webmanifest">
+    <link rel="stylesheet" href="kambus.css">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
+        .splash-fade {
+            transition: opacity 200ms ease;
         }
-
-        html, body {
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            background: #FFFFFF;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            color: #0F172A;
-        }
-
-        body {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            padding: env(safe-area-inset-top) 24px env(safe-area-inset-bottom);
-        }
-
-        /* Splash Content Box */
-        .splash-content {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
+        .splash-fade.fade-out {
             opacity: 0;
-            transform: translateY(8px) scale(0.98);
-            animation: splashIn 0.45s cubic-bezier(.2, .8, .2, 1) forwards;
-            transition: opacity 0.2s ease, transform 0.2s ease;
-        }
-
-        .splash-content.fade-out {
-            opacity: 0;
-            transform: scale(0.99);
-        }
-
-        @keyframes splashIn {
-            to {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
-        }
-
-        /* KAMBUS logo (same artwork as the login screen) */
-        .logo-box {
-            width: 132px;
-            height: 132px;
-            border-radius: 32px;
-            background: #FFFFFF;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 22px;
-            overflow: hidden;
-            border: 1px solid #E2E8F0;
-            box-shadow: 0 16px 38px rgba(23, 37, 84, 0.14), 0 0 0 8px rgba(244, 185, 66, 0.10);
-        }
-
-        .logo-box img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-        }
-
-        /* Thin amber progress line while the app opens */
-        .splash-progress {
-            width: 96px;
-            height: 3px;
-            margin-top: 26px;
-            border-radius: 3px;
-            background: #E2E8F0;
-            overflow: hidden;
-        }
-
-        .splash-progress::after {
-            content: "";
-            display: block;
-            height: 100%;
-            width: 100%;
-            border-radius: 3px;
-            background: linear-gradient(90deg, #F4B942, #E8A317);
-            transform: translateX(-100%);
-            animation: splashLoad 1.3s ease-in-out forwards;
-        }
-
-        @keyframes splashLoad {
-            to { transform: translateX(0); }
-        }
-
-        /* Wordmark */
-        .brand-title {
-            font-size: 28px;
-            font-weight: 800;
-            letter-spacing: 2px;
-            color: #172554;
-            margin-bottom: 4px;
-        }
-
-        /* Subtitle */
-        .brand-subtitle {
-            font-size: 13px;
-            font-weight: 600;
-            color: #64748B;
-            letter-spacing: 0.2px;
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-            .splash-content {
-                animation: none;
-                opacity: 1;
-                transform: none;
-            }
-
-            .splash-progress::after {
-                animation: none;
-                transform: none;
-            }
         }
     </style>
 </head>
-
-<body>
-
-    <main id="splashContent" class="splash-content">
-        <!-- Logo Emblem -->
-        <div class="logo-box">
-            <img src="kamlogo.jpg" alt="KAMBUS Logo">
-        </div>
-
-        <!-- KAMBUS Wordmark -->
-        <h1 class="brand-title">KAMBUS</h1>
-
-        <!-- Subtitle -->
-        <p class="brand-subtitle">Campus Transport Operating System</p>
-
-        <div class="splash-progress" aria-hidden="true"></div>
+<body class="bg-navy w-full h-full min-h-screen flex flex-col items-center justify-center p-6 select-none overflow-hidden">
+    <main id="splashContent" class="splash-fade flex flex-col items-center justify-center gap-4">
+        <img src="brand/mark-white.svg" alt="KAMBUS" class="w-16 h-16">
+        <img src="brand/wordmark-white.svg" alt="KAMBUS" class="h-6">
     </main>
-
     <script>
         (function () {
             "use strict";
-
-            function routeImmediately() {
-                const token = localStorage.getItem("kambus_token") || localStorage.getItem("token");
-                const role = localStorage.getItem("kambus_role") || localStorage.getItem("role");
-
-                // If user is already authenticated with a valid session, navigate straight to role dashboard
+            function route() {
+                var token = localStorage.getItem("kambus_token") || localStorage.getItem("token");
+                var role = localStorage.getItem("kambus_role") || localStorage.getItem("role");
                 if (token && role) {
                     if (role === "student") {
                         window.location.replace("student.html");
                         return;
-                    } else if (role === "driver") {
+                    }
+                    if (role === "driver") {
                         window.location.replace("driver.html");
                         return;
-                    } else if (role === "admin") {
+                    }
+                    if (role === "admin") {
                         window.location.replace("admin.html");
                         return;
                     }
                 }
-
-                // Smooth transition to login screen after 1.3s
-                setTimeout(() => {
-                    const container = document.getElementById("splashContent");
-                    if (container) container.classList.add("fade-out");
-                    setTimeout(() => {
+                setTimeout(function () {
+                    var el = document.getElementById("splashContent");
+                    if (el) el.classList.add("fade-out");
+                    setTimeout(function () {
                         window.location.replace("index.html");
-                    }, 150);
-                }, 1300);
+                    }, 200);
+                }, 800);
             }
-
             if (document.readyState === "complete" || document.readyState === "interactive") {
-                routeImmediately();
+                route();
             } else {
-                document.addEventListener("DOMContentLoaded", routeImmediately);
+                document.addEventListener("DOMContentLoaded", route);
             }
         })();
     </script>
-
 </body>
 </html>

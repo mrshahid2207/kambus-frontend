@@ -6,17 +6,6 @@ const VoiceAnnouncer = (() => {
 
     const PRIORITY = { PROXIMITY: 1, WAIT_REQUEST: 2 };
 
-    // ------------------------------------------------------------------
-    // TRANSPORT DETECTION
-    // ------------------------------------------------------------------
-    // Android WebView does not implement the Web Speech API at all, so
-    // `speechSynthesis` / `SpeechSynthesisUtterance` are undefined there
-    // and every call used to throw silently. Native speech is exposed by
-    // the Android app via a JavascriptInterface named "AndroidTTS" (see
-    // DriverActivity.java). We prefer that bridge whenever it exists and
-    // only fall back to the browser API when testing in a normal browser
-    // (e.g. Chrome DevTools) where AndroidTTS won't be present.
-
     function hasAndroidBridge() {
         return typeof window.AndroidTTS !== "undefined" && typeof window.AndroidTTS.speak === "function";
     }
@@ -43,9 +32,7 @@ const VoiceAnnouncer = (() => {
         if (hasAndroidBridge() && typeof window.AndroidTTS.stop === "function") {
             try {
                 window.AndroidTTS.stop();
-            } catch (e) {
-                console.warn("[VoiceAnnouncer] AndroidTTS.stop() failed:", e);
-            }
+            } catch (e) {}
         }
         if (hasBrowserSpeech()) {
             window.speechSynthesis.cancel();
@@ -53,23 +40,15 @@ const VoiceAnnouncer = (() => {
     }
 
     function speak(text, priority) {
-        console.log("[VoiceAnnouncer] speak() called with:", text);
-        console.log(
-            "[VoiceAnnouncer] transport:",
-            hasAndroidBridge() ? "AndroidTTS (native)" : hasBrowserSpeech() ? "speechSynthesis (browser)" : "NONE AVAILABLE"
-        );
-
         if (!enabled) return;
 
         if (!hasAndroidBridge() && !hasBrowserSpeech()) {
-            console.warn("[VoiceAnnouncer] No speech transport available — voice will not play.");
             return;
         }
 
         if (priority === PRIORITY.WAIT_REQUEST) {
             cancelSpeech();
         } else if (currentPriority === PRIORITY.WAIT_REQUEST && isCurrentlySpeaking()) {
-            // A higher-priority wait-request announcement is still playing — skip this one
             return;
         }
 
@@ -78,13 +57,8 @@ const VoiceAnnouncer = (() => {
         if (hasAndroidBridge()) {
             try {
                 window.AndroidTTS.speak(text);
-            } catch (e) {
-                console.error("[VoiceAnnouncer] AndroidTTS.speak() failed:", e);
-            }
+            } catch (e) {}
 
-            // The native bridge has no onend/onerror callback wired up yet,
-            // so approximate a reset of currentPriority based on a rough
-            // reading duration (avg ~150 words/min => ~2.5 words/sec).
             const approxWords = text.split(/\s+/).length;
             const approxDurationMs = Math.max(1200, (approxWords / 2.5) * 1000);
             setTimeout(() => {
@@ -93,7 +67,6 @@ const VoiceAnnouncer = (() => {
             return;
         }
 
-        // Browser fallback (desktop testing only)
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.rate = 0.95;
         utterance.lang = "en-IN";
@@ -142,16 +115,3 @@ const VoiceAnnouncer = (() => {
         setEnabled,
     };
 })();
-
-// Diagnostic: log which speech transport is available as soon as the page loads
-document.addEventListener("DOMContentLoaded", () => {
-    const hasBridge = typeof window.AndroidTTS !== "undefined" && typeof window.AndroidTTS.speak === "function";
-    const hasBrowser = "speechSynthesis" in window;
-    console.log("[VoiceAnnouncer] AndroidTTS bridge available:", hasBridge, "| browser speechSynthesis available:", hasBrowser);
-
-    if (!hasBridge && hasBrowser) {
-        window.speechSynthesis.onvoiceschanged = () => {
-            console.log("[VoiceAnnouncer] voiceschanged fired, voice count:", window.speechSynthesis.getVoices().length);
-        };
-    }
-});

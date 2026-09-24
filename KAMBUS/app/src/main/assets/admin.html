@@ -3,48 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>KAMBUS — Transport Control Desk</title>
+        <title>KAMBUS</title>
+    <meta name="theme-color" content="#173541">
+    <meta name="description" content="KAMBUS, live bus tracking for KITSW.">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="favicon.ico" sizes="48x48">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="manifest" href="site.webmanifest">
+    <link rel="stylesheet" href="kambus.css">
+    <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+    <script src="vendor/leaflet/leaflet.js"></script>
 
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-
-    <!-- FontAwesome 6 -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Outfit Premium Font -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-
-    <!-- Leaflet 1.9.4 CSS & JS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-
-    <!-- KAMBUS Notifications Styles -->
-    <link rel="stylesheet" href="notifications.css">
-
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                   colors: {
-    brand: '#F4B942',
-    brandDark: '#E8A317',
-    brandLight: '#FDF3DE',
-    navy: '#172554',
-    surface: '#FFFFFF',
-    slateDark: '#172554'
-}
-                }
-            }
-        };
-    </script>
-
-    <style>
+        <style>
         html, body {
             width: 100%;
             max-width: 100%;
             overflow-x: hidden;
-            background-color: #F8FAFC;
+            background-color: #FAFAF8;
         }
 
         *, *::before, *::after {
@@ -62,26 +37,25 @@
             align-items: center;
             gap: 10px;
             width: 100%;
-            padding: 11px 14px;
-            border-radius: 12px;
+            padding: 9px 12px;
+            border-radius: 4px;
             font-size: 13px;
-            font-weight: 700;
-            color: #475569;
+            font-weight: 600;
+            color: #52707A;
             background: transparent;
-            transition: all 0.2s;
+            transition: all 0.15s ease;
             text-align: left;
             border: 1px solid transparent;
         }
 
         .admin-nav-btn:hover {
-            background: #EEF2FF;
-            color: #4F46E5;
+            background: #E3E8E8;
+            color: #173541;
         }
 
         .admin-nav-btn.active {
-            background: #4F46E5;
+            background: #173541;
             color: #FFFFFF;
-            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
         }
 
         .admin-section {
@@ -93,7 +67,7 @@
         }
 
         #adminSidebar {
-            transition: transform 0.25s ease-in-out;
+            transition: transform 0.2s ease-in-out;
         }
 
         @media (max-width: 1023px) {
@@ -103,115 +77,57 @@
                 bottom: 0;
                 left: 0;
                 z-index: 100;
-                width: 280px;
+                width: 260px;
                 transform: translateX(-100%);
             }
             #adminSidebar.open {
                 transform: translateX(0);
             }
         }
-        /* =========================================
-   KAMBUS PREMIUM ADMIN THEME
-========================================= */
-
-body {
-    font-family: 'Outfit', 'Inter', Arial, sans-serif !important;
-    background-color: #F8FAFC !important;
-    background-image:
-        radial-gradient(circle at 12% 8%, rgba(244, 185, 66, 0.10), transparent 40%),
-        radial-gradient(circle at 88% 92%, rgba(23, 37, 84, 0.06), transparent 45%) !important;
-    color: #172554 !important;
-}
-
-/* Premium Gold Arc - Top Left */
-body::before {
-    content: "";
-    position: fixed;
-    width: 280px;
-    height: 280px;
-    border: 32px solid rgba(244, 185, 66, 0.12);
-    border-radius: 50%;
-    top: -150px;
-    left: -150px;
-    pointer-events: none;
-    z-index: 0;
-}
-
-/* Premium Navy Arc - Bottom Right */
-body::after {
-    content: "";
-    position: fixed;
-    width: 320px;
-    height: 320px;
-    border: 38px solid rgba(23, 37, 84, 0.08);
-    border-radius: 50%;
-    bottom: -190px;
-    right: -190px;
-    pointer-events: none;
-    z-index: 0;
-}
-
-/* Keep decorative background behind app */
-body::before,
-body::after {
-    pointer-events: none;
-}
-
-/* Premium Navigation */
-.admin-nav-btn:hover {
-    background: #FDF3DE;
-    color: #E8A317;
-}
-
-.admin-nav-btn.active {
-    background: #F4B942;
-    color: #172554;
-    box-shadow: 0 4px 12px rgba(244, 185, 66, 0.28);
-}
     </style>
 </head>
 
-<body class="text-slate-800 min-h-screen flex flex-col font-sans pb-16 lg:pb-0">
+<body class="text-navy min-h-screen flex flex-col font-sans pb-16 lg:pb-0">
 
     <!-- ========================================================= -->
     <!-- TOP HEADER -->
     <!-- ========================================================= -->
-    <header class="bg-white border-b border-slate-200 sticky top-0 z-40 px-4 sm:px-6 py-3 flex items-center justify-between shadow-xs">
+    <header class="bg-surface border-b border-line sticky top-0 z-40 px-4 sm:px-6 py-3 flex items-center justify-between border border-line">
         <div class="flex items-center gap-3">
-            <button type="button" onclick="window.KambusAdmin.toggleMobileSidebar()" class="lg:hidden w-9 h-9 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center text-base" aria-label="Toggle Navigation">
-                <i class="fa-solid fa-bars"></i>
+            <button type="button" onclick="window.KambusAdmin.toggleMobileSidebar()" class="lg:hidden w-9 h-9 rounded bg-bg text-navy flex items-center justify-center text-base" aria-label="Toggle Navigation">
+                <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-bars"/></svg>
             </button>
-            <div class="w-9 h-9 bg-brand/10 text-brand rounded-xl flex items-center justify-center border border-brand/20 shrink-0">
-                <img src="kamlogo.jpg" alt="KAMBUS" class="w-7 h-7 object-contain">
+            <div class="w-9 h-9 bg-navy rounded flex items-center justify-center shrink-0">
+                <img src="brand/mark-white.svg" alt="KAMBUS" class="w-5 h-5">
             </div>
             <div>
-                <h1 class="text-sm sm:text-base font-black tracking-tight text-slate-900 leading-tight">KAMBUS Admin Desk</h1>
-                <p class="text-[10px] sm:text-[11px] text-slate-400 font-semibold leading-tight">Fleet Control & Transport Management</p>
+                <h1 class="text-sm sm:text-base font-semibold tracking-tight text-navy leading-tight">KAMBUS Admin Desk</h1>
+                <p class="text-[10px] sm:text-[11px] text-ink-muted font-semibold leading-tight">Fleet Control & Transport Management</p>
             </div>
         </div>
 
         <div class="flex items-center gap-2">
             <!-- Global Search Quick Trigger -->
-            <button type="button" onclick="window.KambusAdmin.showSection('search')" class="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-slate-100 hover:bg-slate-200/80 rounded-xl text-xs font-semibold text-slate-600 transition">
-                <i class="fa-solid fa-magnifying-glass text-slate-400"></i>
+            <button type="button" onclick="window.KambusAdmin.showSection('search')" class="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-bg hover:bg-slate-200/80 rounded text-xs font-semibold text-ink-muted transition">
+                <svg class="w-4 h-4 shrink-0 text-ink-muted" aria-hidden="true"><use href="icons.svg#icon-search"/></svg>
                 <span>Search...</span>
             </button>
 
             <!-- Notifications Bell -->
-            <button id="notificationBell" type="button" class="relative w-9 h-9 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 flex items-center justify-center transition" aria-label="Notifications">
-                <i class="fa-solid fa-bell text-sm"></i>
-                <span id="notificationBadge" class="hidden absolute -top-1 -right-1 min-w-[17px] h-[17px] px-1 rounded-full bg-rose-500 text-white text-[9px] font-black flex items-center justify-center">0</span>
+            <button id="notificationBell" type="button" class="relative w-9 h-9 rounded bg-bg hover:bg-bg text-ink-muted border border-line flex items-center justify-center transition" aria-label="Notifications">
+                <svg class="w-4 h-4 shrink-0 text-sm" aria-hidden="true"><use href="icons.svg#icon-bell"/></svg>
+                <span id="notificationBadge" class="hidden absolute -top-1 -right-1 min-w-[17px] h-[17px] px-1 rounded-full bg-danger text-white text-[9px] font-semibold flex items-center justify-center">0</span>
             </button>
 
             <!-- Refresh Button -->
-            <button type="button" onclick="window.location.reload()" class="w-9 h-9 sm:w-auto sm:px-3 sm:py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition" title="Refresh Dashboard">
-                <i class="fa-solid fa-rotate text-xs"></i>
+            <button type="button" onclick="window.location.reload()" class="w-9 h-9 sm:w-auto sm:px-3 sm:py-1.5 bg-ok hover:opacity-90 text-white font-semibold text-xs rounded border border-line flex items-center justify-center gap-1.5 transition" title="Refresh Dashboard">
+                <svg class="w-4 h-4 shrink-0 text-xs" aria-hidden="true"><use href="icons.svg#icon-refresh"/></svg>
                 <span class="hidden sm:inline">Refresh</span>
             </button>
 
             <!-- Logout -->
-            <a href="index.html" class="w-9 h-9 rounded-xl text-slate-400 hover:text-rose-600 flex items-center justify-center transition" aria-label="Logout" title="Logout">
-                <i class="fa-solid fa-right-from-bracket text-sm"></i>
+            <a href="index.html" class="w-9 h-9 rounded text-ink-muted hover:text-danger flex items-center justify-center transition" aria-label="Logout" title="Logout">
+                <svg class="w-4 h-4 shrink-0 text-sm" aria-hidden="true"><use href="icons.svg#icon-logout"/></svg>
             </a>
         </div>
     </header>
@@ -225,66 +141,66 @@ body::after {
         <!-- ========================================================= -->
         <!-- SIDEBAR NAVIGATION -->
         <!-- ========================================================= -->
-        <aside id="adminSidebar" class="w-64 bg-white border-r border-slate-200/90 p-4 flex flex-col justify-between shrink-0 shadow-xs lg:shadow-none">
+        <aside id="adminSidebar" class="w-64 bg-surface border-r border-line/90 p-4 flex flex-col justify-between shrink-0 border border-line lg:shadow-none">
             <div class="space-y-1 overflow-y-auto">
-                <p class="text-[10px] font-black tracking-wider uppercase text-slate-400 px-3 mb-2">Overview</p>
+                <p class="text-[10px] font-semibold tracking-wider uppercase text-ink-muted px-3 mb-2">Overview</p>
                 <button type="button" data-section="dashboard" onclick="window.KambusAdmin.showSection('dashboard')" class="admin-nav-btn active">
-                    <i class="fa-solid fa-chart-pie w-4 text-center"></i> <span>Dashboard</span>
+                    <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-chart-pie"/></svg> <span>Dashboard</span>
                 </button>
                 <button type="button" data-section="today-operations" onclick="window.KambusAdmin.showSection('today-operations')" class="admin-nav-btn">
-                    <i class="fa-solid fa-calendar-day w-4 text-center"></i> <span>Today's Operations</span>
+                    <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-calendar"/></svg> <span>Today's Operations</span>
                 </button>
                 <button type="button" data-section="live-map" onclick="window.KambusAdmin.showSection('live-map')" class="admin-nav-btn">
-                    <i class="fa-solid fa-map-location-dot w-4 text-center text-emerald-500"></i> <span>Live Fleet Map</span>
+                    <svg class="w-4 h-4 shrink-0 text-ok" aria-hidden="true"><use href="icons.svg#icon-route"/></svg> <span>Live Fleet Map</span>
                 </button>
 
-                <p class="text-[10px] font-black tracking-wider uppercase text-slate-400 px-3 mt-4 mb-2">Fleet & Students</p>
+                <p class="text-[10px] font-semibold tracking-wider uppercase text-ink-muted px-3 mt-4 mb-2">Fleet & Students</p>
                 <button type="button" data-section="buses" onclick="window.KambusAdmin.showSection('buses')" class="admin-nav-btn">
-                    <i class="fa-solid fa-bus w-4 text-center"></i> <span>Buses</span>
+                    <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-bus"/></svg> <span>Buses</span>
                 </button>
                 <button type="button" data-section="drivers" onclick="window.KambusAdmin.showSection('drivers')" class="admin-nav-btn">
-                    <i class="fa-solid fa-user-tie w-4 text-center"></i> <span>Drivers</span>
+                    <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-user-tie"/></svg> <span>Drivers</span>
                 </button>
                 <button type="button" data-section="students" onclick="window.KambusAdmin.showSection('students')" class="admin-nav-btn">
-                    <i class="fa-solid fa-user-graduate w-4 text-center"></i> <span>Students</span>
+                    <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-user-graduate"/></svg> <span>Students</span>
                 </button>
                 <button type="button" data-section="routes" onclick="window.KambusAdmin.showSection('routes')" class="admin-nav-btn">
-                    <i class="fa-solid fa-route w-4 text-center"></i> <span>Routes</span>
+                    <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-route"/></svg> <span>Routes</span>
                 </button>
                 <button type="button" data-section="stops" onclick="window.KambusAdmin.showSection('stops')" class="admin-nav-btn">
-                    <i class="fa-solid fa-location-dot w-4 text-center"></i> <span>Stops</span>
+                    <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-map-pin"/></svg> <span>Stops</span>
                 </button>
                 <button type="button" data-section="complaints" onclick="window.KambusAdmin.showSection('complaints')" class="admin-nav-btn">
-                    <i class="fa-solid fa-clipboard-question w-4 text-center text-amber-500"></i> <span>Complaints</span>
+                    <svg class="w-4 h-4 shrink-0 text-warn" aria-hidden="true"><use href="icons.svg#icon-clipboard-question"/></svg> <span>Complaints</span>
                 </button>
 
-                <p class="text-[10px] font-black tracking-wider uppercase text-slate-400 px-3 mt-4 mb-2">Logs</p>
+                <p class="text-[10px] font-semibold tracking-wider uppercase text-ink-muted px-3 mt-4 mb-2">Logs</p>
                 <button type="button" data-section="geofence-logs" onclick="window.KambusAdmin.showSection('geofence-logs')" class="admin-nav-btn">
-                    <i class="fa-solid fa-right-to-bracket w-4 text-center text-emerald-500"></i> <span>Geofence Entry Log</span>
+                    <svg class="w-4 h-4 shrink-0 text-ok" aria-hidden="true"><use href="icons.svg#icon-logout"/></svg> <span>Geofence Entry Log</span>
                 </button>
                 <button type="button" data-section="temp-stop-logs" onclick="window.KambusAdmin.showSection('temp-stop-logs')" class="admin-nav-btn">
-                    <i class="fa-solid fa-map-pin w-4 text-center text-indigo-500"></i> <span>Temporary Stop Log</span>
+                    <svg class="w-4 h-4 shrink-0 text-brand" aria-hidden="true"><use href="icons.svg#icon-map-pin"/></svg> <span>Temporary Stop Log</span>
                 </button>
 
-                <p class="text-[10px] font-black tracking-wider uppercase text-slate-400 px-3 mt-4 mb-2">Communications</p>
+                <p class="text-[10px] font-semibold tracking-wider uppercase text-ink-muted px-3 mt-4 mb-2">Communications</p>
                 <button type="button" data-section="notifications" onclick="window.KambusAdmin.showSection('notifications')" class="admin-nav-btn">
-                    <i class="fa-solid fa-bullhorn w-4 text-center"></i> <span>Announcements</span>
+                    <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-bullhorn"/></svg> <span>Announcements</span>
                 </button>
                 <button type="button" data-section="alerts" onclick="window.KambusAdmin.showSection('alerts')" class="admin-nav-btn">
-                    <i class="fa-solid fa-triangle-exclamation w-4 text-center text-rose-500"></i> <span>Alert Center</span>
+                    <svg class="w-4 h-4 shrink-0 text-danger" aria-hidden="true"><use href="icons.svg#icon-alert"/></svg> <span>Alert Center</span>
                 </button>
 
-                <p class="text-[10px] font-black tracking-wider uppercase text-slate-400 px-3 mt-4 mb-2">System</p>
+                <p class="text-[10px] font-semibold tracking-wider uppercase text-ink-muted px-3 mt-4 mb-2">System</p>
                 <button type="button" data-section="search" onclick="window.KambusAdmin.showSection('search')" class="admin-nav-btn">
-                    <i class="fa-solid fa-magnifying-glass w-4 text-center"></i> <span>Global Search</span>
+                    <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-search"/></svg> <span>Global Search</span>
                 </button>
                 <button type="button" data-section="activity-logs" onclick="window.KambusAdmin.showSection('activity-logs')" class="admin-nav-btn">
-                    <i class="fa-solid fa-list-check w-4 text-center"></i> <span>Activity Log</span>
+                    <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-list-check"/></svg> <span>Activity Log</span>
                 </button>
             </div>
 
-            <div class="pt-4 border-t border-slate-100 text-[11px] text-slate-400">
-                <p class="font-bold text-slate-600">KITSW Campus Transport</p>
+            <div class="pt-4 border-t border-slate-100 text-[11px] text-ink-muted">
+                <p class="font-semibold text-ink-muted">KITSW Campus Transport</p>
                 <p>v2.4.0 &bull; Control Desk</p>
             </div>
         </aside>
@@ -294,76 +210,76 @@ body::after {
         <!-- ========================================================= -->
         <main class="flex-1 p-4 sm:p-6 lg:p-8 min-w-0 overflow-y-auto max-w-full">
 
-            <!-- SECTION 1: 📊 DASHBOARD -->
+            <!-- SECTION 1:  DASHBOARD -->
             <section id="section-dashboard" class="admin-section active space-y-6">
                 <div>
-                    <h2 class="text-xl font-black text-slate-900 tracking-tight">System Overview</h2>
-                    <p class="text-xs text-slate-500">Real-time status of campus fleet, routes, and active trips.</p>
+                    <h2 class="text-xl font-semibold text-navy tracking-tight">System Overview</h2>
+                    <p class="text-xs text-ink-muted">Real-time status of campus fleet, routes, and active trips.</p>
                 </div>
 
                 <!-- KPI Cards Grid -->
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
-                    <div class="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-xs">
-                        <span class="text-[11px] font-bold text-slate-400 uppercase">Total Buses</span>
+                    <div class="bg-surface border border-line/90 rounded p-4 border border-line">
+                        <span class="text-[11px] font-semibold text-ink-muted uppercase">Total Buses</span>
                         <div class="flex items-baseline justify-between mt-1">
-                            <span id="statTotalBuses" class="text-2xl font-black text-slate-900">0</span>
-                            <span class="text-xs font-bold text-brand">🚌</span>
+                            <span id="statTotalBuses" class="text-2xl font-semibold text-navy">0</span>
+                            <span class="text-xs font-semibold text-brand"></span>
                         </div>
                     </div>
 
-                    <div class="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-xs">
-                        <span class="text-[11px] font-bold text-slate-400 uppercase">Active Buses</span>
+                    <div class="bg-surface border border-line/90 rounded p-4 border border-line">
+                        <span class="text-[11px] font-semibold text-ink-muted uppercase">Active Buses</span>
                         <div class="flex items-baseline justify-between mt-1">
-                            <span id="statActiveBuses" class="text-2xl font-black text-emerald-600">0</span>
-                            <span class="text-xs font-bold text-emerald-500">🟢</span>
+                            <span id="statActiveBuses" class="text-2xl font-semibold text-ok">0</span>
+                            <span class="text-xs font-semibold text-ok"></span>
                         </div>
                     </div>
 
-                    <div class="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-xs">
-                        <span class="text-[11px] font-bold text-slate-400 uppercase">Offline Buses</span>
+                    <div class="bg-surface border border-line/90 rounded p-4 border border-line">
+                        <span class="text-[11px] font-semibold text-ink-muted uppercase">Offline Buses</span>
                         <div class="flex items-baseline justify-between mt-1">
-                            <span id="statOfflineBuses" class="text-2xl font-black text-slate-500">0</span>
-                            <span class="text-xs font-bold text-slate-400">⚫</span>
+                            <span id="statOfflineBuses" class="text-2xl font-semibold text-ink-muted">0</span>
+                            <span class="text-xs font-semibold text-ink-muted"></span>
                         </div>
                     </div>
 
-                    <div class="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-xs">
-                        <span class="text-[11px] font-bold text-slate-400 uppercase">Total Drivers</span>
+                    <div class="bg-surface border border-line/90 rounded p-4 border border-line">
+                        <span class="text-[11px] font-semibold text-ink-muted uppercase">Total Drivers</span>
                         <div class="flex items-baseline justify-between mt-1">
-                            <span id="statTotalDrivers" class="text-2xl font-black text-indigo-600">0</span>
-                            <span class="text-xs font-bold text-indigo-400">👨‍✈️</span>
+                            <span id="statTotalDrivers" class="text-2xl font-semibold text-navy">0</span>
+                            <span class="text-xs font-semibold text-brand"></span>
                         </div>
                     </div>
 
-                    <div class="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-xs">
-                        <span class="text-[11px] font-bold text-slate-400 uppercase">Total Students</span>
+                    <div class="bg-surface border border-line/90 rounded p-4 border border-line">
+                        <span class="text-[11px] font-semibold text-ink-muted uppercase">Total Students</span>
                         <div class="flex items-baseline justify-between mt-1">
-                            <span id="statTotalStudents" class="text-2xl font-black text-slate-900">0</span>
-                            <span class="text-xs font-bold text-brand">👨‍🎓</span>
+                            <span id="statTotalStudents" class="text-2xl font-semibold text-navy">0</span>
+                            <span class="text-xs font-semibold text-brand"></span>
                         </div>
                     </div>
 
-                    <div class="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-xs">
-                        <span class="text-[11px] font-bold text-slate-400 uppercase">Travelling Today</span>
+                    <div class="bg-surface border border-line/90 rounded p-4 border border-line">
+                        <span class="text-[11px] font-semibold text-ink-muted uppercase">Travelling Today</span>
                         <div class="flex items-baseline justify-between mt-1">
-                            <span id="statTravellingToday" class="text-2xl font-black text-emerald-600">0</span>
-                            <span class="text-xs font-bold text-emerald-500">🎒</span>
+                            <span id="statTravellingToday" class="text-2xl font-semibold text-ok">0</span>
+                            <span class="text-xs font-semibold text-ok"></span>
                         </div>
                     </div>
 
-                    <div class="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-xs">
-                        <span class="text-[11px] font-bold text-slate-400 uppercase">Total Routes</span>
+                    <div class="bg-surface border border-line/90 rounded p-4 border border-line">
+                        <span class="text-[11px] font-semibold text-ink-muted uppercase">Total Routes</span>
                         <div class="flex items-baseline justify-between mt-1">
-                            <span id="statTotalRoutes" class="text-2xl font-black text-slate-900">0</span>
-                            <span class="text-xs font-bold text-slate-400">🛣️</span>
+                            <span id="statTotalRoutes" class="text-2xl font-semibold text-navy">0</span>
+                            <span class="text-xs font-semibold text-ink-muted"></span>
                         </div>
                     </div>
 
-                    <div class="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-xs">
-                        <span class="text-[11px] font-bold text-slate-400 uppercase">Total Stops</span>
+                    <div class="bg-surface border border-line/90 rounded p-4 border border-line">
+                        <span class="text-[11px] font-semibold text-ink-muted uppercase">Total Stops</span>
                         <div class="flex items-baseline justify-between mt-1">
-                            <span id="statTotalStops" class="text-2xl font-black text-slate-900">0</span>
-                            <span class="text-xs font-bold text-slate-400">📍</span>
+                            <span id="statTotalStops" class="text-2xl font-semibold text-navy">0</span>
+                            <span class="text-xs font-semibold text-ink-muted"></span>
                         </div>
                     </div>
                 </div>
@@ -371,95 +287,95 @@ body::after {
                 <!-- Active Trips & Alerts Dual Columns -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <!-- Active Trips Card -->
-                    <div class="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs">
+                    <div class="bg-surface border border-line/90 rounded p-5 border border-line">
                         <div class="flex items-center justify-between mb-3">
-                            <h3 class="text-sm font-black text-slate-900 flex items-center gap-2">
-                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Currently Active Trips
+                            <h3 class="text-sm font-semibold text-navy flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-ok"></span> Currently Active Trips
                             </h3>
-                            <button type="button" onclick="window.KambusAdmin.showSection('live-map')" class="text-xs font-bold text-brand hover:underline">
+                            <button type="button" onclick="window.KambusAdmin.showSection('live-map')" class="text-xs font-semibold text-brand hover:underline">
                                 Full Map &rarr;
                             </button>
                         </div>
                         <div id="dashboardActiveTrips" class="space-y-2.5">
-                            <div class="p-6 text-center text-xs text-slate-400">Loading active trips...</div>
+                            <div class="p-6 text-center text-xs text-ink-muted">Loading active trips...</div>
                         </div>
                     </div>
 
                     <!-- Recent Alerts -->
-                    <div class="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs">
+                    <div class="bg-surface border border-line/90 rounded p-5 border border-line">
                         <div class="flex items-center justify-between mb-3">
-                            <h3 class="text-sm font-black text-slate-900 flex items-center gap-2">
-                                <i class="fa-solid fa-triangle-exclamation text-amber-500"></i> Operational Alerts
+                            <h3 class="text-sm font-semibold text-navy flex items-center gap-2">
+                                <svg class="w-4 h-4 shrink-0 text-warn" aria-hidden="true"><use href="icons.svg#icon-alert"/></svg> Operational Alerts
                             </h3>
-                            <button type="button" onclick="window.KambusAdmin.showSection('alerts')" class="text-xs font-bold text-brand hover:underline">
+                            <button type="button" onclick="window.KambusAdmin.showSection('alerts')" class="text-xs font-semibold text-brand hover:underline">
                                 View All &rarr;
                             </button>
                         </div>
                         <div id="dashboardRecentAlerts" class="divide-y divide-slate-100">
-                            <div class="p-6 text-center text-xs text-slate-400">Loading alerts...</div>
+                            <div class="p-6 text-center text-xs text-ink-muted">Loading alerts...</div>
                         </div>
                     </div>
                 </div>
             </section>
 
-            <!-- SECTION 2: 🚌 BUS MANAGEMENT -->
+            <!-- SECTION 2:  BUS MANAGEMENT -->
             <section id="section-buses" class="admin-section space-y-5">
                 <div class="flex items-center justify-between gap-3">
                     <div>
-                        <h2 class="text-xl font-black text-slate-900 tracking-tight">Bus Fleet Management</h2>
-                        <p class="text-xs text-slate-500">Manage vehicles, assigned routes, and drivers.</p>
+                        <h2 class="text-xl font-semibold text-navy tracking-tight">Bus Fleet Management</h2>
+                        <p class="text-xs text-ink-muted">Manage vehicles, assigned routes, and drivers.</p>
                     </div>
-                    <button type="button" onclick="window.KambusAdmin.openAddBusModal()" class="px-4 py-2 bg-brand hover:bg-brandDark text-white text-xs font-bold rounded-xl shadow-xs flex items-center gap-2">
-                        <i class="fa-solid fa-plus"></i> <span>Add Bus</span>
+                    <button type="button" onclick="window.KambusAdmin.openAddBusModal()" class="px-4 py-2 bg-brand hover:bg-brandDark text-white text-xs font-semibold rounded border border-line flex items-center gap-2">
+                        <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-plus"/></svg> <span>Add Bus</span>
                     </button>
                 </div>
 
                 <div id="busesList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div class="p-8 text-center text-xs text-slate-400">Loading buses...</div>
+                    <div class="p-8 text-center text-xs text-ink-muted">Loading buses...</div>
                 </div>
             </section>
 
-            <!-- SECTION 3: 👨‍✈️ DRIVER MANAGEMENT -->
+            <!-- SECTION 3:  DRIVER MANAGEMENT -->
             <section id="section-drivers" class="admin-section space-y-5">
                 <div class="flex items-center justify-between gap-3">
                     <div>
-                        <h2 class="text-xl font-black text-slate-900 tracking-tight">Driver Management</h2>
-                        <p class="text-xs text-slate-500">Manage driver credentials, vehicles, and trip logs.</p>
+                        <h2 class="text-xl font-semibold text-navy tracking-tight">Driver Management</h2>
+                        <p class="text-xs text-ink-muted">Manage driver credentials, vehicles, and trip logs.</p>
                     </div>
-                    <button type="button" onclick="document.getElementById('addDriverModal').classList.remove('hidden')" class="px-4 py-2 bg-brand hover:bg-brandDark text-white text-xs font-bold rounded-xl shadow-xs flex items-center gap-2">
-                        <i class="fa-solid fa-plus"></i> <span>Add Driver</span>
+                    <button type="button" onclick="document.getElementById('addDriverModal').classList.remove('hidden')" class="px-4 py-2 bg-brand hover:bg-brandDark text-white text-xs font-semibold rounded border border-line flex items-center gap-2">
+                        <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-plus"/></svg> <span>Add Driver</span>
                     </button>
                 </div>
 
                 <div id="driversList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div class="p-8 text-center text-xs text-slate-400">Loading drivers...</div>
+                    <div class="p-8 text-center text-xs text-ink-muted">Loading drivers...</div>
                 </div>
             </section>
 
-            <!-- SECTION 4: 👨‍🎓 STUDENT MANAGEMENT -->
+            <!-- SECTION 4:  STUDENT MANAGEMENT -->
             <section id="section-students" class="admin-section space-y-5">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
-                        <h2 class="text-xl font-black text-slate-900 tracking-tight">Student Directory</h2>
-                        <p class="text-xs text-slate-500">Manage student profiles, bus assignments, and stops.</p>
+                        <h2 class="text-xl font-semibold text-navy tracking-tight">Student Directory</h2>
+                        <p class="text-xs text-ink-muted">Manage student profiles, bus assignments, and stops.</p>
                     </div>
-                    <button type="button" onclick="window.KambusAdmin.openAddStudentModal()" class="px-4 py-2 bg-brand hover:bg-brandDark text-white text-xs font-bold rounded-xl shadow-xs flex items-center gap-2 self-start sm:self-auto">
-                        <i class="fa-solid fa-user-plus"></i> <span>Add Student</span>
+                    <button type="button" onclick="window.KambusAdmin.openAddStudentModal()" class="px-4 py-2 bg-brand hover:bg-brandDark text-white text-xs font-semibold rounded border border-line flex items-center gap-2 self-start sm:self-auto">
+                        <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-user-plus"/></svg> <span>Add Student</span>
                     </button>
                 </div>
 
                 <!-- Filters Bar -->
-                <div class="bg-white border border-slate-200/90 rounded-2xl p-3.5 shadow-xs grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div class="bg-surface border border-line/90 rounded p-3.5 border border-line grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
-                        <input type="text" id="studentSearchInput" placeholder="Search by name, roll, or department..." oninput="window.KambusAdmin.loadStudents()" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:border-brand focus:ring-1 focus:ring-brand">
+                        <input type="text" id="studentSearchInput" placeholder="Search by name, roll, or department..." oninput="window.KambusAdmin.loadStudents()" class="w-full px-3 py-2 border border-line rounded text-xs focus:border-brand focus:ring-1 focus:ring-brand">
                     </div>
                     <div>
-                        <select id="studentFilterBus" onchange="window.KambusAdmin.loadStudents()" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:border-brand">
+                        <select id="studentFilterBus" onchange="window.KambusAdmin.loadStudents()" class="w-full px-3 py-2 border border-line rounded text-xs focus:border-brand">
                             <option value="">-- All Buses --</option>
                         </select>
                     </div>
                     <div>
-                        <select id="studentFilterTravelling" onchange="window.KambusAdmin.loadStudents()" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:border-brand">
+                        <select id="studentFilterTravelling" onchange="window.KambusAdmin.loadStudents()" class="w-full px-3 py-2 border border-line rounded text-xs focus:border-brand">
                             <option value="">-- All Travel Statuses --</option>
                             <option value="true">Travelling Today</option>
                             <option value="false">Not Travelling Today</option>
@@ -469,100 +385,100 @@ body::after {
 
                 <!-- Student List Container -->
                 <div id="studentsList">
-                    <div class="p-8 text-center text-xs text-slate-400">Loading students...</div>
+                    <div class="p-8 text-center text-xs text-ink-muted">Loading students...</div>
                 </div>
             </section>
 
-            <!-- SECTION 5: 🛣️ ROUTE MANAGEMENT -->
+            <!-- SECTION 5:  ROUTE MANAGEMENT -->
             <section id="section-routes" class="admin-section space-y-5">
                 <div class="flex items-center justify-between gap-3">
                     <div>
-                        <h2 class="text-xl font-black text-slate-900 tracking-tight">Route Management</h2>
-                        <p class="text-xs text-slate-500">Configure road-based transit routes to KITSW Campus.</p>
+                        <h2 class="text-xl font-semibold text-navy tracking-tight">Route Management</h2>
+                        <p class="text-xs text-ink-muted">Configure road-based transit routes to KITSW Campus.</p>
                     </div>
-                    <button type="button" onclick="document.getElementById('addRouteModal').classList.remove('hidden')" class="px-4 py-2 bg-brand hover:bg-brandDark text-white text-xs font-bold rounded-xl shadow-xs flex items-center gap-2">
-                        <i class="fa-solid fa-plus"></i> <span>Create Route</span>
+                    <button type="button" onclick="document.getElementById('addRouteModal').classList.remove('hidden')" class="px-4 py-2 bg-brand hover:bg-brandDark text-white text-xs font-semibold rounded border border-line flex items-center gap-2">
+                        <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-plus"/></svg> <span>Create Route</span>
                     </button>
                 </div>
 
                 <div id="routesList" class="space-y-4">
-                    <div class="p-8 text-center text-xs text-slate-400">Loading routes...</div>
+                    <div class="p-8 text-center text-xs text-ink-muted">Loading routes...</div>
                 </div>
             </section>
 
-            <!-- SECTION 6: 📍 STOP MANAGEMENT -->
+            <!-- SECTION 6:  STOP MANAGEMENT -->
             <section id="section-stops" class="admin-section space-y-5">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
-                        <h2 class="text-xl font-black text-slate-900 tracking-tight">Stop Management</h2>
-                        <p class="text-xs text-slate-500">Manage bus stops, routes, coordinates, and sequence order.</p>
+                        <h2 class="text-xl font-semibold text-navy tracking-tight">Stop Management</h2>
+                        <p class="text-xs text-ink-muted">Manage bus stops, routes, coordinates, and sequence order.</p>
                     </div>
-                    <button type="button" onclick="window.KambusAdmin.openAddStopModal()" class="px-4 py-2 bg-brand hover:bg-brandDark text-white text-xs font-bold rounded-xl shadow-xs flex items-center gap-2 self-start sm:self-auto">
-                        <i class="fa-solid fa-location-dot"></i> <span>Add Stop (Map Picker)</span>
+                    <button type="button" onclick="window.KambusAdmin.openAddStopModal()" class="px-4 py-2 bg-brand hover:bg-brandDark text-white text-xs font-semibold rounded border border-line flex items-center gap-2 self-start sm:self-auto">
+                        <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-map-pin"/></svg> <span>Add Stop (Map Picker)</span>
                     </button>
                 </div>
 
                 <!-- Route Filter Bar -->
-                <div class="bg-white border border-slate-200/90 rounded-2xl p-3.5 shadow-xs flex items-center gap-3">
-                    <label for="stopFilterRoute" class="text-xs font-bold text-slate-700 shrink-0">Filter by Route:</label>
-                    <select id="stopFilterRoute" onchange="window.KambusAdmin.loadStops()" class="w-full sm:w-72 px-3 py-2 border border-slate-200 rounded-xl text-xs focus:border-brand route-select-dropdown">
+                <div class="bg-surface border border-line/90 rounded p-3.5 border border-line flex items-center gap-3">
+                    <label for="stopFilterRoute" class="text-xs font-semibold text-navy shrink-0">Filter by Route:</label>
+                    <select id="stopFilterRoute" onchange="window.KambusAdmin.loadStops()" class="w-full sm:w-72 px-3 py-2 border border-line rounded text-xs focus:border-brand route-select-dropdown">
                         <option value="">-- All Routes --</option>
                     </select>
                 </div>
 
                 <div id="stopsList" class="space-y-3">
-                    <div class="p-8 text-center text-xs text-slate-400">Loading stops...</div>
+                    <div class="p-8 text-center text-xs text-ink-muted">Loading stops...</div>
                 </div>
             </section>
 
-            <!-- SECTION 6b: ⚠️ DRIVER COMPLAINTS -->
+            <!-- SECTION 6b:  DRIVER COMPLAINTS -->
             <section id="section-complaints" class="admin-section space-y-5">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
-                        <h2 class="text-xl font-black text-slate-900 tracking-tight">Driver Complaints & Feedback</h2>
-                        <p class="text-xs text-slate-500">Student reports and peer-corroborated verification results.</p>
+                        <h2 class="text-xl font-semibold text-navy tracking-tight">Driver Complaints & Feedback</h2>
+                        <p class="text-xs text-ink-muted">Student reports and peer-corroborated verification results.</p>
                     </div>
-                    <button type="button" onclick="window.KambusAdmin.loadComplaints()" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl shadow-xs flex items-center gap-2 self-start sm:self-auto transition">
-                        <i class="fa-solid fa-rotate text-xs"></i> <span>Refresh Complaints</span>
+                    <button type="button" onclick="window.KambusAdmin.loadComplaints()" class="px-3.5 py-2 bg-bg hover:bg-slate-200 text-navy text-xs font-semibold rounded border border-line flex items-center gap-2 self-start sm:self-auto transition">
+                        <svg class="w-4 h-4 shrink-0 text-xs" aria-hidden="true"><use href="icons.svg#icon-refresh"/></svg> <span>Refresh Complaints</span>
                     </button>
                 </div>
 
                 <!-- KPI Summary Cards -->
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div class="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-xs">
-                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Reports</span>
+                    <div class="bg-surface border border-line/90 rounded p-4 border border-line">
+                        <span class="text-[10px] font-semibold text-ink-muted uppercase tracking-wider">Total Reports</span>
                         <div class="flex items-baseline justify-between mt-1">
-                            <span id="complaintsStatTotal" class="text-2xl font-black text-slate-900">0</span>
-                            <span class="text-xs font-bold text-amber-500">📋</span>
+                            <span id="complaintsStatTotal" class="text-2xl font-semibold text-navy">0</span>
+                            <span class="text-xs font-semibold text-warn"></span>
                         </div>
                     </div>
-                    <div class="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-xs">
-                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Corroborated by Peers</span>
+                    <div class="bg-surface border border-line/90 rounded p-4 border border-line">
+                        <span class="text-[10px] font-semibold text-ink-muted uppercase tracking-wider">Corroborated by Peers</span>
                         <div class="flex items-baseline justify-between mt-1">
-                            <span id="complaintsStatCorroborated" class="text-2xl font-black text-rose-600">0</span>
-                            <span class="text-xs font-bold text-rose-500">⚠️</span>
+                            <span id="complaintsStatCorroborated" class="text-2xl font-semibold text-danger">0</span>
+                            <span class="text-xs font-semibold text-danger"></span>
                         </div>
                     </div>
-                    <div class="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-xs">
-                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Drivers Reported</span>
+                    <div class="bg-surface border border-line/90 rounded p-4 border border-line">
+                        <span class="text-[10px] font-semibold text-ink-muted uppercase tracking-wider">Drivers Reported</span>
                         <div class="flex items-baseline justify-between mt-1">
-                            <span id="complaintsStatDriversCount" class="text-2xl font-black text-slate-900">0</span>
-                            <span class="text-xs font-bold text-indigo-500">👨‍✈️</span>
+                            <span id="complaintsStatDriversCount" class="text-2xl font-semibold text-navy">0</span>
+                            <span class="text-xs font-semibold text-brand"></span>
                         </div>
                     </div>
                 </div>
 
                 <!-- Filter Bar -->
-                <div class="bg-white border border-slate-200/90 rounded-2xl p-3.5 shadow-xs flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                <div class="bg-surface border border-line/90 rounded p-3.5 border border-line flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                     <div class="flex items-center gap-2 flex-1">
-                        <label for="complaintFilterDriver" class="text-xs font-bold text-slate-700 shrink-0">Filter by Driver:</label>
-                        <select id="complaintFilterDriver" onchange="window.KambusAdmin.loadComplaints()" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:border-brand driver-select-dropdown">
+                        <label for="complaintFilterDriver" class="text-xs font-semibold text-navy shrink-0">Filter by Driver:</label>
+                        <select id="complaintFilterDriver" onchange="window.KambusAdmin.loadComplaints()" class="w-full px-3 py-2 border border-line rounded text-xs focus:border-brand driver-select-dropdown">
                             <option value="">-- All Drivers --</option>
                         </select>
                     </div>
                     <div class="flex items-center gap-2">
-                        <label for="complaintFilterCorroborated" class="text-xs font-bold text-slate-700 shrink-0">Status:</label>
-                        <select id="complaintFilterCorroborated" onchange="window.KambusAdmin.filterComplaintsList()" class="px-3 py-2 border border-slate-200 rounded-xl text-xs focus:border-brand">
+                        <label for="complaintFilterCorroborated" class="text-xs font-semibold text-navy shrink-0">Status:</label>
+                        <select id="complaintFilterCorroborated" onchange="window.KambusAdmin.filterComplaintsList()" class="px-3 py-2 border border-line rounded text-xs focus:border-brand">
                             <option value="all">All Reports</option>
                             <option value="corroborated">Corroborated Only (High Priority)</option>
                             <option value="pending">Pending Verification</option>
@@ -572,7 +488,7 @@ body::after {
 
                 <!-- Complaints List Container -->
                 <div id="complaintsList" class="space-y-3">
-                    <div class="p-8 text-center text-xs text-slate-400">Loading complaints...</div>
+                    <div class="p-8 text-center text-xs text-ink-muted">Loading complaints...</div>
                 </div>
             </section>
 
@@ -580,17 +496,17 @@ body::after {
             <section id="section-geofence-logs" class="admin-section space-y-5">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
-                        <h2 class="text-xl font-black text-slate-900 tracking-tight">Geofence Entry Log</h2>
-                        <p class="text-xs text-slate-500">Recorded bus-entry events with their captured location.</p>
+                        <h2 class="text-xl font-semibold text-navy tracking-tight">Geofence Entry Log</h2>
+                        <p class="text-xs text-ink-muted">Recorded bus-entry events with their captured location.</p>
                     </div>
-                    <button type="button" onclick="window.KambusAdmin.loadGeofenceLogs()" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl shadow-xs flex items-center gap-2 self-start sm:self-auto transition">
-                        <i class="fa-solid fa-rotate text-xs"></i> <span>Refresh Log</span>
+                    <button type="button" onclick="window.KambusAdmin.loadGeofenceLogs()" class="px-3.5 py-2 bg-bg hover:bg-slate-200 text-navy text-xs font-semibold rounded border border-line flex items-center gap-2 self-start sm:self-auto transition">
+                        <svg class="w-4 h-4 shrink-0 text-xs" aria-hidden="true"><use href="icons.svg#icon-refresh"/></svg> <span>Refresh Log</span>
                     </button>
                 </div>
 
-                <div class="bg-white border border-slate-200/90 rounded-2xl shadow-xs overflow-x-auto">
+                <div class="bg-surface border border-line/90 rounded border border-line overflow-x-auto">
                     <table class="w-full text-left text-xs">
-                        <thead class="bg-slate-50 border-b border-slate-200 text-[10px] font-black uppercase tracking-wider text-slate-500">
+                        <thead class="bg-bg border-b border-line text-[10px] font-semibold uppercase tracking-wider text-ink-muted">
                             <tr>
                                 <th class="px-4 py-3">Bus</th>
                                 <th class="px-4 py-3">Driver</th>
@@ -599,7 +515,7 @@ body::after {
                             </tr>
                         </thead>
                         <tbody id="geofenceLogsList">
-                            <tr><td colspan="4" class="p-8 text-center text-xs text-slate-400">Loading geofence entry logs...</td></tr>
+                            <tr><td colspan="4" class="p-8 text-center text-xs text-ink-muted">Loading geofence entry logs...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -609,26 +525,26 @@ body::after {
             <section id="section-temp-stop-logs" class="admin-section space-y-5">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
-                        <h2 class="text-xl font-black text-slate-900 tracking-tight">Temporary Stop Changes</h2>
-                        <p class="text-xs text-slate-500">Log of student temporary stop selections & alternative bus allotments. Use the bin icon to delete a change.</p>
+                        <h2 class="text-xl font-semibold text-navy tracking-tight">Temporary Stop Changes</h2>
+                        <p class="text-xs text-ink-muted">Log of student temporary stop selections & alternative bus allotments. Use the bin icon to delete a change.</p>
                     </div>
                     <div class="flex items-center gap-2">
-                        <select id="tempStopFilterStatus" onchange="window.KambusAdmin.filterTempStopLogs()" class="p-2 border border-slate-200 rounded-xl text-xs font-bold bg-white text-slate-700">
+                        <select id="tempStopFilterStatus" onchange="window.KambusAdmin.filterTempStopLogs()" class="p-2 border border-line rounded text-xs font-semibold bg-surface text-navy">
                             <option value="all">All Statuses</option>
                             <option value="active">Active</option>
                             <option value="scheduled">Scheduled</option>
                             <option value="cancelled">Cancelled</option>
                             <option value="expired">Expired</option>
                         </select>
-                        <button type="button" onclick="window.KambusAdmin.loadTemporaryStopLogs()" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl shadow-xs flex items-center gap-2 transition">
-                            <i class="fa-solid fa-rotate text-xs"></i> <span>Refresh Log</span>
+                        <button type="button" onclick="window.KambusAdmin.loadTemporaryStopLogs()" class="px-3.5 py-2 bg-bg hover:bg-slate-200 text-navy text-xs font-semibold rounded border border-line flex items-center gap-2 transition">
+                            <svg class="w-4 h-4 shrink-0 text-xs" aria-hidden="true"><use href="icons.svg#icon-refresh"/></svg> <span>Refresh Log</span>
                         </button>
                     </div>
                 </div>
 
-                <div class="bg-white border border-slate-200/90 rounded-2xl shadow-xs overflow-x-auto">
+                <div class="bg-surface border border-line/90 rounded border border-line overflow-x-auto">
                     <table class="w-full text-left text-xs">
-                        <thead class="bg-slate-50 border-b border-slate-200 text-[10px] font-black uppercase tracking-wider text-slate-500">
+                        <thead class="bg-bg border-b border-line text-[10px] font-semibold uppercase tracking-wider text-ink-muted">
                             <tr>
                                 <th class="px-4 py-3">Student</th>
                                 <th class="px-4 py-3">Original Stop</th>
@@ -641,45 +557,45 @@ body::after {
                             </tr>
                         </thead>
                         <tbody id="tempStopLogsList">
-                            <tr><td colspan="8" class="p-8 text-center text-xs text-slate-400">Loading temporary stop logs...</td></tr>
+                            <tr><td colspan="8" class="p-8 text-center text-xs text-ink-muted">Loading temporary stop logs...</td></tr>
                         </tbody>
                     </table>
                 </div>
             </section>
 
-            <!-- SECTION 7: 🗺️ LIVE FLEET MAP -->
+            <!-- SECTION 7:  LIVE FLEET MAP -->
             <section id="section-live-map" class="admin-section space-y-4">
                 <div class="flex items-center justify-between gap-3">
                     <div>
-                        <h2 class="text-xl font-black text-slate-900 tracking-tight">Live Fleet Monitoring</h2>
-                        <p class="text-xs text-slate-500">Live GPS tracking of campus buses in transit to KITSW.</p>
+                        <h2 class="text-xl font-semibold text-navy tracking-tight">Live Fleet Monitoring</h2>
+                        <p class="text-xs text-ink-muted">Live GPS tracking of campus buses in transit to KITSW.</p>
                     </div>
-                    <span class="px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full text-xs font-black flex items-center gap-1.5">
-                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span> Live Tracking Active
+                    <span class="px-3 py-1 bg-ok/10 text-ok rounded-full border border-ok/20 text-xs font-semibold flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-ok animate-ping"></span> Live Tracking Active
                     </span>
                 </div>
 
                 <!-- Live Map Container -->
-                <div class="bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-sm">
+                <div class="bg-surface border border-line/90 rounded overflow-hidden border border-line">
                     <div id="adminLiveMap" style="height: 600px; width: 100%;"></div>
                 </div>
             </section>
 
-            <!-- SECTION 8: 🔔 ANNOUNCEMENTS & NOTIFICATIONS -->
+            <!-- SECTION 8:  ANNOUNCEMENTS & NOTIFICATIONS -->
             <section id="section-notifications" class="admin-section space-y-6">
                 <div>
-                    <h2 class="text-xl font-black text-slate-900 tracking-tight">Broadcast Announcements</h2>
-                    <p class="text-xs text-slate-500">Send template-based operational notices with automatic student recipient calculation.</p>
+                    <h2 class="text-xl font-semibold text-navy tracking-tight">Broadcast Announcements</h2>
+                    <p class="text-xs text-ink-muted">Send template-based operational notices with automatic student recipient calculation.</p>
                 </div>
 
                 <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
                     <!-- Composer Form -->
-                    <form onsubmit="window.KambusAdmin.submitBroadcastAnnouncement(event)" class="lg:col-span-7 bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs space-y-4">
-                        <h3 class="text-sm font-black text-slate-900">Compose Notice</h3>
+                    <form onsubmit="window.KambusAdmin.submitBroadcastAnnouncement(event)" class="lg:col-span-7 bg-surface border border-line/90 rounded p-5 border border-line space-y-4">
+                        <h3 class="text-sm font-semibold text-navy">Compose Notice</h3>
 
                         <div>
-                            <label class="block text-xs font-bold text-slate-700 mb-1">Select Predefined Template</label>
-                            <select id="announcementTemplateSelect" onchange="window.KambusAdmin.updateAnnouncementTemplateFields()" class="w-full p-2.5 border border-slate-300 rounded-xl text-xs font-semibold focus:border-brand">
+                            <label class="block text-xs font-semibold text-navy mb-1">Select Predefined Template</label>
+                            <select id="announcementTemplateSelect" onchange="window.KambusAdmin.updateAnnouncementTemplateFields()" class="w-full p-2.5 border border-line rounded text-xs font-semibold focus:border-brand">
                                 <option value="TEMPLATE_A">Template A — Bus Start / Schedule</option>
                                 <option value="TEMPLATE_B">Template B — Student Bus Change</option>
                                 <option value="TEMPLATE_C">Template C — Bus Unavailable</option>
@@ -692,140 +608,140 @@ body::after {
                         </div>
 
                         <!-- Dynamic Fields Area -->
-                        <div id="templateFieldsContainer" class="space-y-3 p-3.5 bg-slate-50 border border-slate-200 rounded-xl"></div>
+                        <div id="templateFieldsContainer" class="space-y-3 p-3.5 bg-bg border border-line rounded"></div>
 
                         <!-- Target Audience Area -->
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
-                                <label class="block text-xs font-bold text-slate-700 mb-1">Target Audience</label>
-                                <select id="announcementTargetType" onchange="window.KambusAdmin.onAnnouncementTargetTypeChanged()" class="w-full p-2.5 border border-slate-300 rounded-xl text-xs">
+                                <label class="block text-xs font-semibold text-navy mb-1">Target Audience</label>
+                                <select id="announcementTargetType" onchange="window.KambusAdmin.onAnnouncementTargetTypeChanged()" class="w-full p-2.5 border border-line rounded text-xs">
                                     <option value="all">All Registered Students</option>
                                     <option value="bus">Specific Bus</option>
                                     <option value="route">Specific Route</option>
                                 </select>
                             </div>
                             <div id="targetBusCol" class="hidden">
-                                <label class="block text-xs font-bold text-slate-700 mb-1">Select Bus</label>
-                                <select id="announcementTargetBus" onchange="window.KambusAdmin.calculateAffectedStudents()" class="w-full p-2.5 border border-slate-300 rounded-xl text-xs bus-select-dropdown">
+                                <label class="block text-xs font-semibold text-navy mb-1">Select Bus</label>
+                                <select id="announcementTargetBus" onchange="window.KambusAdmin.calculateAffectedStudents()" class="w-full p-2.5 border border-line rounded text-xs bus-select-dropdown">
                                     <option value="">-- Select Bus --</option>
                                 </select>
                             </div>
                             <div id="targetRouteCol" class="hidden">
-                                <label class="block text-xs font-bold text-slate-700 mb-1">Select Route</label>
-                                <select id="announcementTargetRoute" onchange="window.KambusAdmin.calculateAffectedStudents()" class="w-full p-2.5 border border-slate-300 rounded-xl text-xs route-select-dropdown">
+                                <label class="block text-xs font-semibold text-navy mb-1">Select Route</label>
+                                <select id="announcementTargetRoute" onchange="window.KambusAdmin.calculateAffectedStudents()" class="w-full p-2.5 border border-line rounded text-xs route-select-dropdown">
                                     <option value="">-- Select Route --</option>
                                 </select>
                             </div>
                         </div>
 
                         <div>
-                            <label class="block text-xs font-bold text-slate-700 mb-1">Announcement Title</label>
-                            <input type="text" id="announcementTitle" class="w-full p-2.5 border border-slate-300 rounded-xl text-xs font-bold" required>
+                            <label class="block text-xs font-semibold text-navy mb-1">Announcement Title</label>
+                            <input type="text" id="announcementTitle" class="w-full p-2.5 border border-line rounded text-xs font-semibold" required>
                         </div>
 
                         <div>
-                            <label class="block text-xs font-bold text-slate-700 mb-1">Generated Message</label>
-                            <textarea id="announcementMessage" rows="3" class="w-full p-2.5 border border-slate-300 rounded-xl text-xs" required></textarea>
+                            <label class="block text-xs font-semibold text-navy mb-1">Generated Message</label>
+                            <textarea id="announcementMessage" rows="3" class="w-full p-2.5 border border-line rounded text-xs" required></textarea>
                         </div>
 
                         <!-- Recipient Counter & Send Button -->
                         <div class="pt-3 border-t border-slate-100 flex items-center justify-between gap-3">
-                            <span id="announcementRecipientCount" class="text-xs font-black text-brand bg-brand/10 px-3 py-1.5 rounded-xl">
-                                🎯 Affected Students: Calculating...
+                            <span id="announcementRecipientCount" class="text-xs font-semibold text-brand bg-brand/10 px-3 py-1.5 rounded">
+                                 Affected Students: Calculating...
                             </span>
-                            <button type="submit" id="btnBroadcastAnnouncement" class="px-5 py-2.5 bg-brand hover:bg-brandDark text-white text-xs font-black rounded-xl shadow flex items-center gap-2">
-                                <i class="fa-solid fa-paper-plane"></i> <span>Send Announcement</span>
+                            <button type="submit" id="btnBroadcastAnnouncement" class="px-5 py-2.5 bg-brand hover:bg-brandDark text-white text-xs font-semibold rounded shadow flex items-center gap-2">
+                                <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-paper-plane"/></svg> <span>Send Announcement</span>
                             </button>
                         </div>
                     </form>
 
                     <!-- History List -->
-                    <div class="lg:col-span-5 bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs flex flex-col justify-between">
+                    <div class="lg:col-span-5 bg-surface border border-line/90 rounded p-5 border border-line flex flex-col justify-between">
                         <div>
-                            <h3 class="text-sm font-black text-slate-900 mb-3">Sent Announcements History</h3>
+                            <h3 class="text-sm font-semibold text-navy mb-3">Sent Announcements History</h3>
                             <div id="announcementHistoryList" class="space-y-2.5 max-h-[500px] overflow-y-auto">
-                                <div class="p-6 text-center text-xs text-slate-400">Loading history...</div>
+                                <div class="p-6 text-center text-xs text-ink-muted">Loading history...</div>
                             </div>
                         </div>
                     </div>
                 </div>
             </section>
 
-            <!-- SECTION 9: 🚨 ALERT CENTER -->
+            <!-- SECTION 9:  ALERT CENTER -->
             <section id="section-alerts" class="admin-section space-y-5">
                 <div>
-                    <h2 class="text-xl font-black text-slate-900 tracking-tight">Operational Alerts & SOS</h2>
-                    <p class="text-xs text-slate-500">Live operational alerts, breakdown reports, and driver emergency signals.</p>
+                    <h2 class="text-xl font-semibold text-navy tracking-tight">Operational Alerts & SOS</h2>
+                    <p class="text-xs text-ink-muted">Live operational alerts, breakdown reports, and driver emergency signals.</p>
                 </div>
 
                 <div id="alertsList" class="space-y-3">
-                    <div class="p-8 text-center text-xs text-slate-400">Loading alerts...</div>
+                    <div class="p-8 text-center text-xs text-ink-muted">Loading alerts...</div>
                 </div>
             </section>
 
-            <!-- SECTION 10: 📅 TODAY'S OPERATIONS -->
+            <!-- SECTION 10:  TODAY'S OPERATIONS -->
             <section id="section-today-operations" class="admin-section space-y-6">
                 <div>
-                    <h2 class="text-xl font-black text-slate-900 tracking-tight">Today's Operations Breakdown</h2>
-                    <p class="text-xs text-slate-500">Summary of today's active trips, student attendance, and fleet status.</p>
+                    <h2 class="text-xl font-semibold text-navy tracking-tight">Today's Operations Breakdown</h2>
+                    <p class="text-xs text-ink-muted">Summary of today's active trips, student attendance, and fleet status.</p>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4" id="todayOpsContainer">
-                    <div class="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs">
-                        <h4 class="text-xs font-bold text-slate-400 uppercase">Buses Breakdown</h4>
+                    <div class="bg-surface border border-line/90 rounded p-5 border border-line">
+                        <h4 class="text-xs font-semibold text-ink-muted uppercase">Buses Breakdown</h4>
                         <div class="mt-3 space-y-2 text-xs">
-                            <div class="flex justify-between font-bold text-emerald-600"><span>🟢 Active Now:</span> <span id="opsBusesActive">0</span></div>
-                            <div class="flex justify-between text-slate-700"><span>⏳ Not Started:</span> <span id="opsBusesNotStarted">0</span></div>
-                            <div class="flex justify-between text-slate-400"><span>⚫ Offline:</span> <span id="opsBusesOffline">0</span></div>
+                            <div class="flex justify-between font-semibold text-ok"><span> Active Now:</span> <span id="opsBusesActive">0</span></div>
+                            <div class="flex justify-between text-navy"><span> Not Started:</span> <span id="opsBusesNotStarted">0</span></div>
+                            <div class="flex justify-between text-ink-muted"><span> Offline:</span> <span id="opsBusesOffline">0</span></div>
                         </div>
                     </div>
 
-                    <div class="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs">
-                        <h4 class="text-xs font-bold text-slate-400 uppercase">Student Travel Status</h4>
+                    <div class="bg-surface border border-line/90 rounded p-5 border border-line">
+                        <h4 class="text-xs font-semibold text-ink-muted uppercase">Student Travel Status</h4>
                         <div class="mt-3 space-y-2 text-xs">
-                            <div class="flex justify-between font-bold text-brand"><span>🎒 Registered:</span> <span id="opsStudentsExpected">0</span></div>
-                            <div class="flex justify-between font-bold text-emerald-600"><span>✓ Travelling Today:</span> <span id="opsStudentsTravelling">0</span></div>
-                            <div class="flex justify-between text-rose-600"><span>✕ Not Travelling:</span> <span id="opsStudentsNotTravelling">0</span></div>
+                            <div class="flex justify-between font-semibold text-brand"><span> Registered:</span> <span id="opsStudentsExpected">0</span></div>
+                            <div class="flex justify-between font-semibold text-ok"><span> Travelling Today:</span> <span id="opsStudentsTravelling">0</span></div>
+                            <div class="flex justify-between text-danger"><span> Not Travelling:</span> <span id="opsStudentsNotTravelling">0</span></div>
                         </div>
                     </div>
 
-                    <div class="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs">
-                        <h4 class="text-xs font-bold text-slate-400 uppercase">Trips Summary</h4>
+                    <div class="bg-surface border border-line/90 rounded p-5 border border-line">
+                        <h4 class="text-xs font-semibold text-ink-muted uppercase">Trips Summary</h4>
                         <div class="mt-3 space-y-2 text-xs">
-                            <div class="flex justify-between font-bold text-emerald-600"><span>🚗 Active in Transit:</span> <span id="opsTripsActive">0</span></div>
-                            <div class="flex justify-between text-slate-700"><span>🏁 Completed Today:</span> <span id="opsTripsCompleted">0</span></div>
+                            <div class="flex justify-between font-semibold text-ok"><span> Active in Transit:</span> <span id="opsTripsActive">0</span></div>
+                            <div class="flex justify-between text-navy"><span> Completed Today:</span> <span id="opsTripsCompleted">0</span></div>
                         </div>
                     </div>
                 </div>
             </section>
 
-            <!-- SECTION 11: 🔍 GLOBAL SEARCH -->
+            <!-- SECTION 11:  GLOBAL SEARCH -->
             <section id="section-search" class="admin-section space-y-5">
                 <div>
-                    <h2 class="text-xl font-black text-slate-900 tracking-tight">Global Entity Search</h2>
-                    <p class="text-xs text-slate-500">Instantly lookup students, drivers, buses, routes, and stops.</p>
+                    <h2 class="text-xl font-semibold text-navy tracking-tight">Global Entity Search</h2>
+                    <p class="text-xs text-ink-muted">Instantly lookup students, drivers, buses, routes, and stops.</p>
                 </div>
 
-                <div class="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-xs">
+                <div class="bg-surface border border-line/90 rounded p-4 border border-line">
                     <div class="flex items-center gap-2">
-                        <input type="text" id="globalSearchInput" placeholder="Type a bus number, student roll number, driver name, or stop..." oninput="window.KambusAdmin.executeGlobalSearch()" class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-xs font-semibold focus:border-brand">
+                        <input type="text" id="globalSearchInput" placeholder="Type a bus number, student roll number, driver name, or stop..." oninput="window.KambusAdmin.executeGlobalSearch()" class="w-full px-3.5 py-2.5 border border-line rounded text-xs font-semibold focus:border-brand">
                     </div>
                 </div>
 
-                <div id="globalSearchResults" class="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-xs min-h-[150px]">
-                    <div class="p-6 text-center text-xs text-slate-400">Start typing to search records...</div>
+                <div id="globalSearchResults" class="bg-surface border border-line/90 rounded p-4 border border-line min-h-[150px]">
+                    <div class="p-6 text-center text-xs text-ink-muted">Start typing to search records...</div>
                 </div>
             </section>
 
-            <!-- SECTION 12: 📝 ACTIVITY LOG -->
+            <!-- SECTION 12:  ACTIVITY LOG -->
             <section id="section-activity-logs" class="admin-section space-y-5">
                 <div>
-                    <h2 class="text-xl font-black text-slate-900 tracking-tight">Admin Activity Log</h2>
-                    <p class="text-xs text-slate-500">Audit trail of all administrative actions performed.</p>
+                    <h2 class="text-xl font-semibold text-navy tracking-tight">Admin Activity Log</h2>
+                    <p class="text-xs text-ink-muted">Audit trail of all administrative actions performed.</p>
                 </div>
 
                 <div id="activityLogsList" class="space-y-2.5">
-                    <div class="p-8 text-center text-xs text-slate-400">Loading activity logs...</div>
+                    <div class="p-8 text-center text-xs text-ink-muted">Loading activity logs...</div>
                 </div>
             </section>
 
@@ -833,15 +749,15 @@ body::after {
             <section id="section-admins" class="admin-section space-y-5">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
-                        <h2 class="text-xl font-black text-slate-900 tracking-tight">Admin Accounts</h2>
-                        <p class="text-xs text-slate-500">Create admins, reset their passwords, or disable access. Admins sign in on the Admin tab with their Admin ID.</p>
+                        <h2 class="text-xl font-semibold text-navy tracking-tight">Admin Accounts</h2>
+                        <p class="text-xs text-ink-muted">Create admins, reset their passwords, or disable access. Admins sign in on the Admin tab with their Admin ID.</p>
                     </div>
-                    <button type="button" onclick="window.KambusAdmin.openAddAdminModal()" class="px-4 py-2 bg-brand hover:bg-brandDark text-white text-xs font-bold rounded-xl shadow-xs flex items-center gap-2 self-start sm:self-auto">
-                        <i class="fa-solid fa-user-shield"></i> <span>Add Admin</span>
+                    <button type="button" onclick="window.KambusAdmin.openAddAdminModal()" class="px-4 py-2 bg-brand hover:bg-brandDark text-white text-xs font-semibold rounded border border-line flex items-center gap-2 self-start sm:self-auto">
+                        <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-user-shield"/></svg> <span>Add Admin</span>
                     </button>
                 </div>
                 <div id="adminsList">
-                    <div class="p-8 text-center text-xs text-slate-400">Loading admins...</div>
+                    <div class="p-8 text-center text-xs text-ink-muted">Loading admins...</div>
                 </div>
             </section>
 
@@ -854,17 +770,17 @@ body::after {
 
     <!-- BUS DETAILS MODAL (WITH EDITABLE FIELDS + QUICK DRIVER/ROUTE CHANGE) -->
     <div id="busDetailsModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl max-w-lg w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-slate-100">
+        <div class="bg-surface rounded max-w-lg w-full max-h-[90vh] flex flex-col border border-line overflow-hidden border border-slate-100">
             <!-- Modal Header -->
-            <div class="p-5 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+            <div class="p-5 bg-bg border-b border-slate-100 flex items-center justify-between">
                 <div>
-                    <h3 id="modalBusTitle" class="text-lg font-black text-slate-900">Bus Details</h3>
-                    <p id="modalBusReg" class="text-xs text-slate-500">Registration</p>
+                    <h3 id="modalBusTitle" class="text-lg font-semibold text-navy">Bus Details</h3>
+                    <p id="modalBusReg" class="text-xs text-ink-muted">Registration</p>
                 </div>
                 <div class="flex items-center gap-2">
                     <div id="modalBusStatusBadge"></div>
-                    <button type="button" onclick="document.getElementById('busDetailsModal').classList.add('hidden')" class="w-8 h-8 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center hover:bg-slate-300 transition">
-                        <i class="fa-solid fa-xmark text-sm"></i>
+                    <button type="button" onclick="document.getElementById('busDetailsModal').classList.add('hidden')" class="w-8 h-8 rounded-full bg-slate-200 text-ink-muted flex items-center justify-center hover:bg-slate-300 transition">
+                        <svg class="w-4 h-4 shrink-0 text-sm" aria-hidden="true"><use href="icons.svg#icon-xmark"/></svg>
                     </button>
                 </div>
             </div>
@@ -872,69 +788,69 @@ body::after {
             <!-- Modal Body -->
             <div class="p-5 overflow-y-auto space-y-4 text-xs">
                 <!-- Stats Summary -->
-                <div class="grid grid-cols-2 gap-3 p-3.5 bg-indigo-50/60 rounded-2xl border border-indigo-100">
+                <div class="grid grid-cols-2 gap-3 p-3.5 bg-bg/60 rounded border border-line">
                     <div>
-                        <span class="text-[10px] font-bold uppercase text-indigo-700">Assigned Students</span>
-                        <p id="modalBusStudentCount" class="text-lg font-black text-indigo-950 mt-0.5">0</p>
+                        <span class="text-[10px] font-semibold uppercase text-ink-muted">Assigned Students</span>
+                        <p id="modalBusStudentCount" class="text-lg font-semibold text-navy mt-0.5">0</p>
                     </div>
                     <div>
-                        <span class="text-[10px] font-bold uppercase text-indigo-700">Travelling Today</span>
-                        <p id="modalBusTravellingCount" class="text-lg font-black text-emerald-700 mt-0.5">0</p>
+                        <span class="text-[10px] font-semibold uppercase text-ink-muted">Travelling Today</span>
+                        <p id="modalBusTravellingCount" class="text-lg font-semibold text-ok mt-0.5">0</p>
                     </div>
                 </div>
 
                 <!-- Editable Bus Properties (Bus Number, Reg, Status) -->
-                <div class="p-4 bg-white border border-slate-200 rounded-2xl space-y-3">
-                    <span class="text-[10px] font-black uppercase text-slate-400">Edit Bus Properties</span>
+                <div class="p-4 bg-surface border border-line rounded space-y-3">
+                    <span class="text-[10px] font-semibold uppercase text-ink-muted">Edit Bus Properties</span>
                     <input type="hidden" id="modalBusId">
                     <div class="grid grid-cols-2 gap-2">
                         <div>
-                            <label class="block text-[11px] font-bold text-slate-600 mb-0.5">Bus Number</label>
-                            <input type="text" id="modalEditBusNumber" class="w-full p-2 border border-slate-300 rounded-xl font-bold text-xs">
+                            <label class="block text-[11px] font-semibold text-ink-muted mb-0.5">Bus Number</label>
+                            <input type="text" id="modalEditBusNumber" class="w-full p-2 border border-line rounded font-semibold text-xs">
                         </div>
                         <div>
-                            <label class="block text-[11px] font-bold text-slate-600 mb-0.5">Reg. Number</label>
-                            <input type="text" id="modalEditBusReg" class="w-full p-2 border border-slate-300 rounded-xl text-xs">
+                            <label class="block text-[11px] font-semibold text-ink-muted mb-0.5">Reg. Number</label>
+                            <input type="text" id="modalEditBusReg" class="w-full p-2 border border-line rounded text-xs">
                         </div>
                     </div>
                     <div class="flex items-center gap-2">
                         <div class="flex-1">
-                            <label class="block text-[11px] font-bold text-slate-600 mb-0.5">Fleet Status</label>
-                            <select id="modalEditBusStatus" class="w-full p-2 border border-slate-300 rounded-xl text-xs font-semibold">
+                            <label class="block text-[11px] font-semibold text-ink-muted mb-0.5">Fleet Status</label>
+                            <select id="modalEditBusStatus" class="w-full p-2 border border-line rounded text-xs font-semibold">
                                 <option value="active">Active (Operational)</option>
                                 <option value="inactive">Inactive (Maintenance / Offline)</option>
                             </select>
                         </div>
-                        <button type="button" id="btnSaveBusGeneralProps" class="mt-4 px-3 py-2 bg-slate-800 text-white font-bold rounded-xl hover:bg-slate-900 transition shrink-0">
+                        <button type="button" id="btnSaveBusGeneralProps" class="mt-4 px-3 py-2 bg-slate-800 text-white font-semibold rounded hover:bg-slate-900 transition shrink-0">
                             Update Info
                         </button>
                     </div>
                 </div>
 
                 <!-- Current Driver & Instant Change Driver -->
-                <div class="p-4 bg-white border border-slate-200 rounded-2xl space-y-2">
+                <div class="p-4 bg-surface border border-line rounded space-y-2">
                     <div>
-                        <span class="text-[10px] font-black uppercase text-slate-400">Assigned Driver</span>
-                        <h4 id="modalBusDriverName" class="text-sm font-black text-slate-900">Driver Name</h4>
-                        <p id="modalBusDriverPhone" class="text-xs text-slate-500 font-semibold"></p>
+                        <span class="text-[10px] font-semibold uppercase text-ink-muted">Assigned Driver</span>
+                        <h4 id="modalBusDriverName" class="text-sm font-semibold text-navy">Driver Name</h4>
+                        <p id="modalBusDriverPhone" class="text-xs text-ink-muted font-semibold"></p>
                     </div>
                     <div class="pt-2 border-t border-slate-100 flex items-center gap-2">
-                        <select id="modalBusDriverSelect" class="flex-1 p-2 border border-slate-300 rounded-xl text-xs driver-select-dropdown"></select>
-                        <button type="button" id="btnSaveBusDriver" class="px-3 py-2 bg-brand text-white font-bold rounded-xl hover:bg-brandDark transition shrink-0">
+                        <select id="modalBusDriverSelect" class="flex-1 p-2 border border-line rounded text-xs driver-select-dropdown"></select>
+                        <button type="button" id="btnSaveBusDriver" class="px-3 py-2 bg-brand text-white font-semibold rounded hover:bg-brandDark transition shrink-0">
                             Save Driver
                         </button>
                     </div>
                 </div>
 
                 <!-- Current Route & Instant Change Route -->
-                <div class="p-4 bg-white border border-slate-200 rounded-2xl space-y-2">
+                <div class="p-4 bg-surface border border-line rounded space-y-2">
                     <div>
-                        <span class="text-[10px] font-black uppercase text-slate-400">Assigned Route</span>
-                        <h4 id="modalBusRouteName" class="text-sm font-black text-slate-900">Route Name</h4>
+                        <span class="text-[10px] font-semibold uppercase text-ink-muted">Assigned Route</span>
+                        <h4 id="modalBusRouteName" class="text-sm font-semibold text-navy">Route Name</h4>
                     </div>
                     <div class="pt-2 border-t border-slate-100 flex items-center gap-2">
-                        <select id="modalBusRouteSelect" class="flex-1 p-2 border border-slate-300 rounded-xl text-xs route-select-dropdown"></select>
-                        <button type="button" id="btnSaveBusRoute" class="px-3 py-2 bg-brand text-white font-bold rounded-xl hover:bg-brandDark transition shrink-0">
+                        <select id="modalBusRouteSelect" class="flex-1 p-2 border border-line rounded text-xs route-select-dropdown"></select>
+                        <button type="button" id="btnSaveBusRoute" class="px-3 py-2 bg-brand text-white font-semibold rounded hover:bg-brandDark transition shrink-0">
                             Save Route
                         </button>
                     </div>
@@ -942,8 +858,8 @@ body::after {
 
                 <!-- Assigned Students List -->
                 <div>
-                    <h4 class="text-xs font-black text-slate-900 mb-2">Students Assigned to this Bus</h4>
-                    <div id="modalBusStudentsList" class="max-h-40 overflow-y-auto border border-slate-200 rounded-2xl divide-y divide-slate-100 p-2"></div>
+                    <h4 class="text-xs font-semibold text-navy mb-2">Students Assigned to this Bus</h4>
+                    <div id="modalBusStudentsList" class="max-h-40 overflow-y-auto border border-line rounded divide-y divide-slate-100 p-2"></div>
                 </div>
             </div>
         </div>
@@ -951,61 +867,61 @@ body::after {
 
     <!-- DRIVER DETAILS MODAL -->
     <div id="driverDetailsModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl max-w-md w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden border border-slate-100">
-            <div class="p-5 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+        <div class="bg-surface rounded max-w-md w-full max-h-[85vh] flex flex-col border border-line overflow-hidden border border-slate-100">
+            <div class="p-5 bg-bg border-b border-slate-100 flex items-center justify-between">
                 <div>
-                    <h3 id="modalDriverName" class="text-lg font-black text-slate-900">Driver Profile</h3>
-                    <p id="modalDriverCode" class="text-xs font-mono text-slate-500">Code</p>
+                    <h3 id="modalDriverName" class="text-lg font-semibold text-navy">Driver Profile</h3>
+                    <p id="modalDriverCode" class="text-xs font-mono text-ink-muted">Code</p>
                 </div>
                 <div class="flex items-center gap-2">
-                    <button type="button" id="modalEditDriverBtn" class="px-3 py-1.5 bg-white border border-slate-200 text-slate-700 hover:text-brand hover:border-brand/40 font-bold rounded-xl shadow-xs flex items-center gap-1.5 text-xs transition">
-                        <i class="fa-solid fa-pen-to-square text-xs"></i> <span>Edit</span>
+                    <button type="button" id="modalEditDriverBtn" class="px-3 py-1.5 bg-surface border border-line text-navy hover:text-brand hover:border-brand/40 font-semibold rounded border border-line flex items-center gap-1.5 text-xs transition">
+                        <svg class="w-4 h-4 shrink-0 text-xs" aria-hidden="true"><use href="icons.svg#icon-pen"/></svg> <span>Edit</span>
                     </button>
-                    <button type="button" onclick="document.getElementById('driverDetailsModal').classList.add('hidden')" class="w-8 h-8 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center hover:bg-slate-300 transition">
-                        <i class="fa-solid fa-xmark text-sm"></i>
+                    <button type="button" onclick="document.getElementById('driverDetailsModal').classList.add('hidden')" class="w-8 h-8 rounded-full bg-slate-200 text-ink-muted flex items-center justify-center hover:bg-slate-300 transition">
+                        <svg class="w-4 h-4 shrink-0 text-sm" aria-hidden="true"><use href="icons.svg#icon-xmark"/></svg>
                     </button>
                 </div>
             </div>
             <div class="p-5 overflow-y-auto space-y-3 text-xs">
-                <div class="p-3 bg-slate-50 rounded-xl space-y-1">
-                    <p id="modalDriverPhone" class="font-bold text-slate-800">Phone</p>
-                    <p id="modalDriverBus" class="font-black text-brand">Bus Assignment</p>
+                <div class="p-3 bg-bg rounded space-y-1">
+                    <p id="modalDriverPhone" class="font-semibold text-navy">Phone</p>
+                    <p id="modalDriverBus" class="font-semibold text-brand">Bus Assignment</p>
                 </div>
-                <h4 class="font-black text-slate-900 mt-3">Recent Trip History</h4>
-                <div id="modalDriverTrips" class="border border-slate-200 rounded-xl divide-y divide-slate-100 max-h-48 overflow-y-auto"></div>
+                <h4 class="font-semibold text-navy mt-3">Recent Trip History</h4>
+                <div id="modalDriverTrips" class="border border-line rounded divide-y divide-slate-100 max-h-48 overflow-y-auto"></div>
             </div>
         </div>
     </div>
 
     <!-- ADD BUS MODAL -->
     <div id="addBusModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100">
+        <div class="bg-surface rounded max-w-md w-full p-6 border border-line border border-slate-100">
             <div class="flex items-center justify-between mb-4">
-                <h3 class="text-base font-black text-slate-900">Add New Bus</h3>
-                <button type="button" onclick="document.getElementById('addBusModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600">
-                    <i class="fa-solid fa-xmark text-lg"></i>
+                <h3 class="text-base font-semibold text-navy">Add New Bus</h3>
+                <button type="button" onclick="document.getElementById('addBusModal').classList.add('hidden')" class="text-ink-muted hover:text-ink-muted">
+                    <svg class="w-4 h-4 shrink-0 text-lg" aria-hidden="true"><use href="icons.svg#icon-xmark"/></svg>
                 </button>
             </div>
             <form onsubmit="window.KambusAdmin.submitAddBus(event)" class="space-y-3.5 text-xs">
                 <div>
-                    <label class="block font-bold text-slate-700 mb-1">Bus Number (e.g. 4, 12, 101)</label>
-                    <input type="text" name="bus_number" placeholder="e.g. 4" class="w-full p-2.5 border border-slate-300 rounded-xl font-bold text-slate-900" required>
+                    <label class="block font-semibold text-navy mb-1">Bus Number (e.g. 4, 12, 101)</label>
+                    <input type="text" name="bus_number" placeholder="e.g. 4" class="w-full p-2.5 border border-line rounded font-semibold text-navy" required>
                 </div>
                 <div>
-                    <label class="block font-bold text-slate-700 mb-1">Registration Number (Optional)</label>
-                    <input type="text" name="registration_number" placeholder="e.g. TS03-EA-1234" class="w-full p-2.5 border border-slate-300 rounded-xl">
+                    <label class="block font-semibold text-navy mb-1">Registration Number (Optional)</label>
+                    <input type="text" name="registration_number" placeholder="e.g. TS03-EA-1234" class="w-full p-2.5 border border-line rounded">
                 </div>
                 <div>
-                    <label class="block font-bold text-slate-700 mb-1">Assign Driver (Optional)</label>
-                    <select name="driver_id" class="w-full p-2.5 border border-slate-300 rounded-xl driver-select-dropdown"></select>
+                    <label class="block font-semibold text-navy mb-1">Assign Driver (Optional)</label>
+                    <select name="driver_id" class="w-full p-2.5 border border-line rounded driver-select-dropdown"></select>
                 </div>
                 <div>
-                    <label class="block font-bold text-slate-700 mb-1">Assign Route (Optional)</label>
-                    <select name="route_id" class="w-full p-2.5 border border-slate-300 rounded-xl route-select-dropdown"></select>
+                    <label class="block font-semibold text-navy mb-1">Assign Route (Optional)</label>
+                    <select name="route_id" class="w-full p-2.5 border border-line rounded route-select-dropdown"></select>
                 </div>
                 <div class="pt-3 flex gap-2">
-                    <button type="button" onclick="document.getElementById('addBusModal').classList.add('hidden')" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl">Cancel</button>
-                    <button type="submit" class="flex-1 py-2.5 bg-brand hover:bg-brandDark text-white font-bold rounded-xl shadow">Save Bus</button>
+                    <button type="button" onclick="document.getElementById('addBusModal').classList.add('hidden')" class="flex-1 py-2.5 bg-bg hover:bg-slate-200 text-navy font-semibold rounded">Cancel</button>
+                    <button type="submit" class="flex-1 py-2.5 bg-brand hover:bg-brandDark text-white font-semibold rounded shadow">Save Bus</button>
                 </div>
             </form>
         </div>
@@ -1013,37 +929,37 @@ body::after {
 
     <!-- ADD DRIVER MODAL -->
     <div id="addDriverModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100">
+        <div class="bg-surface rounded max-w-md w-full p-6 border border-line border border-slate-100">
             <div class="flex items-center justify-between mb-4">
-                <h3 class="text-base font-black text-slate-900">Add New Driver</h3>
-                <button type="button" onclick="document.getElementById('addDriverModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600">
-                    <i class="fa-solid fa-xmark text-lg"></i>
+                <h3 class="text-base font-semibold text-navy">Add New Driver</h3>
+                <button type="button" onclick="document.getElementById('addDriverModal').classList.add('hidden')" class="text-ink-muted hover:text-ink-muted">
+                    <svg class="w-4 h-4 shrink-0 text-lg" aria-hidden="true"><use href="icons.svg#icon-xmark"/></svg>
                 </button>
             </div>
             <form onsubmit="window.KambusAdmin.submitAddDriver(event)" class="space-y-3 text-xs">
                 <div>
-                    <label class="block font-bold text-slate-700 mb-1">Full Name</label>
-                    <input type="text" name="name" placeholder="e.g. Ramesh Kumar" class="w-full p-2.5 border border-slate-300 rounded-xl font-semibold" required>
+                    <label class="block font-semibold text-navy mb-1">Full Name</label>
+                    <input type="text" name="name" placeholder="e.g. Ramesh Kumar" class="w-full p-2.5 border border-line rounded font-semibold" required>
                 </div>
                 <div>
-                    <label class="block font-bold text-slate-700 mb-1">Driver Code (Unique login code)</label>
-                    <input type="text" name="driver_code" placeholder="e.g. DRV-01" class="w-full p-2.5 border border-slate-300 rounded-xl font-mono uppercase" required>
+                    <label class="block font-semibold text-navy mb-1">Driver Code (Unique login code)</label>
+                    <input type="text" name="driver_code" placeholder="e.g. DRV-01" class="w-full p-2.5 border border-line rounded font-mono uppercase" required>
                 </div>
                 <div>
-                    <label class="block font-bold text-slate-700 mb-1">Phone Number</label>
-                    <input type="tel" name="phone" placeholder="e.g. 9876543210" class="w-full p-2.5 border border-slate-300 rounded-xl" required>
+                    <label class="block font-semibold text-navy mb-1">Phone Number</label>
+                    <input type="tel" name="phone" placeholder="e.g. 9876543210" class="w-full p-2.5 border border-line rounded" required>
                 </div>
                 <div>
-                    <label class="block font-bold text-slate-700 mb-1">Password</label>
-                    <input type="password" name="password" placeholder="••••••••" class="w-full p-2.5 border border-slate-300 rounded-xl" required>
+                    <label class="block font-semibold text-navy mb-1">Password</label>
+                    <input type="password" name="password" placeholder="••••••••" class="w-full p-2.5 border border-line rounded" required>
                 </div>
                 <div>
-                    <label class="block font-bold text-slate-700 mb-1">Driving License Number</label>
-                    <input type="text" name="license_number" placeholder="e.g. TS-123456789" class="w-full p-2.5 border border-slate-300 rounded-xl">
+                    <label class="block font-semibold text-navy mb-1">Driving License Number</label>
+                    <input type="text" name="license_number" placeholder="e.g. TS-123456789" class="w-full p-2.5 border border-line rounded">
                 </div>
                 <div class="pt-3 flex gap-2">
-                    <button type="button" onclick="document.getElementById('addDriverModal').classList.add('hidden')" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl">Cancel</button>
-                    <button type="submit" class="flex-1 py-2.5 bg-brand hover:bg-brandDark text-white font-bold rounded-xl shadow">Register Driver</button>
+                    <button type="button" onclick="document.getElementById('addDriverModal').classList.add('hidden')" class="flex-1 py-2.5 bg-bg hover:bg-slate-200 text-navy font-semibold rounded">Cancel</button>
+                    <button type="submit" class="flex-1 py-2.5 bg-brand hover:bg-brandDark text-white font-semibold rounded shadow">Register Driver</button>
                 </div>
             </form>
         </div>
@@ -1051,38 +967,38 @@ body::after {
 
     <!-- EDIT DRIVER MODAL -->
     <div id="editDriverModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100">
+        <div class="bg-surface rounded max-w-md w-full p-6 border border-line border border-slate-100">
             <div class="flex items-center justify-between mb-4">
-                <h3 class="text-base font-black text-slate-900">Edit Driver</h3>
-                <button type="button" onclick="document.getElementById('editDriverModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600">
-                    <i class="fa-solid fa-xmark text-lg"></i>
+                <h3 class="text-base font-semibold text-navy">Edit Driver</h3>
+                <button type="button" onclick="document.getElementById('editDriverModal').classList.add('hidden')" class="text-ink-muted hover:text-ink-muted">
+                    <svg class="w-4 h-4 shrink-0 text-lg" aria-hidden="true"><use href="icons.svg#icon-xmark"/></svg>
                 </button>
             </div>
             <form onsubmit="window.KambusAdmin.submitEditDriver(event)" class="space-y-3 text-xs">
                 <input type="hidden" name="driver_id" id="editDriverId">
                 <div>
-                    <label class="block font-bold text-slate-700 mb-1">Full Name</label>
-                    <input type="text" name="name" id="editDriverName" placeholder="e.g. Ramesh Kumar" class="w-full p-2.5 border border-slate-300 rounded-xl font-semibold" required>
+                    <label class="block font-semibold text-navy mb-1">Full Name</label>
+                    <input type="text" name="name" id="editDriverName" placeholder="e.g. Ramesh Kumar" class="w-full p-2.5 border border-line rounded font-semibold" required>
                 </div>
                 <div>
-                    <label class="block font-bold text-slate-700 mb-1">Driver Code (Unique login code)</label>
-                    <input type="text" name="driver_code" id="editDriverCode" placeholder="e.g. DRV-01" class="w-full p-2.5 border border-slate-300 rounded-xl font-mono uppercase" required>
+                    <label class="block font-semibold text-navy mb-1">Driver Code (Unique login code)</label>
+                    <input type="text" name="driver_code" id="editDriverCode" placeholder="e.g. DRV-01" class="w-full p-2.5 border border-line rounded font-mono uppercase" required>
                 </div>
                 <div>
-                    <label class="block font-bold text-slate-700 mb-1">Phone Number</label>
-                    <input type="tel" name="phone" id="editDriverPhone" placeholder="e.g. 9876543210" class="w-full p-2.5 border border-slate-300 rounded-xl" required>
+                    <label class="block font-semibold text-navy mb-1">Phone Number</label>
+                    <input type="tel" name="phone" id="editDriverPhone" placeholder="e.g. 9876543210" class="w-full p-2.5 border border-line rounded" required>
                 </div>
                 <div>
-                    <label class="block font-bold text-slate-700 mb-1">New Password <span class="text-slate-400 font-normal">(Leave blank to keep unchanged)</span></label>
-                    <input type="password" name="password" id="editDriverPassword" placeholder="••••••••" class="w-full p-2.5 border border-slate-300 rounded-xl">
+                    <label class="block font-semibold text-navy mb-1">New Password <span class="text-ink-muted font-normal">(Leave blank to keep unchanged)</span></label>
+                    <input type="password" name="password" id="editDriverPassword" placeholder="••••••••" class="w-full p-2.5 border border-line rounded">
                 </div>
                 <div>
-                    <label class="block font-bold text-slate-700 mb-1">Driving License Number</label>
-                    <input type="text" name="license_number" id="editDriverLicense" placeholder="e.g. TS-123456789" class="w-full p-2.5 border border-slate-300 rounded-xl">
+                    <label class="block font-semibold text-navy mb-1">Driving License Number</label>
+                    <input type="text" name="license_number" id="editDriverLicense" placeholder="e.g. TS-123456789" class="w-full p-2.5 border border-line rounded">
                 </div>
                 <div class="pt-3 flex gap-2">
-                    <button type="button" onclick="document.getElementById('editDriverModal').classList.add('hidden')" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl">Cancel</button>
-                    <button type="submit" class="flex-1 py-2.5 bg-brand hover:bg-brandDark text-white font-bold rounded-xl shadow">Save Changes</button>
+                    <button type="button" onclick="document.getElementById('editDriverModal').classList.add('hidden')" class="flex-1 py-2.5 bg-bg hover:bg-slate-200 text-navy font-semibold rounded">Cancel</button>
+                    <button type="submit" class="flex-1 py-2.5 bg-brand hover:bg-brandDark text-white font-semibold rounded shadow">Save Changes</button>
                 </div>
             </form>
         </div>
@@ -1090,45 +1006,45 @@ body::after {
 
     <!-- ADD STUDENT MODAL -->
     <div id="addStudentModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100">
+        <div class="bg-surface rounded max-w-md w-full p-6 border border-line border border-slate-100">
             <div class="flex items-center justify-between mb-4">
-                <h3 class="text-base font-black text-slate-900">Add New Student</h3>
-                <button type="button" onclick="document.getElementById('addStudentModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600">
-                    <i class="fa-solid fa-xmark text-lg"></i>
+                <h3 class="text-base font-semibold text-navy">Add New Student</h3>
+                <button type="button" onclick="document.getElementById('addStudentModal').classList.add('hidden')" class="text-ink-muted hover:text-ink-muted">
+                    <svg class="w-4 h-4 shrink-0 text-lg" aria-hidden="true"><use href="icons.svg#icon-xmark"/></svg>
                 </button>
             </div>
             <form onsubmit="window.KambusAdmin.submitAddStudent(event)" class="space-y-3 text-xs">
                 <div>
-                    <label class="block font-bold text-slate-700 mb-1">Full Name</label>
-                    <input type="text" name="name" placeholder="Student Name" class="w-full p-2.5 border border-slate-300 rounded-xl" required>
+                    <label class="block font-semibold text-navy mb-1">Full Name</label>
+                    <input type="text" name="name" placeholder="Student Name" class="w-full p-2.5 border border-line rounded" required>
                 </div>
                 <div>
-                    <label class="block font-bold text-slate-700 mb-1">Roll Number</label>
-                    <input type="text" name="roll_number" placeholder="e.g. 21KIT123" class="w-full p-2.5 border border-slate-300 rounded-xl uppercase font-mono" required>
+                    <label class="block font-semibold text-navy mb-1">Roll Number</label>
+                    <input type="text" name="roll_number" placeholder="e.g. 21KIT123" class="w-full p-2.5 border border-line rounded uppercase font-mono" required>
                 </div>
                 <div>
-                    <label class="block font-bold text-slate-700 mb-1">Department</label>
-                    <input type="text" name="department" placeholder="e.g. CSE / ECE" class="w-full p-2.5 border border-slate-300 rounded-xl">
+                    <label class="block font-semibold text-navy mb-1">Department</label>
+                    <input type="text" name="department" placeholder="e.g. CSE / ECE" class="w-full p-2.5 border border-line rounded">
                 </div>
                 <div>
-                    <label class="block font-bold text-slate-700 mb-1">Phone Number</label>
-                    <input type="tel" name="phone" placeholder="Phone" class="w-full p-2.5 border border-slate-300 rounded-xl" required>
+                    <label class="block font-semibold text-navy mb-1">Phone Number</label>
+                    <input type="tel" name="phone" placeholder="Phone" class="w-full p-2.5 border border-line rounded" required>
                 </div>
                 <div>
-                    <label class="block font-bold text-slate-700 mb-1">Password</label>
-                    <input type="password" name="password" placeholder="••••••••" class="w-full p-2.5 border border-slate-300 rounded-xl" required>
+                    <label class="block font-semibold text-navy mb-1">Password</label>
+                    <input type="password" name="password" placeholder="••••••••" class="w-full p-2.5 border border-line rounded" required>
                 </div>
                 <div>
-                    <label class="block font-bold text-slate-700 mb-1">Assign Bus (Optional)</label>
-                    <select name="bus_id" class="w-full p-2.5 border border-slate-300 rounded-xl bus-select-dropdown"></select>
+                    <label class="block font-semibold text-navy mb-1">Assign Bus (Optional)</label>
+                    <select name="bus_id" class="w-full p-2.5 border border-line rounded bus-select-dropdown"></select>
                 </div>
                 <div>
-                    <label class="block font-bold text-slate-700 mb-1">Assign Stop (Optional)</label>
-                    <select name="stop_id" class="w-full p-2.5 border border-slate-300 rounded-xl stop-select-dropdown"></select>
+                    <label class="block font-semibold text-navy mb-1">Assign Stop (Optional)</label>
+                    <select name="stop_id" class="w-full p-2.5 border border-line rounded stop-select-dropdown"></select>
                 </div>
                 <div class="pt-3 flex gap-2">
-                    <button type="button" onclick="document.getElementById('addStudentModal').classList.add('hidden')" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl">Cancel</button>
-                    <button type="submit" class="flex-1 py-2.5 bg-brand hover:bg-brandDark text-white font-bold rounded-xl shadow">Create Student</button>
+                    <button type="button" onclick="document.getElementById('addStudentModal').classList.add('hidden')" class="flex-1 py-2.5 bg-bg hover:bg-slate-200 text-navy font-semibold rounded">Cancel</button>
+                    <button type="submit" class="flex-1 py-2.5 bg-brand hover:bg-brandDark text-white font-semibold rounded shadow">Create Student</button>
                 </div>
             </form>
         </div>
@@ -1136,39 +1052,39 @@ body::after {
 
     <!-- EDIT STUDENT MODAL -->
     <div id="editStudentModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100">
+        <div class="bg-surface rounded max-w-md w-full p-6 border border-line border border-slate-100">
             <div class="flex items-center justify-between mb-4">
-                <h3 class="text-base font-black text-slate-900">Edit Student</h3>
-                <button type="button" onclick="document.getElementById('editStudentModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600">
-                    <i class="fa-solid fa-xmark text-lg"></i>
+                <h3 class="text-base font-semibold text-navy">Edit Student</h3>
+                <button type="button" onclick="document.getElementById('editStudentModal').classList.add('hidden')" class="text-ink-muted hover:text-ink-muted">
+                    <svg class="w-4 h-4 shrink-0 text-lg" aria-hidden="true"><use href="icons.svg#icon-xmark"/></svg>
                 </button>
             </div>
             <form onsubmit="window.KambusAdmin.submitEditStudent(event)" class="space-y-3 text-xs">
                 <input type="hidden" name="student_id" id="editStudentId">
                 <div>
-                    <label class="block font-bold text-slate-700 mb-1">Full Name</label>
-                    <input type="text" name="name" id="editStudentName" class="w-full p-2.5 border border-slate-300 rounded-xl font-semibold" required>
+                    <label class="block font-semibold text-navy mb-1">Full Name</label>
+                    <input type="text" name="name" id="editStudentName" class="w-full p-2.5 border border-line rounded font-semibold" required>
                 </div>
                 <div>
-                    <label class="block font-bold text-slate-700 mb-1">Roll Number</label>
-                    <input type="text" name="roll_number" id="editStudentRoll" class="w-full p-2.5 border border-slate-300 rounded-xl uppercase font-mono" required>
+                    <label class="block font-semibold text-navy mb-1">Roll Number</label>
+                    <input type="text" name="roll_number" id="editStudentRoll" class="w-full p-2.5 border border-line rounded uppercase font-mono" required>
                 </div>
                 <div>
-                    <label class="block font-bold text-slate-700 mb-1">Department</label>
-                    <input type="text" name="department" id="editStudentDepartment" placeholder="e.g. CSE / ECE" class="w-full p-2.5 border border-slate-300 rounded-xl">
+                    <label class="block font-semibold text-navy mb-1">Department</label>
+                    <input type="text" name="department" id="editStudentDepartment" placeholder="e.g. CSE / ECE" class="w-full p-2.5 border border-line rounded">
                 </div>
                 <div>
-                    <label class="block font-bold text-slate-700 mb-1">Phone Number</label>
-                    <input type="tel" name="phone" id="editStudentPhone" class="w-full p-2.5 border border-slate-300 rounded-xl" required>
+                    <label class="block font-semibold text-navy mb-1">Phone Number</label>
+                    <input type="tel" name="phone" id="editStudentPhone" class="w-full p-2.5 border border-line rounded" required>
                 </div>
                 <div>
-                    <label class="block font-bold text-slate-700 mb-1">New Password <span class="text-slate-400 font-normal">(Leave blank to keep unchanged)</span></label>
-                    <input type="password" name="password" id="editStudentPassword" placeholder="••••••••" class="w-full p-2.5 border border-slate-300 rounded-xl">
+                    <label class="block font-semibold text-navy mb-1">New Password <span class="text-ink-muted font-normal">(Leave blank to keep unchanged)</span></label>
+                    <input type="password" name="password" id="editStudentPassword" placeholder="••••••••" class="w-full p-2.5 border border-line rounded">
                 </div>
-                <p class="text-[11px] text-slate-400">Bus and stop are changed with the Assign button.</p>
+                <p class="text-[11px] text-ink-muted">Bus and stop are changed with the Assign button.</p>
                 <div class="pt-3 flex gap-2">
-                    <button type="button" onclick="document.getElementById('editStudentModal').classList.add('hidden')" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl">Cancel</button>
-                    <button type="submit" class="flex-1 py-2.5 bg-brand hover:bg-brandDark text-white font-bold rounded-xl shadow">Save Changes</button>
+                    <button type="button" onclick="document.getElementById('editStudentModal').classList.add('hidden')" class="flex-1 py-2.5 bg-bg hover:bg-slate-200 text-navy font-semibold rounded">Cancel</button>
+                    <button type="submit" class="flex-1 py-2.5 bg-brand hover:bg-brandDark text-white font-semibold rounded shadow">Save Changes</button>
                 </div>
             </form>
         </div>
@@ -1176,29 +1092,29 @@ body::after {
 
     <!-- ADD ADMIN MODAL (super-admin only) -->
     <div id="addAdminModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100">
+        <div class="bg-surface rounded max-w-md w-full p-6 border border-line border border-slate-100">
             <div class="flex items-center justify-between mb-4">
-                <h3 class="text-base font-black text-slate-900">Add Admin</h3>
-                <button type="button" onclick="document.getElementById('addAdminModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600">
-                    <i class="fa-solid fa-xmark text-lg"></i>
+                <h3 class="text-base font-semibold text-navy">Add Admin</h3>
+                <button type="button" onclick="document.getElementById('addAdminModal').classList.add('hidden')" class="text-ink-muted hover:text-ink-muted">
+                    <svg class="w-4 h-4 shrink-0 text-lg" aria-hidden="true"><use href="icons.svg#icon-xmark"/></svg>
                 </button>
             </div>
             <form onsubmit="window.KambusAdmin.submitAddAdmin(event)" class="space-y-3 text-xs">
                 <div>
-                    <label class="block font-bold text-slate-700 mb-1">Full Name</label>
-                    <input type="text" name="name" class="w-full p-2.5 border border-slate-300 rounded-xl font-semibold" required>
+                    <label class="block font-semibold text-navy mb-1">Full Name</label>
+                    <input type="text" name="name" class="w-full p-2.5 border border-line rounded font-semibold" required>
                 </div>
                 <div>
-                    <label class="block font-bold text-slate-700 mb-1">Phone Number</label>
-                    <input type="tel" name="phone" class="w-full p-2.5 border border-slate-300 rounded-xl" required>
+                    <label class="block font-semibold text-navy mb-1">Phone Number</label>
+                    <input type="tel" name="phone" class="w-full p-2.5 border border-line rounded" required>
                 </div>
                 <div>
-                    <label class="block font-bold text-slate-700 mb-1">Password <span class="text-slate-400 font-normal">(at least 10 characters)</span></label>
-                    <input type="password" name="password" minlength="10" class="w-full p-2.5 border border-slate-300 rounded-xl" required>
+                    <label class="block font-semibold text-navy mb-1">Password <span class="text-ink-muted font-normal">(at least 10 characters)</span></label>
+                    <input type="password" name="password" minlength="10" class="w-full p-2.5 border border-line rounded" required>
                 </div>
                 <div class="pt-3 flex gap-2">
-                    <button type="button" onclick="document.getElementById('addAdminModal').classList.add('hidden')" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl">Cancel</button>
-                    <button type="submit" class="flex-1 py-2.5 bg-brand hover:bg-brandDark text-white font-bold rounded-xl shadow">Create Admin</button>
+                    <button type="button" onclick="document.getElementById('addAdminModal').classList.add('hidden')" class="flex-1 py-2.5 bg-bg hover:bg-slate-200 text-navy font-semibold rounded">Cancel</button>
+                    <button type="submit" class="flex-1 py-2.5 bg-brand hover:bg-brandDark text-white font-semibold rounded shadow">Create Admin</button>
                 </div>
             </form>
         </div>
@@ -1206,23 +1122,23 @@ body::after {
 
     <!-- RESET ADMIN PASSWORD MODAL (super-admin only) -->
     <div id="resetAdminPasswordModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100">
+        <div class="bg-surface rounded max-w-md w-full p-6 border border-line border border-slate-100">
             <div class="flex items-center justify-between mb-4">
-                <h3 class="text-base font-black text-slate-900">Reset Admin Password</h3>
-                <button type="button" onclick="document.getElementById('resetAdminPasswordModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600">
-                    <i class="fa-solid fa-xmark text-lg"></i>
+                <h3 class="text-base font-semibold text-navy">Reset Admin Password</h3>
+                <button type="button" onclick="document.getElementById('resetAdminPasswordModal').classList.add('hidden')" class="text-ink-muted hover:text-ink-muted">
+                    <svg class="w-4 h-4 shrink-0 text-lg" aria-hidden="true"><use href="icons.svg#icon-xmark"/></svg>
                 </button>
             </div>
             <form onsubmit="window.KambusAdmin.submitResetAdminPassword(event)" class="space-y-3 text-xs">
                 <input type="hidden" name="admin_id" id="resetAdminId">
-                <p id="resetAdminName" class="font-bold text-slate-700"></p>
+                <p id="resetAdminName" class="font-semibold text-navy"></p>
                 <div>
-                    <label class="block font-bold text-slate-700 mb-1">New Password <span class="text-slate-400 font-normal">(at least 10 characters)</span></label>
-                    <input type="password" name="password" minlength="10" class="w-full p-2.5 border border-slate-300 rounded-xl" required>
+                    <label class="block font-semibold text-navy mb-1">New Password <span class="text-ink-muted font-normal">(at least 10 characters)</span></label>
+                    <input type="password" name="password" minlength="10" class="w-full p-2.5 border border-line rounded" required>
                 </div>
                 <div class="pt-3 flex gap-2">
-                    <button type="button" onclick="document.getElementById('resetAdminPasswordModal').classList.add('hidden')" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl">Cancel</button>
-                    <button type="submit" class="flex-1 py-2.5 bg-brand hover:bg-brandDark text-white font-bold rounded-xl shadow">Reset Password</button>
+                    <button type="button" onclick="document.getElementById('resetAdminPasswordModal').classList.add('hidden')" class="flex-1 py-2.5 bg-bg hover:bg-slate-200 text-navy font-semibold rounded">Cancel</button>
+                    <button type="submit" class="flex-1 py-2.5 bg-brand hover:bg-brandDark text-white font-semibold rounded shadow">Reset Password</button>
                 </div>
             </form>
         </div>
@@ -1230,23 +1146,23 @@ body::after {
 
     <!-- ASSIGN STUDENT BUS/STOP MODAL -->
     <div id="assignStudentModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl max-w-sm w-full p-5 shadow-2xl border border-slate-100">
-            <h3 class="text-sm font-black text-slate-900 mb-1">Assign Bus & Stop</h3>
-            <p id="assignStudentName" class="text-xs text-brand font-bold mb-3"></p>
+        <div class="bg-surface rounded max-w-sm w-full p-5 border border-line border border-slate-100">
+            <h3 class="text-sm font-semibold text-navy mb-1">Assign Bus & Stop</h3>
+            <p id="assignStudentName" class="text-xs text-brand font-semibold mb-3"></p>
             <input type="hidden" id="assignStudentId">
 
             <form onsubmit="window.KambusAdmin.submitAssignStudent(event)" class="space-y-3 text-xs">
                 <div>
-                    <label class="block font-bold text-slate-700 mb-1">Select Bus</label>
-                    <select id="assignStudentBusSelect" class="w-full p-2.5 border border-slate-300 rounded-xl bus-select-dropdown"></select>
+                    <label class="block font-semibold text-navy mb-1">Select Bus</label>
+                    <select id="assignStudentBusSelect" class="w-full p-2.5 border border-line rounded bus-select-dropdown"></select>
                 </div>
                 <div>
-                    <label class="block font-bold text-slate-700 mb-1">Select Assigned Stop</label>
-                    <select id="assignStudentStopSelect" class="w-full p-2.5 border border-slate-300 rounded-xl stop-select-dropdown"></select>
+                    <label class="block font-semibold text-navy mb-1">Select Assigned Stop</label>
+                    <select id="assignStudentStopSelect" class="w-full p-2.5 border border-line rounded stop-select-dropdown"></select>
                 </div>
                 <div class="pt-3 flex gap-2">
-                    <button type="button" onclick="document.getElementById('assignStudentModal').classList.add('hidden')" class="flex-1 py-2 bg-slate-100 text-slate-700 font-bold rounded-xl">Cancel</button>
-                    <button type="submit" class="flex-1 py-2 bg-brand text-white font-bold rounded-xl shadow">Save Assignment</button>
+                    <button type="button" onclick="document.getElementById('assignStudentModal').classList.add('hidden')" class="flex-1 py-2 bg-bg text-navy font-semibold rounded">Cancel</button>
+                    <button type="submit" class="flex-1 py-2 bg-brand text-white font-semibold rounded shadow">Save Assignment</button>
                 </div>
             </form>
         </div>
@@ -1254,48 +1170,48 @@ body::after {
 
     <!-- ADD STOP MODAL (WITH INTERACTIVE MAP PICKER) -->
     <div id="addStopModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 flex flex-col max-h-[90vh]">
+        <div class="bg-surface rounded max-w-lg w-full p-6 border border-line border border-slate-100 flex flex-col max-h-[90vh]">
             <div class="flex items-center justify-between mb-3">
                 <div>
-                    <h3 class="text-base font-black text-slate-900">Add Stop (Interactive Map Picker)</h3>
-                    <p class="text-xs text-slate-500">Click or drag the marker on the map to automatically capture coordinates.</p>
+                    <h3 class="text-base font-semibold text-navy">Add Stop (Interactive Map Picker)</h3>
+                    <p class="text-xs text-ink-muted">Click or drag the marker on the map to automatically capture coordinates.</p>
                 </div>
-                <button type="button" onclick="document.getElementById('addStopModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600">
-                    <i class="fa-solid fa-xmark text-lg"></i>
+                <button type="button" onclick="document.getElementById('addStopModal').classList.add('hidden')" class="text-ink-muted hover:text-ink-muted">
+                    <svg class="w-4 h-4 shrink-0 text-lg" aria-hidden="true"><use href="icons.svg#icon-xmark"/></svg>
                 </button>
             </div>
 
             <form onsubmit="window.KambusAdmin.submitAddStop(event)" class="space-y-3 text-xs overflow-y-auto flex-1">
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block font-bold text-slate-700 mb-1">Stop Name</label>
-                        <input type="text" name="name" placeholder="e.g. Hanamkonda Chowrasta" class="w-full p-2.5 border border-slate-300 rounded-xl font-bold" required>
+                        <label class="block font-semibold text-navy mb-1">Stop Name</label>
+                        <input type="text" name="name" placeholder="e.g. Hanamkonda Chowrasta" class="w-full p-2.5 border border-line rounded font-semibold" required>
                     </div>
                     <div>
-                        <label class="block font-bold text-slate-700 mb-1">Select Route</label>
-                        <select name="route_id" class="w-full p-2.5 border border-slate-300 rounded-xl route-select-dropdown" required></select>
+                        <label class="block font-semibold text-navy mb-1">Select Route</label>
+                        <select name="route_id" class="w-full p-2.5 border border-line rounded route-select-dropdown" required></select>
                     </div>
                 </div>
 
                 <div>
-                    <label class="block font-bold text-slate-700 mb-1">Stop Order (1, 2, 3...)</label>
-                    <input type="number" name="stop_order" value="1" min="1" class="w-full p-2.5 border border-slate-300 rounded-xl font-bold" required>
+                    <label class="block font-semibold text-navy mb-1">Stop Order (1, 2, 3...)</label>
+                    <input type="number" name="stop_order" value="1" min="1" class="w-full p-2.5 border border-line rounded font-semibold" required>
                 </div>
 
                 <!-- Interactive Map Container -->
                 <div>
                     <div class="flex items-center justify-between mb-1">
-                        <label class="block font-bold text-slate-700">📍 Pick Stop Location on Map</label>
-                        <span id="addStopCoordsDisplay" class="text-[10px] font-mono font-bold text-brand">Click on map to place marker</span>
+                        <label class="block font-semibold text-navy"> Pick Stop Location on Map</label>
+                        <span id="addStopCoordsDisplay" class="text-[10px] font-mono font-semibold text-brand">Click on map to place marker</span>
                     </div>
-                    <div id="stopPickerMapContainer" style="height: 220px; width: 100%; border-radius: 12px; overflow: hidden; border: 1px solid #CBD5E1;"></div>
+                    <div id="stopPickerMapContainer" style="height: 220px; width: 100%; border-radius: 12px; overflow: hidden; border: 1px solid #E3E8E8;"></div>
                     <input type="hidden" id="addStopLat" name="latitude">
                     <input type="hidden" id="addStopLng" name="longitude">
                 </div>
 
                 <div class="pt-3 flex gap-2">
-                    <button type="button" onclick="document.getElementById('addStopModal').classList.add('hidden')" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl">Cancel</button>
-                    <button type="submit" class="flex-1 py-2.5 bg-brand hover:bg-brandDark text-white font-bold rounded-xl shadow">Save Stop</button>
+                    <button type="button" onclick="document.getElementById('addStopModal').classList.add('hidden')" class="flex-1 py-2.5 bg-bg hover:bg-slate-200 text-navy font-semibold rounded">Cancel</button>
+                    <button type="submit" class="flex-1 py-2.5 bg-brand hover:bg-brandDark text-white font-semibold rounded shadow">Save Stop</button>
                 </div>
             </form>
         </div>
@@ -1303,47 +1219,47 @@ body::after {
 
     <!-- EDIT STOP MODAL -->
     <div id="editStopModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 flex flex-col max-h-[90vh]">
+        <div class="bg-surface rounded max-w-lg w-full p-6 border border-line border border-slate-100 flex flex-col max-h-[90vh]">
             <div class="flex items-center justify-between mb-3">
                 <div>
-                    <h3 class="text-base font-black text-slate-900">Edit Stop</h3>
-                    <p class="text-xs text-slate-500">Update stop details or click/drag marker on map to update coordinates.</p>
+                    <h3 class="text-base font-semibold text-navy">Edit Stop</h3>
+                    <p class="text-xs text-ink-muted">Update stop details or click/drag marker on map to update coordinates.</p>
                 </div>
-                <button type="button" onclick="document.getElementById('editStopModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600">
-                    <i class="fa-solid fa-xmark text-lg"></i>
+                <button type="button" onclick="document.getElementById('editStopModal').classList.add('hidden')" class="text-ink-muted hover:text-ink-muted">
+                    <svg class="w-4 h-4 shrink-0 text-lg" aria-hidden="true"><use href="icons.svg#icon-xmark"/></svg>
                 </button>
             </div>
             <form onsubmit="window.KambusAdmin.submitEditStop(event)" class="space-y-3 text-xs overflow-y-auto flex-1">
                 <input type="hidden" name="stop_id" id="editStopId">
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block font-bold text-slate-700 mb-1">Stop Name</label>
-                        <input type="text" name="name" id="editStopName" placeholder="e.g. Hanamkonda Chowrasta" class="w-full p-2.5 border border-slate-300 rounded-xl font-bold" required>
+                        <label class="block font-semibold text-navy mb-1">Stop Name</label>
+                        <input type="text" name="name" id="editStopName" placeholder="e.g. Hanamkonda Chowrasta" class="w-full p-2.5 border border-line rounded font-semibold" required>
                     </div>
                     <div>
-                        <label class="block font-bold text-slate-700 mb-1">Route</label>
-                        <select name="route_id" id="editStopRouteId" class="w-full p-2.5 border border-slate-300 rounded-xl route-select-dropdown" required></select>
+                        <label class="block font-semibold text-navy mb-1">Route</label>
+                        <select name="route_id" id="editStopRouteId" class="w-full p-2.5 border border-line rounded route-select-dropdown" required></select>
                     </div>
                 </div>
                 <div>
-                    <label class="block font-bold text-slate-700 mb-1">Stop Order (1, 2, 3...)</label>
-                    <input type="number" name="stop_order" id="editStopOrder" min="1" class="w-full p-2.5 border border-slate-300 rounded-xl font-bold" required>
+                    <label class="block font-semibold text-navy mb-1">Stop Order (1, 2, 3...)</label>
+                    <input type="number" name="stop_order" id="editStopOrder" min="1" class="w-full p-2.5 border border-line rounded font-semibold" required>
                 </div>
 
                 <!-- Interactive Map Container for Edit Stop -->
                 <div>
                     <div class="flex items-center justify-between mb-1">
-                        <label class="block font-bold text-slate-700">📍 Edit Stop Location on Map</label>
-                        <span id="editStopCoordsDisplay" class="text-[10px] font-mono font-bold text-brand">Click on map or drag pin</span>
+                        <label class="block font-semibold text-navy"> Edit Stop Location on Map</label>
+                        <span id="editStopCoordsDisplay" class="text-[10px] font-mono font-semibold text-brand">Click on map or drag pin</span>
                     </div>
-                    <div id="editStopPickerMapContainer" style="height: 220px; width: 100%; border-radius: 12px; overflow: hidden; border: 1px solid #CBD5E1;"></div>
+                    <div id="editStopPickerMapContainer" style="height: 220px; width: 100%; border-radius: 12px; overflow: hidden; border: 1px solid #E3E8E8;"></div>
                     <input type="hidden" id="editStopLat" name="latitude">
                     <input type="hidden" id="editStopLng" name="longitude">
                 </div>
 
                 <div class="pt-3 flex gap-2">
-                    <button type="button" onclick="document.getElementById('editStopModal').classList.add('hidden')" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl">Cancel</button>
-                    <button type="submit" class="flex-1 py-2.5 bg-brand hover:bg-brandDark text-white font-bold rounded-xl shadow">Save Changes</button>
+                    <button type="button" onclick="document.getElementById('editStopModal').classList.add('hidden')" class="flex-1 py-2.5 bg-bg hover:bg-slate-200 text-navy font-semibold rounded">Cancel</button>
+                    <button type="submit" class="flex-1 py-2.5 bg-brand hover:bg-brandDark text-white font-semibold rounded shadow">Save Changes</button>
                 </div>
             </form>
         </div>
@@ -1351,25 +1267,25 @@ body::after {
 
     <!-- ADD ROUTE MODAL -->
     <div id="addRouteModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100">
+        <div class="bg-surface rounded max-w-md w-full p-6 border border-line border border-slate-100">
             <div class="flex items-center justify-between mb-4">
-                <h3 class="text-base font-black text-slate-900">Create New Route</h3>
-                <button type="button" onclick="document.getElementById('addRouteModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600">
-                    <i class="fa-solid fa-xmark text-lg"></i>
+                <h3 class="text-base font-semibold text-navy">Create New Route</h3>
+                <button type="button" onclick="document.getElementById('addRouteModal').classList.add('hidden')" class="text-ink-muted hover:text-ink-muted">
+                    <svg class="w-4 h-4 shrink-0 text-lg" aria-hidden="true"><use href="icons.svg#icon-xmark"/></svg>
                 </button>
             </div>
             <form onsubmit="window.KambusAdmin.submitAddRoute(event)" class="space-y-3 text-xs">
                 <div>
-                    <label class="block font-bold text-slate-700 mb-1">Route Name</label>
-                    <input type="text" name="name" placeholder="e.g. Route 1 — Kazipet to KITSW" class="w-full p-2.5 border border-slate-300 rounded-xl font-bold" required>
+                    <label class="block font-semibold text-navy mb-1">Route Name</label>
+                    <input type="text" name="name" placeholder="e.g. Route 1 — Kazipet to KITSW" class="w-full p-2.5 border border-line rounded font-semibold" required>
                 </div>
                 <div>
-                    <label class="block font-bold text-slate-700 mb-1">Description</label>
-                    <textarea name="description" rows="2" placeholder="Via Kazipet, Hanamkonda..." class="w-full p-2.5 border border-slate-300 rounded-xl"></textarea>
+                    <label class="block font-semibold text-navy mb-1">Description</label>
+                    <textarea name="description" rows="2" placeholder="Via Kazipet, Hanamkonda..." class="w-full p-2.5 border border-line rounded"></textarea>
                 </div>
                 <div class="pt-3 flex gap-2">
-                    <button type="button" onclick="document.getElementById('addRouteModal').classList.add('hidden')" class="flex-1 py-2.5 bg-slate-100 text-slate-700 font-bold rounded-xl">Cancel</button>
-                    <button type="submit" class="flex-1 py-2.5 bg-brand text-white font-bold rounded-xl shadow">Save Route</button>
+                    <button type="button" onclick="document.getElementById('addRouteModal').classList.add('hidden')" class="flex-1 py-2.5 bg-bg text-navy font-semibold rounded">Cancel</button>
+                    <button type="submit" class="flex-1 py-2.5 bg-brand text-white font-semibold rounded shadow">Save Route</button>
                 </div>
             </form>
         </div>
@@ -1377,17 +1293,17 @@ body::after {
 
     <!-- ROUTE PREVIEW ROAD MAP MODAL -->
     <div id="routePreviewModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100 flex flex-col max-h-[90vh]">
+        <div class="bg-surface rounded max-w-2xl w-full p-6 border border-line border border-slate-100 flex flex-col max-h-[90vh]">
             <div class="flex items-center justify-between mb-3">
                 <div>
-                    <h3 id="routePreviewTitle" class="text-base font-black text-slate-900">Route Map</h3>
-                    <p class="text-xs text-slate-500">Road-based transit visualization to KITSW Campus.</p>
+                    <h3 id="routePreviewTitle" class="text-base font-semibold text-navy">Route Map</h3>
+                    <p class="text-xs text-ink-muted">Road-based transit visualization to KITSW Campus.</p>
                 </div>
-                <button type="button" onclick="document.getElementById('routePreviewModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600">
-                    <i class="fa-solid fa-xmark text-lg"></i>
+                <button type="button" onclick="document.getElementById('routePreviewModal').classList.add('hidden')" class="text-ink-muted hover:text-ink-muted">
+                    <svg class="w-4 h-4 shrink-0 text-lg" aria-hidden="true"><use href="icons.svg#icon-xmark"/></svg>
                 </button>
             </div>
-            <div class="bg-slate-100 rounded-2xl overflow-hidden border border-slate-200 flex-1 min-h-[350px]">
+            <div class="bg-bg rounded overflow-hidden border border-line flex-1 min-h-[350px]">
                 <div id="routePreviewMap" style="height: 400px; width: 100%;"></div>
             </div>
         </div>
@@ -1395,88 +1311,88 @@ body::after {
 
     <!-- SUPER-ADMIN COMPLAINT DETAIL & VOTER BREAKDOWN MODAL -->
     <div id="complaintDetailModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100 flex flex-col max-h-[90vh] overflow-y-auto space-y-4">
+        <div class="bg-surface rounded max-w-2xl w-full p-6 border border-line border border-slate-100 flex flex-col max-h-[90vh] overflow-y-auto space-y-4">
             <div class="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div class="flex items-center gap-2">
-                    <span class="px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 text-[10px] font-black uppercase tracking-wider">Super Admin View</span>
-                    <h3 id="complaintDetailTitle" class="text-base font-black text-slate-900">Complaint Investigation</h3>
+                    <span class="px-2 py-0.5 rounded-full bg-brand/10 text-brand text-[10px] font-semibold uppercase tracking-wider">Super Admin View</span>
+                    <h3 id="complaintDetailTitle" class="text-base font-semibold text-navy">Complaint Investigation</h3>
                 </div>
-                <button type="button" onclick="document.getElementById('complaintDetailModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600">
-                    <i class="fa-solid fa-xmark text-lg"></i>
+                <button type="button" onclick="document.getElementById('complaintDetailModal').classList.add('hidden')" class="text-ink-muted hover:text-ink-muted">
+                    <svg class="w-4 h-4 shrink-0 text-lg" aria-hidden="true"><use href="icons.svg#icon-xmark"/></svg>
                 </button>
             </div>
 
             <!-- Complainant Card -->
-            <div class="bg-slate-50 border border-slate-200/90 rounded-2xl p-4 space-y-2">
-                <p class="text-[10px] font-black tracking-wider uppercase text-slate-400">Complainant (Original Reporter)</p>
+            <div class="bg-bg border border-line/90 rounded p-4 space-y-2">
+                <p class="text-[10px] font-semibold tracking-wider uppercase text-ink-muted">Complainant (Original Reporter)</p>
                 <div class="flex items-start justify-between">
                     <div>
-                        <h4 id="complaintDetailComplainantName" class="font-black text-sm text-slate-900">—</h4>
-                        <p id="complaintDetailComplainantMeta" class="text-xs text-slate-500">—</p>
+                        <h4 id="complaintDetailComplainantName" class="font-semibold text-sm text-navy">—</h4>
+                        <p id="complaintDetailComplainantMeta" class="text-xs text-ink-muted">—</p>
                     </div>
-                    <span id="complaintDetailReasonBadge" class="px-2.5 py-1 rounded-lg bg-amber-100 text-amber-900 text-xs font-black">Reason</span>
+                    <span id="complaintDetailReasonBadge" class="px-2.5 py-1 rounded bg-warn/10 text-warn border border-warn/20 text-xs font-semibold">Reason</span>
                 </div>
-                <div id="complaintDetailDescriptionBox" class="p-3 bg-white rounded-xl border border-slate-100 text-xs text-slate-700 mt-2">
+                <div id="complaintDetailDescriptionBox" class="p-3 bg-surface rounded border border-slate-100 text-xs text-navy mt-2">
                     —
                 </div>
             </div>
 
             <!-- Corroboration Summary -->
             <div class="grid grid-cols-3 gap-2 text-center text-xs">
-                <div class="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200">
-                    <p class="text-[10px] text-emerald-600 font-bold uppercase">Agreed (Yes)</p>
-                    <p id="complaintDetailYesCount" class="text-lg font-black text-emerald-800">0</p>
+                <div class="p-2.5 rounded bg-ok/10 border border-ok/30">
+                    <p class="text-[10px] text-ok font-semibold uppercase">Agreed (Yes)</p>
+                    <p id="complaintDetailYesCount" class="text-lg font-semibold text-ok">0</p>
                 </div>
-                <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
-                    <p class="text-[10px] text-slate-500 font-bold uppercase">Disagreed (No)</p>
-                    <p id="complaintDetailNoCount" class="text-lg font-black text-slate-700">0</p>
+                <div class="p-2.5 rounded bg-bg border border-line">
+                    <p class="text-[10px] text-ink-muted font-semibold uppercase">Disagreed (No)</p>
+                    <p id="complaintDetailNoCount" class="text-lg font-semibold text-navy">0</p>
                 </div>
-                <div class="p-2.5 rounded-xl bg-indigo-50 border border-indigo-200">
-                    <p class="text-[10px] text-indigo-600 font-bold uppercase">Total Votes</p>
-                    <p id="complaintDetailTotalCount" class="text-lg font-black text-indigo-800">0</p>
+                <div class="p-2.5 rounded bg-bg border border-line">
+                    <p class="text-[10px] text-navy font-semibold uppercase">Total Votes</p>
+                    <p id="complaintDetailTotalCount" class="text-lg font-semibold text-ink">0</p>
                 </div>
             </div>
 
             <!-- Detailed Voter List -->
             <div class="space-y-2">
-                <p class="text-[10px] font-black tracking-wider uppercase text-slate-400">Voter Verification Breakdown</p>
+                <p class="text-[10px] font-semibold tracking-wider uppercase text-ink-muted">Voter Verification Breakdown</p>
                 <div id="complaintDetailVotersList" class="space-y-2 max-h-56 overflow-y-auto">
                     <!-- Dynamic voter cards -->
                 </div>
             </div>
 
             <div class="pt-2 flex justify-end">
-                <button type="button" onclick="document.getElementById('complaintDetailModal').classList.add('hidden')" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl">Close</button>
+                <button type="button" onclick="document.getElementById('complaintDetailModal').classList.add('hidden')" class="px-4 py-2 bg-bg hover:bg-slate-200 text-navy font-semibold text-xs rounded">Close</button>
             </div>
         </div>
     </div>
 
     <!-- MOBILE BOTTOM TAB BAR -->
-    <nav class="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-30 flex items-center justify-around py-2 px-1 shadow-md">
-        <button type="button" onclick="window.KambusAdmin.showSection('dashboard')" class="flex flex-col items-center gap-0.5 text-slate-500 hover:text-brand">
-            <i class="fa-solid fa-chart-pie text-sm"></i>
-            <span class="text-[9px] font-bold">Home</span>
+    <nav class="lg:hidden fixed bottom-0 left-0 right-0 bg-surface border-t border-line z-30 flex items-center justify-around py-2 px-1 border border-line">
+        <button type="button" onclick="window.KambusAdmin.showSection('dashboard')" class="flex flex-col items-center gap-0.5 text-ink-muted hover:text-brand">
+            <svg class="w-4 h-4 shrink-0 text-sm" aria-hidden="true"><use href="icons.svg#icon-chart-pie"/></svg>
+            <span class="text-[9px] font-semibold">Home</span>
         </button>
-        <button type="button" onclick="window.KambusAdmin.showSection('live-map')" class="flex flex-col items-center gap-0.5 text-emerald-600">
-            <i class="fa-solid fa-map-location-dot text-sm"></i>
-            <span class="text-[9px] font-bold">Live Map</span>
+        <button type="button" onclick="window.KambusAdmin.showSection('live-map')" class="flex flex-col items-center gap-0.5 text-ok">
+            <svg class="w-4 h-4 shrink-0 text-sm" aria-hidden="true"><use href="icons.svg#icon-route"/></svg>
+            <span class="text-[9px] font-semibold">Live Map</span>
         </button>
-        <button type="button" onclick="window.KambusAdmin.showSection('buses')" class="flex flex-col items-center gap-0.5 text-slate-500 hover:text-brand">
-            <i class="fa-solid fa-bus text-sm"></i>
-            <span class="text-[9px] font-bold">Buses</span>
+        <button type="button" onclick="window.KambusAdmin.showSection('buses')" class="flex flex-col items-center gap-0.5 text-ink-muted hover:text-brand">
+            <svg class="w-4 h-4 shrink-0 text-sm" aria-hidden="true"><use href="icons.svg#icon-bus"/></svg>
+            <span class="text-[9px] font-semibold">Buses</span>
         </button>
-        <button type="button" onclick="window.KambusAdmin.showSection('notifications')" class="flex flex-col items-center gap-0.5 text-slate-500 hover:text-brand">
-            <i class="fa-solid fa-bullhorn text-sm"></i>
-            <span class="text-[9px] font-bold">Announce</span>
+        <button type="button" onclick="window.KambusAdmin.showSection('notifications')" class="flex flex-col items-center gap-0.5 text-ink-muted hover:text-brand">
+            <svg class="w-4 h-4 shrink-0 text-sm" aria-hidden="true"><use href="icons.svg#icon-bullhorn"/></svg>
+            <span class="text-[9px] font-semibold">Announce</span>
         </button>
-        <button type="button" onclick="window.KambusAdmin.showSection('alerts')" class="flex flex-col items-center gap-0.5 text-rose-500">
-            <i class="fa-solid fa-triangle-exclamation text-sm"></i>
-            <span class="text-[9px] font-bold">Alerts</span>
+        <button type="button" onclick="window.KambusAdmin.showSection('alerts')" class="flex flex-col items-center gap-0.5 text-danger">
+            <svg class="w-4 h-4 shrink-0 text-sm" aria-hidden="true"><use href="icons.svg#icon-alert"/></svg>
+            <span class="text-[9px] font-semibold">Alerts</span>
         </button>
     </nav>
 
     <!-- Scripts -->
-    <script src="notifications.js"></script>
+    <script src="kambus-ui.js"></script>
     <script src="notification-center.js"></script>
     <script src="admin.js"></script>
 </body>
