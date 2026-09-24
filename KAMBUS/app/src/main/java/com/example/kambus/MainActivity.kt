@@ -368,7 +368,7 @@ class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
             (function () {
               var jwt = localStorage.getItem('kambus_token');
               if (!jwt) return;
-              fetch('http://10.170.244.250:8000/notifications/device-token', {
+                fetch('https://kambus-backend.onrender.com/notifications/device-token', {
                 method: 'POST', headers: {'Content-Type':'application/json','Authorization':'Bearer ' + jwt},
                 body: JSON.stringify({token: $encoded, platform: 'android'})
               }).catch(function (error) {});

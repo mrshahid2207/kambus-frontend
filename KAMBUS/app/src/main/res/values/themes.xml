@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="Theme.Kambus" parent="Theme.AppCompat.Light.NoActionBar">
-        <item name="android:windowLightStatusBar">true</item>
-        <item name="android:statusBarColor">@android:color/white</item>
+        <item name="android:statusBarColor">#F6F9FF</item>
+        <item name="android:navigationBarColor">#E6EEFD</item>
     </style>
 </resources>
