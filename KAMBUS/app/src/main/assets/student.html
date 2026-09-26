@@ -1462,8 +1462,12 @@
             return;
         }
 
-        const etaText = document.getElementById("etaValue")?.textContent || "";
-        if (etaText.toLowerCase().includes("unavailable")) {
+        const etaText = document.getElementById("etaValue")?.textContent?.trim() || "";
+        // A live fallback estimate is rendered as, for example,
+        // "~4 mins • Speed unavailable".  That is still a usable ETA; only
+        // the explicit no-ETA states should hide the wait controls.
+        const etaIsUnavailable = /^(eta(?: temporarily)? unavailable|bus is not travelling)$/i.test(etaText);
+        if (etaIsUnavailable) {
             if (eligibilityText) eligibilityText.textContent = "Live ETA is currently unavailable.";
             if (waitOptions) waitOptions.classList.add("hidden");
             return;

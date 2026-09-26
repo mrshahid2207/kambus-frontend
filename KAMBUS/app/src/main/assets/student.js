@@ -2853,7 +2853,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("temporaryRegisteredStop")?.addEventListener("change", resetTemporaryStopRouteCheck);
     document.getElementById("temporaryPinLatitude")?.addEventListener("input", resetTemporaryStopRouteCheck);
     document.getElementById("temporaryPinLongitude")?.addEventListener("input", resetTemporaryStopRouteCheck);
-    initNotificationWebSocket();
+    initNotificationWebSocket();    
     checkActiveDriverAlerts();
     setInterval(checkActiveDriverAlerts, 10000);
     protectWaitRequestFunctions();

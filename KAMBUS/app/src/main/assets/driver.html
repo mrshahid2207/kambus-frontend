@@ -26,6 +26,17 @@
             background: #B02A34;
             animation: scan-laser 2.2s ease-in-out infinite;
         }
+        #quaggaViewport video,
+        #quaggaViewport canvas {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        #quaggaViewport canvas.drawingBuffer {
+            z-index: 1;
+        }
         @keyframes scan-laser {
             0% { top: 10%; opacity: 0.8; }
             50% { top: 90%; opacity: 1; }
@@ -163,10 +174,18 @@
                 </div>
             </div>
 
-            <button type="button" id="startTripBtn" class="w-full py-3.5 bg-navy hover:bg-brand active:bg-brand text-white font-semibold text-base rounded transition-colors flex items-center justify-center gap-2">
+            <div class="space-y-2" role="group" aria-label="Trip type">
+                <p class="text-xs font-semibold uppercase tracking-wider text-ink-muted">Select trip type</p>
+                <div class="grid grid-cols-2 gap-2">
+                    <button type="button" id="morningTripTypeBtn" class="trip-type-btn py-2.5 rounded border border-line bg-bg text-navy text-sm font-semibold transition-colors" aria-pressed="false">Morning</button>
+                    <button type="button" id="eveningTripTypeBtn" class="trip-type-btn py-2.5 rounded border border-line bg-bg text-navy text-sm font-semibold transition-colors" aria-pressed="false">Evening</button>
+                </div>
+            </div>
+
+            <button type="button" id="startTripBtn" disabled class="w-full py-3.5 bg-navy hover:bg-brand active:bg-brand disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold text-base rounded transition-colors flex items-center justify-center gap-2">
                 <svg id="startTripIcon" class="w-4 h-4" aria-hidden="true"><use href="icons.svg#icon-play"/></svg>
                 <span id="startTripText" class="tracking-wide uppercase font-semibold">
-                    Start Morning Trip
+                    Select Trip Type
                 </span>
             </button>
 
@@ -323,11 +342,12 @@
 
             <div class="relative w-full h-48 bg-navy rounded overflow-hidden flex flex-col items-center justify-center text-white text-center p-3 border border-line">
                 <video id="scannerVideo" class="hidden absolute inset-0 w-full h-full object-cover" autoplay playsinline muted></video>
+                <div id="quaggaViewport" class="hidden absolute inset-0 w-full h-full overflow-hidden"></div>
                 <div class="scanner-laser hidden" id="scannerLaser"></div>
 
                 <div id="scannerPlaceholder" class="space-y-2 z-10 p-2">
                     <svg class="w-8 h-8 text-tint mx-auto" aria-hidden="true"><use href="icons.svg#icon-camera"/></svg>
-                    <p class="text-xs text-white/80">Position student QR code in front of camera</p>
+                    <p class="text-xs text-white/80">Position student barcode in front of camera</p>
                     <div class="flex gap-2 justify-center pt-1">
                         <button type="button" onclick="startCameraScanner()" class="px-3 py-1 bg-brand text-white text-xs font-semibold rounded transition-colors hover:bg-navy">
                             Start Camera
@@ -482,6 +502,7 @@
     <script src="kambus-ui.js"></script>
     <script src="notification-center.js"></script>
     <script src="voiceAnnouncements.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/quagga@0.12.1/dist/quagga.min.js"></script>
     <script src="driver.js"></script>
 
 </body>

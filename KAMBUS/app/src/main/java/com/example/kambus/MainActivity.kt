@@ -268,7 +268,7 @@ class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
             }
         }
 
-        webView.loadUrl("file:///android_asset/index.html")
+        webView.loadUrl("file:///android_asset/splash.html")
 
         onBackPressedDispatcher.addCallback(
             this,

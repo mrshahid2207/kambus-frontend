@@ -12,27 +12,34 @@
     <link rel="manifest" href="site.webmanifest">
     <link rel="stylesheet" href="kambus.css">
     <script src="kambus-ui.js"></script>
+    <style>
+        body.login-page { position:relative; overflow:hidden; background:#fff; }
+        body.login-page::before, body.login-page::after { content:""; position:fixed; z-index:0; width:150vw; pointer-events:none; }
+        body.login-page::before { top:-126px; left:-25vw; height:212px; border-radius:0 0 50% 50%; background:radial-gradient(ellipse at 50% 100%, rgba(91,157,179,.28), transparent 58%), linear-gradient(135deg, #10303c, #1d4a5a); box-shadow:0 8px 28px rgba(23,53,65,.12); }
+        body.login-page::after { bottom:-146px; right:-29vw; height:238px; border-radius:50% 50% 0 0; background:radial-gradient(ellipse at 50% 0%, rgba(111,183,204,.34), transparent 60%), linear-gradient(135deg, #174251, #0f2b36); box-shadow:0 -8px 28px rgba(23,53,65,.08); }
+        .login-shell { position:relative; z-index:1; width:min(100%, 410px); animation:login-enter 220ms ease-out both; }
+        .login-card { position:relative; padding:26px; background:transparent; border:0; border-radius:0; box-shadow:none; }
+        .login-brand { display:flex; align-items:center; justify-content:center; margin-bottom:25px; }.login-crest { width:58px!important; height:58px!important; border-radius:50%; object-fit:cover; box-shadow:0 7px 18px rgba(23,53,65,.16); }.login-wordmark { height:23px!important; }.login-brand > div { gap:0!important; }
+        .role-tabs { --role-position: 0; position:relative; display:grid; grid-template-columns:repeat(3,1fr); gap:2px; padding:4px; border:1px solid #dce5e8; border-radius:14px; background:#edf2f3; }.role-indicator { position:absolute; top:4px; bottom:4px; left:4px; width:calc((100% - 8px)/3); border-radius:10px; background:linear-gradient(135deg,#173541,#285466); box-shadow:0 3px 8px rgba(23,53,65,.2); transform:translateX(calc(var(--role-position)*100%)); transition:transform 230ms cubic-bezier(.2,.8,.2,1); }.role-tab { position:relative; z-index:1; display:flex; align-items:center; justify-content:center; gap:5px; min-height:36px!important; padding:7px 3px!important; border:0; border-radius:10px; color:#66767d; background:transparent; font-size:11px!important; font-weight:600; transition:color 160ms ease; }.role-tab.is-active { color:#fff!important; }.role-tab svg { width:13px; height:13px; }
+        .login-input { height:46px; border-radius:12px!important; background:#f7fafb!important; transition:border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease; }.login-input:focus { border-color:#4e9ab5!important; background:#fff!important; box-shadow:0 0 0 4px rgba(78,154,181,.15); }.login-error { display:none; align-items:flex-start; gap:8px; margin:0 0 14px; padding:10px 11px; border:1px solid #f0b9b9; border-radius:11px; color:#992f2f; background:#fff1f1; font-size:12px; line-height:1.35; }.login-error.visible { display:flex; }.login-error svg { width:15px; height:15px; flex:none; margin-top:1px; }.remember-row { margin:2px 0 16px; font-size:10px!important; line-height:1!important; color:#71868e!important; }.remember-row input { width:12px!important; height:12px!important; min-width:12px!important; min-height:12px!important; }.remember-row span { font-size:10px; }
+        #btnSubmit { min-height:47px; border-radius:13px!important; background:linear-gradient(135deg,#173541,#285466)!important; box-shadow:0 8px 16px rgba(23,53,65,.26); transition:transform 160ms ease, box-shadow 160ms ease, opacity 160ms ease; }#btnSubmit:hover:not(:disabled) { transform:translateY(-1px); box-shadow:0 11px 20px rgba(23,53,65,.32); }.login-footer { display:flex; align-items:center; justify-content:center; gap:9px; margin:8px 0 0; color:#547681; text-align:center; font-size:10px; letter-spacing:.08em; font-weight:600; }.login-footer::before,.login-footer::after { content:""; height:1px; flex:1; background:linear-gradient(90deg, transparent, #a9cbd5); }.login-footer::after { background:linear-gradient(90deg, #a9cbd5, transparent); } body.login-page .kambus-toast, body.login-page #kambusNotificationPanel { background:rgba(255,255,255,.98); border-color:#dce7e9; border-radius:14px; box-shadow:0 14px 32px rgba(23,53,65,.13); } @keyframes login-enter { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } } @media(max-width:380px) { body.login-page::before { top:-142px; }.login-card { padding:22px 18px; }.role-tab { font-size:10px!important; }.role-tab svg { display:none; } }
+    </style>
 </head>
-<body class="bg-bg text-navy font-sans min-h-screen flex flex-col items-center justify-center p-4">
+<body class="login-page text-navy font-sans min-h-screen flex flex-col items-center justify-center p-4">
 
-    <main class="w-full max-w-sm bg-surface border border-line rounded p-6 sm:p-8">
-        <header class="flex flex-col items-center gap-3 mb-6">
-            <img src="brand/kitsw-crest.png" alt="Kakatiya Institute of Technology and Science, Warangal" class="h-28 w-28">
-            <div class="flex items-center gap-2">
-                <img src="brand/mark-navy.svg" alt="" class="h-6 w-6" aria-hidden="true">
-                <img src="brand/wordmark-navy.svg" alt="KAMBUS" class="h-5 w-auto">
-            </div>
+    <main class="login-shell">
+      <section class="login-card">
+        <header class="login-brand">
+            <img src="brand/kitsw-crest.png" alt="Kakatiya Institute of Technology and Science, Warangal" class="login-crest">
+            <div><img src="brand/wordmark-navy.svg" alt="KAMBUS" class="login-wordmark"></div>
         </header>
 
-        <div class="flex border border-line rounded p-1 mb-5 gap-1 bg-bg" role="tablist" aria-label="Role Selector">
-            <button type="button" onclick="setRole('student')" id="tab-student" class="flex-1 py-1.5 text-xs font-semibold rounded bg-navy text-white transition-colors flex items-center justify-center" role="tab" aria-selected="true">
-                Student
+        <div class="role-tabs mb-5" id="roleTabs" role="tablist" aria-label="Role Selector"><span class="role-indicator" aria-hidden="true"></span>
+            <button type="button" onclick="setRole('student')" id="tab-student" class="role-tab is-active" role="tab" aria-selected="true"><svg aria-hidden="true"><use href="icons.svg#icon-user-graduate"/></svg>Student
             </button>
-            <button type="button" onclick="setRole('driver')" id="tab-driver" class="flex-1 py-1.5 text-xs font-semibold rounded text-ink-muted hover:text-navy transition-colors flex items-center justify-center" role="tab" aria-selected="false">
-                Driver
+            <button type="button" onclick="setRole('driver')" id="tab-driver" class="role-tab" role="tab" aria-selected="false"><svg aria-hidden="true"><use href="icons.svg#icon-bus"/></svg>Driver
             </button>
-            <button type="button" onclick="setRole('admin')" id="tab-admin" class="flex-1 py-1.5 text-xs font-semibold rounded text-ink-muted hover:text-navy transition-colors flex items-center justify-center" role="tab" aria-selected="false">
-                Admin
+            <button type="button" onclick="setRole('admin')" id="tab-admin" class="role-tab" role="tab" aria-selected="false"><svg aria-hidden="true"><use href="icons.svg#icon-user-shield"/></svg>Admin
             </button>
         </div>
 
@@ -46,7 +53,7 @@
                         <svg class="w-4 h-4" aria-hidden="true"><use href="icons.svg#icon-id-card"/></svg>
                     </span>
                     <input type="text" id="username" name="username" required autocomplete="username" placeholder="Enter roll number" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="next"
-                           class="w-full pl-9 pr-3 py-2 bg-surface border border-line rounded text-sm text-navy placeholder-ink-muted focus:border-brand focus:outline-none">
+                           class="login-input w-full pl-9 pr-3 py-2 border border-line text-sm text-navy placeholder-ink-muted focus:outline-none">
                 </div>
             </div>
 
@@ -57,23 +64,24 @@
                         <svg class="w-4 h-4" aria-hidden="true"><use href="icons.svg#icon-lock"/></svg>
                     </span>
                     <input type="password" id="password" name="password" required autocomplete="current-password" placeholder="Enter password" enterkeyhint="go"
-                           class="w-full pl-9 pr-10 py-2 bg-surface border border-line rounded text-sm text-navy placeholder-ink-muted focus:border-brand focus:outline-none">
+                           class="login-input w-full pl-9 pr-10 py-2 border border-line text-sm text-navy placeholder-ink-muted focus:outline-none">
                     <button type="button" onclick="togglePasswordVisibility('password', 'passwordToggleIcon')" aria-label="Show or hide password" aria-pressed="false" class="absolute right-2.5 text-ink-muted hover:text-navy p-1 focus:outline-none">
                         <svg id="passwordToggleIcon" class="w-4 h-4" aria-hidden="true"><use href="icons.svg#icon-eye"/></svg>
                     </button>
                 </div>
             </div>
-
-            <label for="rememberMe" class="flex items-center gap-1.5 w-fit cursor-pointer select-none text-xs text-ink-muted pt-0.5">
+            <label for="rememberMe" class="remember-row flex items-center gap-1.5 w-fit cursor-pointer select-none">
                 <input type="checkbox" id="rememberMe" class="w-3.5 h-3.5 rounded-sm border-line text-navy accent-navy">
                 <span>Remember me</span>
             </label>
 
-            <button type="submit" id="btnSubmit" class="w-full py-2.5 px-4 bg-navy text-white text-sm font-semibold rounded hover:bg-brand active:bg-brand transition-colors flex items-center justify-center gap-2 disabled:opacity-60">
+            <div id="loginError" class="login-error" role="alert" aria-live="polite"><svg aria-hidden="true"><use href="icons.svg#icon-alert"/></svg><span></span></div>
+            <button type="submit" id="btnSubmit" class="w-full py-2.5 px-4 text-white text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-60">
                 <span>Sign In</span>
                 <svg class="w-4 h-4" aria-hidden="true"><use href="icons.svg#icon-arrow-right"/></svg>
             </button>
         </form>
+      </section><p class="login-footer">KITS Warangal &middot; KAMBUS</p>
     </main>
 
     <script>
@@ -104,14 +112,11 @@
 
             ["student", "driver", "admin"].forEach(r => {
                 const tab = document.getElementById(`tab-${r}`);
-                if (r === role) {
-                    tab.className = "flex-1 py-1.5 text-xs font-semibold rounded bg-navy text-white transition-colors";
-                    tab.setAttribute("aria-selected", "true");
-                } else {
-                    tab.className = "flex-1 py-1.5 text-xs font-semibold rounded text-ink-muted hover:text-navy transition-colors";
-                    tab.setAttribute("aria-selected", "false");
-                }
+                const isActive = r === role;
+                tab.classList.toggle("is-active", isActive);
+                tab.setAttribute("aria-selected", String(isActive));
             });
+            document.getElementById("roleTabs").style.setProperty("--role-position", ["student", "driver", "admin"].indexOf(role));
 
             const label = document.getElementById("identityLabel");
             const usernameInput = document.getElementById("username");
@@ -120,12 +125,23 @@
                 label.innerText = "Roll Number";
                 usernameInput.placeholder = "Enter roll number";
             } else if (role === "driver") {
-                label.innerText = "Driver Mobile / ID";
-                usernameInput.placeholder = "Enter mobile or ID";
+                label.innerText = "Driver ID";
+                usernameInput.placeholder = "Enter driver ID";
             } else {
-                label.innerText = "Admin Username";
-                usernameInput.placeholder = "Enter admin username";
+                label.innerText = "Admin ID";
+                usernameInput.placeholder = "Enter admin ID";
             }
+            hideLoginError();
+        }
+
+        function showLoginError(message) {
+            const banner = document.getElementById("loginError");
+            banner.querySelector("span").textContent = message;
+            banner.classList.add("visible");
+        }
+
+        function hideLoginError() {
+            document.getElementById("loginError").classList.remove("visible");
         }
 
         function togglePasswordVisibility(inputId, iconId) {
@@ -142,6 +158,7 @@
 
         async function handleLogin(e) {
             e.preventDefault();
+            hideLoginError();
 
             const identifier = document.getElementById("username").value.trim();
             const password = document.getElementById("password").value;
@@ -232,6 +249,7 @@
                 }
 
                 notifyUser("danger", displayTitle, displayMsg);
+                showLoginError(displayMsg);
                 button.disabled = false;
                 button.innerHTML = originalButtonContent;
             }

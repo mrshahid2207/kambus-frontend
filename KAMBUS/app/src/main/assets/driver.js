@@ -30,6 +30,7 @@ let isTripActive = false;
 let isGpsPaused = false;
 let isTripStarting = false;
 let isTripEnding = false;
+let selectedTripType = null;
 let busAssignmentCheckInterval = null; // Polls for driver->bus reassignment while a trip is active
 
 let BUS_ID = null;
@@ -116,6 +117,9 @@ document.addEventListener("DOMContentLoaded", () => {
 // Bind Start & End Trip Buttons
     document.getElementById("startTripBtn")?.addEventListener("click", handleStartTrip);
     document.getElementById("endTripBtn")?.addEventListener("click", confirmAndEndTrip);
+    document.getElementById("morningTripTypeBtn")?.addEventListener("click", () => selectTripType("morning"));
+    document.getElementById("eveningTripTypeBtn")?.addEventListener("click", () => selectTripType("evening"));
+    updateTripTypeControls();
 
     // Bind Recenter Map Button
     document.getElementById("recenterBtn")?.addEventListener("click", recenterRouteMap);
@@ -263,7 +267,8 @@ async function restoreDriverDashboardState() {
         const data = await response.json();
 
         if (response.ok && data.active) {
-isTripActive = true;
+            await loadDriverRouteStops();
+            isTripActive = true;
             switchToActiveTripView();
             startGpsTracking();
             startWaitRequestsPolling();
@@ -399,9 +404,9 @@ async function loadDriverRouteStops() {
             return;
         }
 
-        // Sort stops by stop_order strictly
+        // The backend already returns stops in the active trip's direction.
         const rawStops = Array.isArray(data.stops) ? data.stops : [];
-        driverRouteStops = rawStops.sort((a, b) => (Number(a.stop_order) || 0) - (Number(b.stop_order) || 0));
+        driverRouteStops = [...rawStops];
 
         // Dynamic College Coordinates from Backend if provided
         if (data.college_location?.latitude && data.college_location?.longitude) {
@@ -458,8 +463,48 @@ function updatePreTripOverview() {
 // START TRIP CONTROLLER
 // ========================================================================
 
+function selectTripType(tripType) {
+    selectedTripType = tripType;
+    updateTripTypeControls();
+}
+
+function updateTripTypeControls() {
+    const startBtn = document.getElementById("startTripBtn");
+    const startText = document.getElementById("startTripText");
+    const labels = { morning: "Morning", evening: "Evening" };
+
+    ["morning", "evening"].forEach((tripType) => {
+        const button = document.getElementById(`${tripType}TripTypeBtn`);
+        if (!button) return;
+        const isSelected = selectedTripType === tripType;
+        button.setAttribute("aria-pressed", String(isSelected));
+        button.classList.toggle("bg-navy", isSelected);
+        button.classList.toggle("text-white", isSelected);
+        button.classList.toggle("border-navy", isSelected);
+        button.classList.toggle("bg-bg", !isSelected);
+        button.classList.toggle("text-navy", !isSelected);
+        button.classList.toggle("border-line", !isSelected);
+    });
+
+    if (startBtn && !isTripStarting) startBtn.disabled = !selectedTripType;
+    if (startText && !isTripStarting) {
+        startText.textContent = selectedTripType
+            ? `START ${labels[selectedTripType].toUpperCase()} TRIP`
+            : "SELECT TRIP TYPE";
+    }
+}
+
 async function handleStartTrip() {
     if (isTripActive || isTripStarting) return;
+
+    if (!selectedTripType) {
+        KambusNotify.notify({
+            type: "warning",
+            title: "Select trip type",
+            message: "Choose Morning or Evening before starting the trip."
+        });
+        return;
+    }
 
     const token = getToken();
     if (!token) {
@@ -502,7 +547,8 @@ async function handleStartTrip() {
             headers: {
                 "Authorization": `Bearer ${token}`,
                 "Content-Type": "application/json"
-            }
+            },
+            body: JSON.stringify({ trip_type: selectedTripType })
         });
 
         const data = await response.json();
@@ -510,7 +556,8 @@ async function handleStartTrip() {
         if (!response.ok) {
             throw new Error(data.detail || "Server failed to start trip");
         }
-isTripActive = true;
+        await loadDriverRouteStops();
+        isTripActive = true;
         isGpsPaused = false;
         passedStopIds.clear();
         lastRouteFetchAt = 0;
@@ -536,12 +583,12 @@ isTripActive = true;
         });
     } finally {
         isTripStarting = false;
-        if (startBtn) startBtn.disabled = false;
+        if (startBtn) startBtn.disabled = !selectedTripType;
         if (startIcon) {
         startIcon.className = "w-4 h-4 shrink-0";
         startIcon.innerHTML = '<use href="icons.svg#icon-play"/>';
     }
-        if (startText) startText.textContent = "START MORNING TRIP";
+        updateTripTypeControls();
     }
 }
 
@@ -786,7 +833,7 @@ async function handleBusReassignmentDetected() {
 function updateNextStopAndEta(driverPos) {
     if (!driverPos || driverRouteStops.length === 0) return;
 
-    // Filter unpassed stops in strict stop_order
+    // The backend returns this array in the active trip's travel order.
     const remainingStops = driverRouteStops.filter(s => !passedStopIds.has(s.stop_id || s.id));
 
     if (remainingStops.length === 0) {
@@ -814,6 +861,9 @@ function updateNextStopAndEta(driverPos) {
 
     // Next upcoming stop in sequence
     const nextStop = remainingStops[0];
+    const nextStopPosition = driverRouteStops.findIndex(
+        stop => (stop.stop_id || stop.id) === (nextStop.stop_id || nextStop.id)
+    ) + 1;
     const distToNext = calculateDistance(driverPos.latitude, driverPos.longitude, nextStop.latitude, nextStop.longitude);
 
     VoiceAnnouncer.checkProximityAnnouncement(
@@ -838,7 +888,7 @@ function updateNextStopAndEta(driverPos) {
     renderNextStopCard({
         name: nextStop.name,
         distance: distToNext,
-        orderText: `Stop ${nextStop.stop_order} of ${driverRouteStops.length}`,
+        orderText: `Stop ${nextStopPosition} of ${driverRouteStops.length}`,
         studentCount: nextStop.student_count,
         isCollege: false
     });
@@ -967,7 +1017,7 @@ function renderMapMarkers() {
     stopMarkersGroup.clearLayers();
 
     // 1. Plot Stops
-    driverRouteStops.forEach(stop => {
+    driverRouteStops.forEach((stop, index) => {
         const lat = Number(stop.latitude);
         const lng = Number(stop.longitude);
         if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
@@ -975,10 +1025,10 @@ function renderMapMarkers() {
         const isPassed = passedStopIds.has(stop.stop_id || stop.id);
         const isNext = currentNextStop && (currentNextStop.stop_id || currentNextStop.id) === (stop.stop_id || stop.id);
 
-        const stopIcon = createStopMarkerIcon(stop.stop_order, isPassed, isNext);
+        const stopIcon = createStopMarkerIcon(index + 1, isPassed, isNext);
 
         const marker = L.marker([lat, lng], { icon: stopIcon, zIndexOffset: isNext ? 500 : 100 })
-            .bindPopup(`<strong>${stop.name}</strong><br>Stop ${stop.stop_order}${stop.student_count ? ` • ${stop.student_count} expected` : ''}`);
+            .bindPopup(`<strong>${stop.name}</strong><br>Stop ${index + 1}${stop.student_count ? ` • ${stop.student_count} expected` : ''}`);
 
         marker.stopData = stop;
         stopMarkersGroup.addLayer(marker);
@@ -1064,7 +1114,10 @@ function updateStopMarkersAppearance() {
             const stop = layer.stopData;
             const isPassed = passedStopIds.has(stop.stop_id || stop.id);
             const isNext = currentNextStop && (currentNextStop.stop_id || currentNextStop.id) === (stop.stop_id || stop.id);
-            layer.setIcon(createStopMarkerIcon(stop.stop_order, isPassed, isNext));
+            const stopPosition = driverRouteStops.findIndex(
+                routeStop => (routeStop.stop_id || routeStop.id) === (stop.stop_id || stop.id)
+            ) + 1;
+            layer.setIcon(createStopMarkerIcon(stopPosition, isPassed, isNext));
             layer.setZIndexOffset(isNext ? 500 : (isPassed ? 50 : 100));
         }
     });
@@ -1403,6 +1456,11 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
 
 let scannerStream = null;
 let scannerScanInterval = null;
+let scannerFallbackTimeout = null;
+let scannerFallbackStarted = false;
+let scannerHasDecoded = false;
+let isQuaggaLiveScanning = false;
+let quaggaDetectedHandler = null;
 let currentDetourReason = "Road Construction";
 let currentDetourDelay = 10;
 let currentSosType = "Vehicle Breakdown";
@@ -1467,7 +1525,15 @@ async function startCameraScanner() {
             await video.play().catch(() => {});
         }
 
-        // Initialize Barcode Detector if available
+        scannerFallbackStarted = false;
+        scannerHasDecoded = false;
+        console.info("[PassScanner] camera stream started", {
+            nativeBarcodeDetector: 'BarcodeDetector' in window,
+            trackCount: scannerStream?.getVideoTracks().length || 0
+        });
+
+        // Try the native detector first. QuaggaJS takes over if it is absent
+        // or has not decoded a barcode after a short active scan window.
         startBarcodeDetectionLoop(video);
 
     } catch (err) {
@@ -1482,30 +1548,176 @@ async function startCameraScanner() {
 window.startCameraScanner = startCameraScanner;
 
 function startBarcodeDetectionLoop(video) {
-    if (!('BarcodeDetector' in window)) {
-return;
+    const nativeBarcodeDetectorAvailable = 'BarcodeDetector' in window;
+    console.info("[PassScanner] BarcodeDetector availability", nativeBarcodeDetectorAvailable);
+    if (!nativeBarcodeDetectorAvailable) {
+        startQuaggaFallback(video, "native BarcodeDetector unavailable");
+        return;
     }
 
     try {
         const barcodeDetector = new BarcodeDetector({ formats: ['qr_code', 'code_128', 'code_39', 'data_matrix'] });
+        console.info("[PassScanner] BarcodeDetector scan loop started");
+
+        if (scannerFallbackTimeout) clearTimeout(scannerFallbackTimeout);
+        scannerFallbackTimeout = setTimeout(() => {
+            console.info("[PassScanner] native fallback timeout fired", {
+                scannerHasDecoded,
+                scannerFallbackStarted,
+                hasStream: Boolean(scannerStream)
+            });
+            if (!scannerHasDecoded) startQuaggaFallback(video, "no native decode after 4 seconds");
+        }, 4000);
+        console.info("[PassScanner] native fallback timeout registered", { timeoutMs: 4000 });
 
         if (scannerScanInterval) clearInterval(scannerScanInterval);
         scannerScanInterval = setInterval(async () => {
             if (!scannerStream || !video || video.readyState < 2 || isVerifyingPass) return;
             try {
+                console.debug("[PassScanner] native detection attempt");
                 const barcodes = await barcodeDetector.detect(video);
+                console.debug("[PassScanner] native detection result", { count: barcodes?.length || 0 });
                 if (barcodes && barcodes.length > 0) {
                     const rawVal = barcodes[0].rawValue;
-                    if (rawVal) {
-await verifyStudentPassBackend(rawVal);
-                    }
+                    if (rawVal) handleDecodedPass(rawVal);
                 }
             } catch (scanErr) {
-                // Ignore transient frame decode errors
+                console.debug("[PassScanner] native detection frame error", scanErr);
             }
         }, 500);
     } catch (err) {
         console.warn("Barcode detector init error:", err);
+        startQuaggaFallback(video, "native BarcodeDetector initialization failed");
+    }
+}
+
+function stopBarcodeDetectionLoops() {
+    console.info("[PassScanner] stopping decoder loops", {
+        nativeLoop: Boolean(scannerScanInterval),
+        fallbackTimeout: Boolean(scannerFallbackTimeout),
+        quaggaLive: isQuaggaLiveScanning
+    });
+    if (scannerScanInterval) {
+        clearInterval(scannerScanInterval);
+        scannerScanInterval = null;
+    }
+    if (scannerFallbackTimeout) {
+        clearTimeout(scannerFallbackTimeout);
+        scannerFallbackTimeout = null;
+    }
+}
+
+function handleDecodedPass(rawValue) {
+    if (!rawValue || scannerHasDecoded || isVerifyingPass) {
+        console.debug("[PassScanner] decoded value ignored", { hasValue: Boolean(rawValue), scannerHasDecoded, isVerifyingPass });
+        return;
+    }
+    console.info("[PassScanner] barcode decoded; sending existing verification request");
+    scannerHasDecoded = true;
+    stopBarcodeDetectionLoops();
+    stopQuaggaLiveScanner();
+    void verifyStudentPassBackend(rawValue);
+}
+
+function startQuaggaFallback(video, reason = "unspecified") {
+    console.info("[PassScanner] startQuaggaFallback called", {
+        reason,
+        scannerFallbackStarted,
+        scannerHasDecoded,
+        hasStream: Boolean(scannerStream),
+        hasVideo: Boolean(video),
+        quaggaAvailable: Boolean(window.Quagga)
+    });
+    if (scannerFallbackStarted || !scannerStream || !video) return;
+    scannerFallbackStarted = true;
+    stopBarcodeDetectionLoops();
+
+    if (!window.Quagga) {
+        console.warn("QuaggaJS is unavailable; use manual roll-number entry.");
+        KambusNotify.notify({
+            type: "warning",
+            title: "Barcode scanner unavailable",
+            message: "Please enter the Roll Number manually."
+        });
+        return;
+    }
+
+    // Quagga LiveStream owns its own camera track, so release the native
+    // preview before starting it to avoid two consumers competing for camera focus.
+    scannerStream.getTracks().forEach(track => track.stop());
+    scannerStream = null;
+    video.srcObject = null;
+    video.classList.add("hidden");
+
+    const viewport = document.getElementById("quaggaViewport");
+    if (!viewport) return;
+    viewport.innerHTML = "";
+    viewport.classList.remove("hidden");
+
+    console.info("[PassScanner] starting QuaggaJS LiveStream scanner", { reason });
+    window.Quagga.init({
+        inputStream: {
+            name: "Live",
+            type: "LiveStream",
+            target: viewport,
+            constraints: {
+                facingMode: { ideal: "environment" },
+                width: { ideal: 1920 },
+                height: { ideal: 1080 }
+            },
+            size: 1600
+        },
+        numOfWorkers: 2,
+        frequency: 10,
+        locate: true,
+        locator: {
+            patchSize: "small",
+            halfSample: false
+        },
+        decoder: { readers: ["code_128_reader", "code_39_reader"] }
+    }, error => {
+        if (error) {
+            console.warn("[PassScanner] QuaggaJS LiveStream initialization failed", error);
+            viewport.classList.add("hidden");
+            document.getElementById("scannerPlaceholder")?.classList.remove("hidden");
+            document.getElementById("scannerLaser")?.classList.add("hidden");
+            KambusNotify.notify({
+                type: "warning",
+                title: "Barcode scanner unavailable",
+                message: "Please enter the Roll Number manually."
+            });
+            return;
+        }
+
+        isQuaggaLiveScanning = true;
+        quaggaDetectedHandler = result => {
+            const code = result?.codeResult?.code;
+            console.debug("[PassScanner] QuaggaJS LiveStream detection result", { decoded: Boolean(code) });
+            if (code) handleDecodedPass(code);
+        };
+        window.Quagga.onDetected(quaggaDetectedHandler);
+        window.Quagga.start();
+        console.info("[PassScanner] QuaggaJS LiveStream scanner started");
+    });
+}
+
+function stopQuaggaLiveScanner() {
+    const viewport = document.getElementById("quaggaViewport");
+    if (window.Quagga && quaggaDetectedHandler && typeof window.Quagga.offDetected === "function") {
+        window.Quagga.offDetected(quaggaDetectedHandler);
+    }
+    quaggaDetectedHandler = null;
+    if (window.Quagga && isQuaggaLiveScanning) {
+        try {
+            window.Quagga.stop();
+        } catch (error) {
+            console.warn("[PassScanner] QuaggaJS stop failed", error);
+        }
+    }
+    isQuaggaLiveScanning = false;
+    if (viewport) {
+        viewport.innerHTML = "";
+        viewport.classList.add("hidden");
     }
 }
 
@@ -1546,10 +1758,11 @@ async function handleQrFileUpload(event) {
 window.handleQrFileUpload = handleQrFileUpload;
 
 function stopCameraScanner() {
-    if (scannerScanInterval) {
-        clearInterval(scannerScanInterval);
-        scannerScanInterval = null;
-    }
+    console.info("[PassScanner] camera scanner stopped");
+    stopBarcodeDetectionLoops();
+    stopQuaggaLiveScanner();
+    scannerFallbackStarted = false;
+    scannerHasDecoded = false;
     if (scannerStream) {
         scannerStream.getTracks().forEach(track => track.stop());
         scannerStream = null;
@@ -1586,6 +1799,16 @@ window.handleManualPassLookup = handleManualPassLookup;
 
 // REAL BACKEND PASS VERIFICATION
 async function verifyStudentPassBackend(queryStr) {
+    queryStr = typeof queryStr === "string" ? queryStr.trim() : "";
+    if (/^data:image\//i.test(queryStr)) {
+        console.error("[PassScanner] refused image frame data as a verification query");
+        KambusNotify.notify({
+            type: "error",
+            title: "Invalid scanner value",
+            message: "The scanner returned an image frame instead of a barcode value. Please scan again or enter the Roll Number."
+        });
+        return;
+    }
     if (isVerifyingPass) return;
     isVerifyingPass = true;
 
@@ -1600,6 +1823,7 @@ async function verifyStudentPassBackend(queryStr) {
 
     const token = getToken();
     try {
+        console.info("[PassScanner] verify-pass request query:", queryStr);
         const response = await fetch(`${API_BASE}/driver/verify-pass`, {
             method: "POST",
             headers: {
