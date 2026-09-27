@@ -1349,6 +1349,32 @@
         }
     }
 
+    function getAnnouncementStyle(templateType) {
+        const type = String(templateType || "").toUpperCase();
+        if (["TEMPLATE_C", "TEMPLATE_H"].includes(type)) {
+            return { className: "announcement-card--urgent", icon: "⚠️", label: "Heads up" };
+        }
+        if (["TEMPLATE_A", "TEMPLATE_B", "TEMPLATE_D", "TEMPLATE_F"].includes(type)) {
+            return { className: "announcement-card--bus", icon: "🚌", label: "Bus update" };
+        }
+        if (type === "TEMPLATE_G") {
+            return { className: "announcement-card--stop", icon: "📍", label: "Stop update" };
+        }
+        return { className: "announcement-card--general", icon: "✨", label: "Update" };
+    }
+
+    function formatAnnouncementTime(value) {
+        const timestamp = new Date(value).getTime();
+        if (!Number.isFinite(timestamp)) return formatDateTime(value);
+
+        const seconds = Math.max(0, Math.floor((Date.now() - timestamp) / 1000));
+        if (seconds < 60) return "now";
+        if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+        if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+        if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
+        return formatDateTime(value);
+    }
+
     async function handleAdminLogout(event) {
         if (event) event.preventDefault();
 
@@ -2201,35 +2227,35 @@
     const ANNOUNCEMENT_TEMPLATES = {
         TEMPLATE_A: {
             title: "Bus Departure Schedule",
-            template: "Bus No. {bus} will start at {time} for {date_range}."
+            template: "🚌 Bus {bus} is fueled up and rolling at {time} for {date_range}. Don't make it wait!"
         },
         TEMPLATE_B: {
             title: "Student Bus Change",
-            template: "Students of {target} will travel in Bus No. {replacement_bus} today."
+            template: "🔄 Plot twist, Bus {target} fam — you're riding Bus {replacement_bus} today. Same squad, new chariot."
         },
         TEMPLATE_C: {
             title: "Bus Service Unavailable",
-            template: "Bus No. {bus} will not be available on {date}."
+            template: "😴 Bus {bus} is calling in sick on {date}. Sort your ride, legend."
         },
         TEMPLATE_D: {
             title: "Bus Replacement Notice",
-            template: "Bus No. {bus} is replaced by Bus No. {replacement_bus} on {date}."
+            template: "🔁 Bus {bus} tagged out, Bus {replacement_bus} tagged in — {date} only. Don't get on the wrong one!"
         },
         TEMPLATE_E: {
             title: "Schedule Timing Change",
-            template: "Bus No. {bus} will operate at {new_time} instead of {old_time}."
+            template: "⏰ Plans changed! Bus {bus} now rolls at {new_time} instead of {old_time}. Set that alarm, sleepyhead."
         },
         TEMPLATE_F: {
             title: "Route Modification Notice",
-            template: "Route {route} has been modified due to road conditions."
+            template: "🛣️ Route {route} said \"new me\" — road conditions forced a reroute. Peep the updated path before you dash out!"
         },
         TEMPLATE_G: {
             title: "Stop Adjustment Notice",
-            template: "Students assigned to {old_stop} should use {new_stop} instead."
+            template: "📍 {old_stop} crew, plot twist — you're now boarding at {new_stop}. Update your GPS and your vibes."
         },
         TEMPLATE_H: {
             title: "College Holiday — No Bus Service",
-            template: "Campus bus services will not operate on {date}."
+            template: "🎉 No buses, no problem — campus rides are off on {date}. Sleep in, you earned it."
         }
     };
 
@@ -2390,7 +2416,7 @@
         const endDate = document.getElementById("annFieldEndDate")?.value || startDate;
 
         if (templateKey === "TEMPLATE_B") {
-            msg = `Students of Bus ${sourceBusNumber} will travel in Bus No. ${replacementBusNumber} from ${startDate} to ${endDate}.`;
+            msg = `🔄 Plot twist, Bus ${sourceBusNumber} fam — you're riding Bus ${replacementBusNumber} from ${startDate} to ${endDate}. Same squad, new chariot.`;
         }
 
         msg = msg.replace("{replacement_bus}", replacementBusNumber);
@@ -2435,10 +2461,10 @@
             const btn = document.getElementById("btnBroadcastAnnouncement");
 
             if (countDisplay) {
-                countDisplay.textContent = `Affected Students: ${count}`;
+                countDisplay.textContent = `Reach: ${count} student${count === 1 ? "" : "s"}`;
             }
             if (btn) {
-                btn.innerHTML = `<svg class="w-4 h-4 shrink-0 inline mr-1.5" aria-hidden="true"><use href="icons.svg#icon-paper-plane"/></svg> Send to ${count} Student${count === 1 ? '' : 's'}`;
+                btn.innerHTML = `<svg class="w-4 h-4 shrink-0 inline mr-1.5" aria-hidden="true"><use href="icons.svg#icon-paper-plane"/></svg> Send update to ${count}`;
                 btn.disabled = count === 0;
             }
         } catch (error) {
@@ -2500,11 +2526,15 @@
                 });
             }
 
-            showToast("success", "Announcement Sent", res.message);
+            if (res.delivered === false) {
+                showToast("warning", "Saved, but not delivered", res.warning || res.message);
+            } else {
+                showToast("success", "Sent! 🎉", res.message);
+            }
             loadAnnouncementHistory();
             if (templateKey === "TEMPLATE_B") loadAdminBusChanges();
         } catch (error) {
-            showToast("error", "Broadcast Failed", error.message);
+            showToast("error", "Couldn’t send", error.message);
         }
     }
 
@@ -2517,23 +2547,33 @@
             const list = data.announcements || [];
 
             if (list.length === 0) {
-                container.innerHTML = `<div class="p-6 text-center text-xs text-slate-400">No past announcements logged.</div>`;
+                container.innerHTML = `
+                    <div class="announcement-empty">
+                        <div class="text-2xl mb-2" aria-hidden="true">📣</div>
+                        <p class="text-xs font-semibold text-navy">Nothing sent yet</p>
+                        <p class="text-[11px] mt-1">Your next update will show up here.</p>
+                    </div>`;
                 return;
             }
 
-            container.innerHTML = list.map(a => `
-                <div class="p-3.5 bg-slate-50 border border-slate-200/80 rounded">
+            container.innerHTML = list.map(a => {
+                const style = getAnnouncementStyle(a.template_type);
+                return `
+                <article class="announcement-card ${style.className}">
                     <div class="flex items-center justify-between gap-2">
-                        <span class="text-xs font-black text-slate-900">${escapeHtml(a.title)}</span>
-                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-brand/10 text-brand">${a.recipient_count} recipients</span>
+                        <div class="flex items-center gap-2 min-w-0">
+                            <span aria-hidden="true">${style.icon}</span>
+                            <span class="text-xs font-black text-navy truncate">${escapeHtml(a.title)}</span>
+                        </div>
+                        <span class="shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/75 text-brand border border-brand/10">${a.recipient_count} reached</span>
                     </div>
-                    <p class="text-xs text-slate-600 mt-1">${escapeHtml(a.message)}</p>
-                    <div class="flex items-center justify-between text-[10px] text-slate-400 mt-2">
-                        <span>Sent by ${escapeHtml(a.sender_name)}</span>
-                        <span>${formatDateTime(a.created_at)}</span>
+                    <p class="text-xs text-ink-muted mt-2 leading-relaxed">${escapeHtml(a.message)}</p>
+                    <div class="flex items-center justify-between text-[10px] text-ink-muted mt-3">
+                        <span>${style.label} · ${escapeHtml(a.sender_name)}</span>
+                        <span>${formatAnnouncementTime(a.created_at)}</span>
                     </div>
-                </div>
-            `).join("");
+                </article>`;
+            }).join("");
         } catch (e) {
             console.warn("History load failed:", e);
         }

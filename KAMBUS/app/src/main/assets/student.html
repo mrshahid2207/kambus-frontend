@@ -55,6 +55,14 @@
             min-height: 160px;
             width: 100%;
             background: #e2e8f0;
+            border-radius: 14px 14px 0 0 !important;
+            overflow: hidden !important;
+        }
+
+        /* Clips Leaflet panes and tiles to the map's rounded top corners. */
+        main.flex-1.min-h-0.relative {
+            border-radius: 14px 14px 0 0 !important;
+            overflow: hidden !important;
         }
 
         /* Recenter Floating Button */
@@ -84,8 +92,11 @@
         #navyHero {
             background: linear-gradient(180deg, #173541 0%, #1a3e4c 100%) !important;
             border-bottom: 2px solid #235265 !important;
-            padding: 8px 12px !important;
+            padding: 5px 12px !important;
             box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12) !important;
+            border-radius: 14px !important;
+            overflow: hidden !important;
+            margin: 2px 4px !important;
         }
         #etaValue {
             font-size: 1.15rem !important;
@@ -121,18 +132,22 @@
             background: #f1f5f9 !important;
         }
         .btn-pass {
-            height: 36px !important;
-            padding: 0 12px !important;
+            height: 34px !important;
+            margin: 2px 3px 0 !important;
+            padding: 0 10px !important;
             border-radius: 10px !important;
             background: #059669 !important;
             color: #ffffff !important;
             font-weight: 800 !important;
-            font-size: 12.5px !important;
+            font-size: 12px !important;
             display: inline-flex !important;
             align-items: center !important;
-            gap: 5px !important;
+            justify-content: center !important;
+            gap: 6px !important;
+            line-height: 1 !important;
+            white-space: nowrap;
             border: none !important;
-            box-shadow: 0 2px 6px rgba(5, 150, 105, 0.3) !important;
+            box-shadow: 0 2px 5px rgba(5, 150, 105, 0.24) !important;
             cursor: pointer;
             transition: background-color 0.15s ease;
         }
@@ -636,7 +651,7 @@
         }
         .kx-map {
             position: relative; isolation: isolate;
-            height: 176px; border-radius: 16px; overflow: hidden; border: 1.5px solid #e2e8f0;
+            height: 296px; border-radius: 16px; overflow: hidden; border: 1.5px solid #e2e8f0;
         }
         .kx-map > #tempStopPickerMap { width: 100%; height: 100%; }
         .kx-seg {
@@ -1165,6 +1180,7 @@
                 <div class="kx-callout">
                     <p id="waitRequestStateTitle" class="kx-callout-text">Wait request created</p>
                     <p id="waitRequestStateMessage" class="kx-note" style="margin-top:2px">Waiting for decision window...</p>
+                    <button type="button" id="waitBoardedBtn" onclick="confirmWaitBoarded()" class="hidden mt-3 w-full px-3 py-2 bg-brand text-white text-xs font-semibold rounded transition-colors hover:bg-navy">I've boarded</button>
                 </div>
             </div>
         </div>
@@ -1430,6 +1446,7 @@
     }
 
     let waitRequestPollTimer = null;
+    let waitCountdownTimer = null;
     let waitRequestActiveId = null;
     let waitRequestLastStatus = null;
 
@@ -1562,6 +1579,7 @@
 
             if (data.status === "completed") {
                 stopWaitRequestStatusPolling();
+                document.getElementById("waitBoardedBtn")?.classList.add("hidden");
                 updateWaitRequestStateUI("completed", data);
                 KambusNotify.notify({ type: "ok", title: "Wait completed", message: "The bus has finished waiting." });
                 waitRequestActiveId = null;
@@ -1574,14 +1592,16 @@
                 return;
             }
             if (data.status === "accepted") {
-                stopWaitRequestStatusPolling();
                 updateWaitRequestStateUI("accepted", data);
                 if (waitRequestLastStatus !== "accepted") {
                     KambusNotify.notify({ type: "ok", title: "Wait accepted", message: `Your ${data.minutes}-minute wait request has been accepted.` });
                 }
                 waitRequestLastStatus = "accepted";
-                waitRequestActiveId = null;
-                restoreWaitRequestButton(true);
+                return;
+            }
+            if (data.status === "waiting") {
+                updateWaitRequestStateUI("waiting", data);
+                showWaitingRequestState(data);
                 return;
             }
             if (data.status === "rejected") {
@@ -1597,6 +1617,75 @@
         } catch (error) {}
     }
 
+    function showWaitingRequestState(data) {
+        const modal = document.getElementById("waitModal");
+        const waitOptions = document.getElementById("waitOptions");
+        const waitState = document.getElementById("waitRequestState");
+        const boardedButton = document.getElementById("waitBoardedBtn");
+
+        modal?.classList.remove("hidden");
+        waitOptions?.classList.add("hidden");
+        waitState?.classList.remove("hidden");
+        boardedButton?.classList.remove("hidden");
+
+        if (waitCountdownTimer) clearInterval(waitCountdownTimer);
+        let fallbackSeconds = Math.max(0, Number(data.wait_remaining_seconds) || 0);
+
+        function updateWaitingCountdown() {
+            const deadline = Date.parse(data.wait_until);
+            const remainingSeconds = Number.isFinite(deadline)
+                ? Math.max(0, Math.ceil((deadline - Date.now()) / 1000))
+                : fallbackSeconds;
+
+            updateWaitRequestStateUI("waiting", { ...data, wait_remaining_seconds: remainingSeconds });
+            if (remainingSeconds <= 0) {
+                clearInterval(waitCountdownTimer);
+                waitCountdownTimer = null;
+                return;
+            }
+            fallbackSeconds = Math.max(0, fallbackSeconds - 1);
+        }
+
+        updateWaitingCountdown();
+        waitCountdownTimer = setInterval(updateWaitingCountdown, 1000);
+    }
+
+    async function confirmWaitBoarded() {
+        if (waitRequestActiveId === null) return;
+
+        const token = getToken();
+        if (!token) return;
+
+        const boardedButton = document.getElementById("waitBoardedBtn");
+        if (boardedButton) {
+            boardedButton.disabled = true;
+            boardedButton.textContent = "Confirming…";
+        }
+
+        try {
+            const response = await fetch(`${API_BASE}/student/wait-request/${waitRequestActiveId}/board`, {
+                method: "POST",
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.detail || "Unable to confirm boarding.");
+
+            stopWaitRequestStatusPolling();
+            document.getElementById("waitModal")?.classList.add("hidden");
+            document.getElementById("waitRequestState")?.classList.add("hidden");
+            boardedButton?.classList.add("hidden");
+            waitRequestActiveId = null;
+            restoreWaitRequestButton(true);
+            KambusNotify.notify({ type: "ok", title: "Boarding confirmed", message: "The driver can continue the trip." });
+        } catch (error) {
+            KambusNotify.notify({ type: "warn", title: "Unable to confirm boarding", message: error.message || "Please try again." });
+            if (boardedButton) {
+                boardedButton.disabled = false;
+                boardedButton.textContent = "I've boarded";
+            }
+        }
+    }
+
     function updateWaitRequestStateUI(status, data) {
         const title = document.getElementById("waitRequestStateTitle");
         const message = document.getElementById("waitRequestStateMessage");
@@ -1608,6 +1697,12 @@
         } else if (status === "accepted") {
             title.textContent = "Wait accepted";
             message.textContent = `The bus will wait approximately ${minutes} minute(s).`;
+        } else if (status === "waiting") {
+            const remainingSeconds = Math.max(0, Number(data.wait_remaining_seconds) || 0);
+            const remainingMinutes = Math.floor(remainingSeconds / 60);
+            const remainingSecondsText = String(remainingSeconds % 60).padStart(2, "0");
+            title.textContent = "Bus waiting";
+            message.textContent = `Bus waiting — ${remainingMinutes}:${remainingSecondsText} remaining`;
         } else if (status === "rejected") {
             title.textContent = "Wait skipped";
             message.textContent = "The driver skipped this wait request.";
@@ -1621,6 +1716,10 @@
         if (waitRequestPollTimer) {
             clearInterval(waitRequestPollTimer);
             waitRequestPollTimer = null;
+        }
+        if (waitCountdownTimer) {
+            clearInterval(waitCountdownTimer);
+            waitCountdownTimer = null;
         }
     }
 

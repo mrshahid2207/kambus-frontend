@@ -45,6 +45,7 @@ let assignedBusId = null;
 let assignedStop = null;
 let stopMarker = null;
 let routeStops = [];
+let routeStopsBusId = null;
 let routeStopsGroup = null;
 let routePolylineLayer = null;
 let collegeMarker = null;
@@ -419,11 +420,13 @@ async function loadRouteStops() {
         if (!response.ok) {
             console.warn(`Route stops unavailable or not assigned yet (HTTP ${response.status})`);
             routeStops = [];
+            routeStopsBusId = null;
             return;
         }
 
         const data = await response.json();
         routeStops = Array.isArray(data.stops) ? data.stops : [];
+        routeStopsBusId = data.bus_id ?? null;
         renderRouteStops();
         fetchAndDrawStudentRoute(true);
     } catch (error) {
@@ -526,7 +529,7 @@ function updateStopMarker() {
     const isTemp = assignedStop.is_temporary === true;
     const titleText = isTemp ? "Temporary Pickup Stop" : "Your Assigned Stop";
     const bgStyle = isTemp
-        ? "background: var(--warn); border: 2px solid #ffffff;"
+        ? "background: #0284C7; border: 2px solid #ffffff;"
         : "background: var(--brand); border: 2px solid #ffffff;";
 
     const customIcon = L.divIcon({
@@ -2216,9 +2219,72 @@ let tempStopPickerLat = null;
 let tempStopPickerLng = null;
 let tempStopPickerAddress = null;
 let tempStopRouteStopMarkers = [];
+let tempStopPickerRoutePolyline = null;
 let temporaryStopInputMode = "pin";
 let temporaryStopRouteCheck = null;
 let temporarySelectedCandidateBusId = null;
+
+const BUS_MAP_COLORS = [
+    "#173541", "#D97706", "#15803D", "#7C3AED",
+    "#E11D48", "#0F766E", "#4338CA", "#A16207"
+];
+
+function getBusMapColor(busId) {
+    const numericBusId = Number(busId);
+    if (Number.isInteger(numericBusId) && numericBusId > 0 && numericBusId <= BUS_MAP_COLORS.length) {
+        return BUS_MAP_COLORS[numericBusId - 1];
+    }
+
+    const source = String(busId ?? "default");
+    let hash = 0;
+    for (let index = 0; index < source.length; index += 1) {
+        hash = ((hash << 5) - hash + source.charCodeAt(index)) | 0;
+    }
+    return `hsl(${Math.abs(hash) % 360} 62% 38%)`;
+}
+
+function getTemporaryStopPickerRouteStops() {
+    return routeStops.filter(stop =>
+        Number.isFinite(Number(stop.latitude)) && Number.isFinite(Number(stop.longitude))
+    );
+}
+
+function drawTemporaryStopPickerRouteFallback(mapInstance, stops, color) {
+    if (tempStopPickerMap !== mapInstance || stops.length < 2) return;
+    tempStopPickerRoutePolyline = L.polyline(
+        stops.map(stop => [Number(stop.latitude), Number(stop.longitude)]),
+        { color, weight: 4, opacity: 0.8, lineJoin: "round" }
+    ).addTo(mapInstance);
+}
+
+async function drawTemporaryStopPickerRoute(mapInstance, stops, color) {
+    if (stops.length < 2) return;
+
+    const coordString = stops
+        .map(stop => `${Number(stop.longitude)},${Number(stop.latitude)}`)
+        .join(";");
+    const url = `https://router.project-osrm.org/route/v1/driving/${coordString}?overview=full&geometries=geojson&steps=false`;
+
+    try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`OSRM routing HTTP error ${response.status}`);
+
+        const data = await response.json();
+        const coordinates = data.routes?.[0]?.geometry?.coordinates;
+        if (!Array.isArray(coordinates) || coordinates.length < 2) {
+            throw new Error("No road route found in OSRM response");
+        }
+        if (tempStopPickerMap !== mapInstance) return;
+
+        tempStopPickerRoutePolyline = L.polyline(
+            coordinates.map(([longitude, latitude]) => [latitude, longitude]),
+            { color, weight: 4, opacity: 0.8, lineJoin: "round" }
+        ).addTo(mapInstance);
+    } catch (error) {
+        console.warn("Temporary stop picker road routing notice:", error.message);
+        drawTemporaryStopPickerRouteFallback(mapInstance, stops, color);
+    }
+}
 
 function escapeTemporaryStopText(value) {
     const element = document.createElement("span");
@@ -2433,6 +2499,7 @@ function initTempStopPickerMap() {
         tempStopPickerMap = null;
         tempStopPickerMarker = null;
         tempStopRouteStopMarkers = [];
+        tempStopPickerRoutePolyline = null;
     }
 
     // Must invalidate after modal becomes visible
@@ -2446,15 +2513,23 @@ function initTempStopPickerMap() {
             maxZoom: 19
         }).addTo(tempStopPickerMap);
 
-        // Show existing route stops as dim blue circles
+        const pickerMapInstance = tempStopPickerMap;
+        const pickerRouteStops = getTemporaryStopPickerRouteStops();
+        const busColor = getBusMapColor(routeStopsBusId);
+
+        // Draw the route underneath its stop markers. This deliberately excludes
+        // College: the picker is for the bus-stop route, not the campus extension.
+        drawTemporaryStopPickerRoute(pickerMapInstance, pickerRouteStops, busColor);
+
+        // Show existing route stops using their bus's stable map colour.
         tempStopRouteStopMarkers = [];
-        if (routeStops?.length > 0) {
-            routeStops.forEach(stop => {
+        if (pickerRouteStops.length > 0) {
+            pickerRouteStops.forEach(stop => {
                 if (!stop.latitude || !stop.longitude) return;
                 const circle = L.circleMarker([stop.latitude, stop.longitude], {
                     radius: 7,
-                    color: "#4A6F79",
-                    fillColor: "#85ADBB",
+                    color: busColor,
+                    fillColor: busColor,
                     fillOpacity: 0.8,
                     weight: 2
                 }).addTo(tempStopPickerMap);
@@ -2491,7 +2566,7 @@ function placeTempStopMarker(lat, lng, addressHint) {
     if (!tempStopPickerMarker) {
         const icon = L.divIcon({
             className: "",
-            html: `<div style="width:28px;height:28px;background:var(--navy);border:2px solid #FFFFFF;border-radius:50% 50% 50% 0;transform:rotate(-45deg);"></div>`,
+            html: `<div style="width:28px;height:28px;background:#0284C7;border:2px solid #FFFFFF;border-radius:50% 50% 50% 0;transform:rotate(-45deg);"></div>`,
             iconSize: [28, 28],
             iconAnchor: [14, 28]
         });
@@ -2741,6 +2816,7 @@ async function submitTemporaryStopChange() {
         // Re-read effective stop so the dashboard card/map updates immediately
         await loadMyStop(true);
         await loadTemporaryStopChange();
+        await loadStudentBus();
     } catch (error) {
         console.error("[ERROR] Temporary stop change failed:", error);
         featureNotify("error", "Unable to change stop", error.message || "Please try again.");

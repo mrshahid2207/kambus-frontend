@@ -66,6 +66,68 @@
             display: block;
         }
 
+        .announcement-card {
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(23, 53, 65, 0.10);
+            border-radius: 16px;
+            padding: 14px 14px 14px 18px;
+            animation: announcement-card-in 240ms ease-out both;
+        }
+
+        .announcement-card::before {
+            content: "";
+            position: absolute;
+            inset: 0 auto 0 0;
+            width: 4px;
+            border-radius: 16px 0 0 16px;
+            background: #D9922E;
+        }
+
+        .announcement-card--general {
+            background: linear-gradient(135deg, #FFF8E9 0%, #FFFDF8 70%);
+        }
+
+        .announcement-card--bus {
+            background: linear-gradient(135deg, #EEF5F8 0%, #F9FCFD 70%);
+        }
+
+        .announcement-card--urgent {
+            background: linear-gradient(135deg, #FFF1EF 0%, #FFFAF9 70%);
+        }
+
+        .announcement-card--stop {
+            background: linear-gradient(135deg, #EEF4FF 0%, #FBFCFF 70%);
+        }
+
+        .announcement-card--general::before { background: #D9922E; }
+        .announcement-card--bus::before { background: #173541; }
+        .announcement-card--urgent::before { background: #C43A3A; }
+        .announcement-card--stop::before { background: #426B9A; }
+
+        .announcement-empty {
+            border: 1px dashed rgba(23, 53, 65, 0.18);
+            border-radius: 16px;
+            padding: 28px 18px;
+            background: linear-gradient(135deg, #FFFBF3, #F6FAFB);
+            text-align: center;
+            color: #52707A;
+        }
+
+        #notificationBadge:not(.hidden) {
+            animation: notification-badge-pulse 1.8s ease-in-out infinite;
+        }
+
+        @keyframes announcement-card-in {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes notification-badge-pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(196, 58, 58, 0.34); }
+            55% { box-shadow: 0 0 0 6px rgba(196, 58, 58, 0); }
+        }
+
         #adminSidebar {
             transition: transform 0.2s ease-in-out;
         }
@@ -584,17 +646,17 @@
             <!-- SECTION 8:  ANNOUNCEMENTS & NOTIFICATIONS -->
             <section id="section-notifications" class="admin-section space-y-6">
                 <div>
-                    <h2 class="text-xl font-semibold text-navy tracking-tight">Broadcast Announcements</h2>
-                    <p class="text-xs text-ink-muted">Send template-based operational notices with automatic student recipient calculation.</p>
+                    <h2 class="text-xl font-semibold text-navy tracking-tight">Updates Hub</h2>
+                    <p class="text-xs text-ink-muted">Keep riders in the loop with one clean send.</p>
                 </div>
 
                 <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
                     <!-- Composer Form -->
-                    <form onsubmit="window.KambusAdmin.submitBroadcastAnnouncement(event)" class="lg:col-span-7 bg-surface border border-line/90 rounded p-5 border border-line space-y-4">
-                        <h3 class="text-sm font-semibold text-navy">Compose Notice</h3>
+                    <form onsubmit="window.KambusAdmin.submitBroadcastAnnouncement(event)" class="lg:col-span-7 bg-surface border border-line/90 rounded-2xl p-5 border border-line space-y-4">
+                        <h3 class="text-sm font-semibold text-navy">Drop an update</h3>
 
                         <div>
-                            <label class="block text-xs font-semibold text-navy mb-1">Select Predefined Template</label>
+                            <label class="block text-xs font-semibold text-navy mb-1">Start with a template</label>
                             <select id="announcementTemplateSelect" onchange="window.KambusAdmin.updateAnnouncementTemplateFields()" class="w-full p-2.5 border border-line rounded text-xs font-semibold focus:border-brand">
                                 <option value="TEMPLATE_A">Template A — Bus Start / Schedule</option>
                                 <option value="TEMPLATE_B">Template B — Student Bus Change</option>
@@ -613,9 +675,9 @@
                         <!-- Target Audience Area -->
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
-                                <label class="block text-xs font-semibold text-navy mb-1">Target Audience</label>
+                            <label class="block text-xs font-semibold text-navy mb-1">Who should see this?</label>
                                 <select id="announcementTargetType" onchange="window.KambusAdmin.onAnnouncementTargetTypeChanged()" class="w-full p-2.5 border border-line rounded text-xs">
-                                    <option value="all">All Registered Students</option>
+                                <option value="all">All students</option>
                                     <option value="bus">Specific Bus</option>
                                     <option value="route">Specific Route</option>
                                 </select>
@@ -635,36 +697,36 @@
                         </div>
 
                         <div>
-                            <label class="block text-xs font-semibold text-navy mb-1">Announcement Title</label>
+                            <label class="block text-xs font-semibold text-navy mb-1">Headline</label>
                             <input type="text" id="announcementTitle" class="w-full p-2.5 border border-line rounded text-xs font-semibold" required>
                         </div>
 
                         <div>
-                            <label class="block text-xs font-semibold text-navy mb-1">Generated Message</label>
+                            <label class="block text-xs font-semibold text-navy mb-1">Message</label>
                             <textarea id="announcementMessage" rows="3" class="w-full p-2.5 border border-line rounded text-xs" required></textarea>
                         </div>
 
                         <!-- Recipient Counter & Send Button -->
                         <div class="pt-3 border-t border-slate-100 flex items-center justify-between gap-3">
                             <span id="announcementRecipientCount" class="text-xs font-semibold text-brand bg-brand/10 px-3 py-1.5 rounded">
-                                 Affected Students: Calculating...
+                                 Checking reach…
                             </span>
                             <button type="submit" id="btnBroadcastAnnouncement" class="px-5 py-2.5 bg-brand hover:bg-brandDark text-white text-xs font-semibold rounded shadow flex items-center gap-2">
-                                <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-paper-plane"/></svg> <span>Send Announcement</span>
+                                <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-paper-plane"/></svg> <span>Send update</span>
                             </button>
                         </div>
                     </form>
 
                     <!-- History List -->
-                    <div class="lg:col-span-5 bg-surface border border-line/90 rounded p-5 border border-line flex flex-col justify-between">
+                    <div class="lg:col-span-5 bg-surface border border-line/90 rounded-2xl p-5 border border-line flex flex-col justify-between">
                         <div>
-                            <h3 class="text-sm font-semibold text-navy mb-3">Sent Announcements History</h3>
+                            <h3 class="text-sm font-semibold text-navy mb-3">Recent sends</h3>
                             <div id="announcementHistoryList" class="space-y-2.5 max-h-[500px] overflow-y-auto">
-                                <div class="p-6 text-center text-xs text-ink-muted">Loading history...</div>
+                                <div class="p-6 text-center text-xs text-ink-muted">Loading the feed…</div>
                             </div>
                         </div>
                         <div class="mt-5 pt-5 border-t border-slate-100">
-                            <h3 class="text-sm font-semibold text-navy mb-3">Bus Changes</h3>
+                            <h3 class="text-sm font-semibold text-navy mb-3">Bus-switch timeline</h3>
                             <div id="adminBusChangesList" class="space-y-2.5 max-h-[300px] overflow-y-auto">
                                 <div class="p-4 text-center text-xs text-ink-muted">Loading bus changes...</div>
                             </div>
