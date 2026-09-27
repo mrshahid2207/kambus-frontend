@@ -36,6 +36,7 @@ let busAssignmentCheckInterval = null; // Polls for driver->bus reassignment whi
 let BUS_ID = null;
 let currentBusData = null;
 let driverRouteStops = [];
+let activeTripType = null;
 let passedStopIds = new Set();
 let currentNextStop = null;
 
@@ -145,7 +146,7 @@ async function handleDriverLogout(event) {
     if (event) event.preventDefault();
 
     if (isTripActive) {
-        const confirmed = confirm("You have an active trip in progress. Are you sure you want to log out? The trip will be ended automatically.");
+        const confirmed = await confirm("You have an active trip in progress. Are you sure you want to log out? The trip will be ended automatically.");
         if (!confirmed) return;
 
         // End the trip on the backend before clearing local state
@@ -407,6 +408,14 @@ async function loadDriverRouteStops() {
         // The backend already returns stops in the active trip's direction.
         const rawStops = Array.isArray(data.stops) ? data.stops : [];
         driverRouteStops = [...rawStops];
+        activeTripType = data.trip_type || null;
+        if (selectedTripType && driverRouteStops.length > 0) {
+            const firstStopName = document.getElementById("preTripFirstStopName");
+            const firstStop = selectedTripType === "evening"
+                ? driverRouteStops[driverRouteStops.length - 1]
+                : driverRouteStops[0];
+            if (firstStopName && firstStop) firstStopName.textContent = firstStop.name;
+        }
 
         // Dynamic College Coordinates from Backend if provided
         if (data.college_location?.latitude && data.college_location?.longitude) {
@@ -465,6 +474,13 @@ function updatePreTripOverview() {
 
 function selectTripType(tripType) {
     selectedTripType = tripType;
+    if (driverRouteStops.length > 0) {
+        const firstStopName = document.getElementById("preTripFirstStopName");
+        const firstStop = tripType === "evening"
+            ? driverRouteStops[driverRouteStops.length - 1]
+            : driverRouteStops[0];
+        if (firstStopName && firstStop) firstStopName.textContent = firstStop.name;
+    }
     updateTripTypeControls();
 }
 
@@ -837,6 +853,20 @@ function updateNextStopAndEta(driverPos) {
     const remainingStops = driverRouteStops.filter(s => !passedStopIds.has(s.stop_id || s.id));
 
     if (remainingStops.length === 0) {
+        if (activeTripType === "evening") {
+            renderNextStopCard({
+                name: "All stops completed",
+                distance: 0,
+                orderText: "Trip Complete",
+                studentCount: null,
+                isCollege: false
+            });
+
+            currentNextStop = null;
+            updateStopProgressionUI();
+            return;
+        }
+
         // All stops completed; route destination is College
         const distToCollege = calculateDistance(
             driverPos.latitude,
@@ -943,14 +973,24 @@ function renderNextStopCard({ name, distance, orderText, studentCount, isCollege
 function updateCollegeEta(driverPos) {
     const clockElem = document.getElementById("collegeClockEta");
     const durationElem = document.getElementById("collegeDurationEta");
+    const labelElem = document.getElementById("collegeEtaLabel");
 
     if (!clockElem || !durationElem || !driverPos) return;
+
+    const finalStop = activeTripType === "evening" && driverRouteStops.length > 0
+        ? driverRouteStops[driverRouteStops.length - 1]
+        : null;
+    const destination = finalStop || COLLEGE_LOCATION;
+
+    if (labelElem) {
+        labelElem.textContent = finalStop ? "ETA to Final Stop" : "ETA to College";
+    }
 
     const distanceMeters = calculateDistance(
         driverPos.latitude,
         driverPos.longitude,
-        COLLEGE_LOCATION.latitude,
-        COLLEGE_LOCATION.longitude
+        Number(destination.latitude),
+        Number(destination.longitude)
     );
 
     const speedKmh = (driverPos.speed && driverPos.speed >= 15) ? driverPos.speed : 28;
@@ -1235,7 +1275,9 @@ async function fetchAndDrawRoadRoute(driverPos, nextId) {
             waypoints.push({ latitude: Number(stop.latitude), longitude: Number(stop.longitude) });
         });
 
-        waypoints.push({ latitude: COLLEGE_LOCATION.latitude, longitude: COLLEGE_LOCATION.longitude });
+        if (activeTripType !== "evening") {
+            waypoints.push({ latitude: COLLEGE_LOCATION.latitude, longitude: COLLEGE_LOCATION.longitude });
+        }
 
         // IMPORTANT: OSRM uses longitude,latitude format
         const coordString = waypoints
@@ -1320,10 +1362,10 @@ async function loadActiveWaitRequests() {
 
         const requests = Array.isArray(data.requests) ? data.requests : [];
 
-        if (requests.length > 0) {
-            renderActiveWaitCard(requests[0]);
-        } else {
+        if (requests.length === 0) {
             hideActiveWaitCard();
+        } else {
+            renderActiveWaitCard(requests[0]);
         }
     } catch (e) {
         console.warn("Wait requests poll error:", e);
@@ -1338,6 +1380,7 @@ function renderActiveWaitCard(group) {
     const title = document.getElementById("waitStopTitle");
     const countElem = document.getElementById("waitStudentCount");
     const countdownElem = document.getElementById("waitCountdownBadge");
+    const skipBtn = document.getElementById("skipWaitBtn");
 
     if (!card || !title || !countdownElem) return;
 
@@ -1349,8 +1392,46 @@ function renderActiveWaitCard(group) {
         countElem.textContent = `• ${studentCount} ${studentCount === 1 ? "student" : "students"} waiting (${group.minutes} min)`;
     }
 
-    // Live Auto-Accept Countdown
     if (waitCountdownInterval) clearInterval(waitCountdownInterval);
+    const status = group.status || "pending";
+
+    if (status === "accepted") {
+        countdownElem.textContent = "Accepted — waiting for arrival";
+        skipBtn?.classList.add("hidden");
+        return;
+    }
+
+    if (status === "waiting") {
+        skipBtn?.classList.add("hidden");
+        let fallbackSeconds = Math.max(0, Number(group.wait_remaining_seconds) || 0);
+
+        function updateWaitingCountdown() {
+            const deadline = Date.parse(group.wait_until);
+            const remainingSeconds = Number.isFinite(deadline)
+                ? Math.max(0, Math.ceil((deadline - Date.now()) / 1000))
+                : fallbackSeconds;
+
+            if (remainingSeconds <= 0) {
+                countdownElem.textContent = "Continue your trip";
+                clearInterval(waitCountdownInterval);
+                waitCountdownInterval = null;
+                return;
+            }
+
+            const minutes = Math.floor(remainingSeconds / 60);
+            const seconds = String(remainingSeconds % 60).padStart(2, "0");
+            countdownElem.textContent = `Waiting — resume in ${minutes}:${seconds}`;
+            fallbackSeconds = Math.max(0, fallbackSeconds - 1);
+        }
+
+        updateWaitingCountdown();
+        waitCountdownInterval = setInterval(updateWaitingCountdown, 1000);
+        return;
+    }
+
+    skipBtn?.classList.remove("hidden");
+
+    // Pending: live auto-accept countdown.
 
     function updateCountdown() {
         const deadline = Date.parse(group.auto_accept_at);

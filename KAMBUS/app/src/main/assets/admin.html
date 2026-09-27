@@ -126,7 +126,7 @@
             </button>
 
             <!-- Logout -->
-            <a href="index.html" class="w-9 h-9 rounded text-ink-muted hover:text-danger flex items-center justify-center transition" aria-label="Logout" title="Logout">
+            <a href="index.html" onclick="window.KambusAdmin.handleAdminLogout(event)" class="w-9 h-9 rounded text-ink-muted hover:text-danger flex items-center justify-center transition" aria-label="Logout" title="Logout">
                 <svg class="w-4 h-4 shrink-0 text-sm" aria-hidden="true"><use href="icons.svg#icon-logout"/></svg>
             </a>
         </div>
@@ -1200,13 +1200,22 @@
 
                 <!-- Interactive Map Container -->
                 <div>
+                    <div class="flex gap-2 mb-2">
+                        <button type="button" id="addStopPickupModeBtn" class="flex-1 py-1.5 text-xs font-semibold rounded border">Set Pickup (Morning)</button>
+                        <button type="button" id="addStopDropModeBtn" class="flex-1 py-1.5 text-xs font-semibold rounded border">Set Drop (Evening)</button>
+                    </div>
                     <div class="flex items-center justify-between mb-1">
                         <label class="block font-semibold text-navy"> Pick Stop Location on Map</label>
-                        <span id="addStopCoordsDisplay" class="text-[10px] font-mono font-semibold text-brand">Click on map to place marker</span>
+                        <span class="text-[10px] font-mono font-semibold text-brand text-right">
+                            <span id="addStopPickupCoordsDisplay">Pickup: click map</span><br>
+                            <span id="addStopDropCoordsDisplay">Drop: not set</span>
+                        </span>
                     </div>
                     <div id="stopPickerMapContainer" style="height: 220px; width: 100%; border-radius: 12px; overflow: hidden; border: 1px solid #E3E8E8;"></div>
                     <input type="hidden" id="addStopLat" name="latitude">
                     <input type="hidden" id="addStopLng" name="longitude">
+                    <input type="hidden" id="addStopEveningLat" name="evening_latitude">
+                    <input type="hidden" id="addStopEveningLng" name="evening_longitude">
                 </div>
 
                 <div class="pt-3 flex gap-2">
@@ -1248,13 +1257,22 @@
 
                 <!-- Interactive Map Container for Edit Stop -->
                 <div>
+                    <div class="flex gap-2 mb-2">
+                        <button type="button" id="editStopPickupModeBtn" class="flex-1 py-1.5 text-xs font-semibold rounded border">Set Pickup (Morning)</button>
+                        <button type="button" id="editStopDropModeBtn" class="flex-1 py-1.5 text-xs font-semibold rounded border">Set Drop (Evening)</button>
+                    </div>
                     <div class="flex items-center justify-between mb-1">
                         <label class="block font-semibold text-navy"> Edit Stop Location on Map</label>
-                        <span id="editStopCoordsDisplay" class="text-[10px] font-mono font-semibold text-brand">Click on map or drag pin</span>
+                        <span class="text-[10px] font-mono font-semibold text-brand text-right">
+                            <span id="editStopPickupCoordsDisplay">Pickup: click map</span><br>
+                            <span id="editStopDropCoordsDisplay">Drop: not set</span>
+                        </span>
                     </div>
                     <div id="editStopPickerMapContainer" style="height: 220px; width: 100%; border-radius: 12px; overflow: hidden; border: 1px solid #E3E8E8;"></div>
                     <input type="hidden" id="editStopLat" name="latitude">
                     <input type="hidden" id="editStopLng" name="longitude">
+                    <input type="hidden" id="editStopEveningLat" name="evening_latitude">
+                    <input type="hidden" id="editStopEveningLng" name="evening_longitude">
                 </div>
 
                 <div class="pt-3 flex gap-2">

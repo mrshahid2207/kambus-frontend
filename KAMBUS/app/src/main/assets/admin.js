@@ -18,8 +18,12 @@
     let liveTrackingInterval = null;
     let stopPickerMap = null;
     let stopPickerMarker = null;
+    let stopPickerDropMarker = null;
+    let addStopPickMode = "pickup";
     let editStopPickerMap = null;
     let editStopPickerMarker = null;
+    let editStopPickerDropMarker = null;
+    let editStopPickMode = "pickup";
     let routeMap = null;
     let routeMapLayers = [];
     let adminSocket = null;
@@ -394,6 +398,23 @@
         await loadRoutesDropdown();
         const form = document.querySelector("#addStopModal form");
         if (form) form.reset();
+        addStopPickMode = "pickup";
+        document.getElementById("addStopEveningLat").value = "";
+        document.getElementById("addStopEveningLng").value = "";
+        document.getElementById("addStopDropCoordsDisplay").textContent = "Drop: not set";
+        if (stopPickerDropMarker && stopPickerMap) {
+            stopPickerMap.removeLayer(stopPickerDropMarker);
+        }
+        stopPickerDropMarker = null;
+        document.getElementById("addStopPickupModeBtn").onclick = () => {
+            addStopPickMode = "pickup";
+            updateAddStopModeButtons();
+        };
+        document.getElementById("addStopDropModeBtn").onclick = () => {
+            addStopPickMode = "drop";
+            updateAddStopModeButtons();
+        };
+        updateAddStopModeButtons();
         document.getElementById("addStopModal")?.classList.remove("hidden");
         setTimeout(() => initStopMapPicker(17.985, 79.595), 150);
     }
@@ -682,9 +703,8 @@
     }
 
     async function deleteBus(busId, busNumber) {
-        if (!confirm(`Are you sure you want to delete Bus ${busNumber}? Students assigned will be unassigned.`)) {
-            return;
-        }
+        const confirmed = await confirm(`Are you sure you want to delete Bus ${busNumber}? Students assigned will be unassigned.`);
+        if (!confirmed) return;
         try {
             await apiRequest(`/admin/buses/${busId}`, { method: "DELETE" });
             showToast("info", "Bus Deleted", `Bus ${busNumber} removed.`);
@@ -891,9 +911,8 @@
     }
 
     async function deleteDriver(driverId, name) {
-        if (!confirm(`Are you sure you want to remove driver ${name}?`)) {
-            return;
-        }
+        const confirmed = await confirm(`Are you sure you want to remove driver ${name}?`);
+        if (!confirmed) return;
         try {
             await apiRequest(`/admin/drivers/${driverId}`, { method: "DELETE" });
             showToast("info", "Driver Removed", `Driver ${name} deleted.`);
@@ -1114,9 +1133,8 @@
     }
 
     async function deleteStudent(studentId, rollNumber) {
-        if (!confirm(`Are you sure you want to delete student ${rollNumber}?`)) {
-            return;
-        }
+        const confirmed = await confirm(`Are you sure you want to delete student ${rollNumber}?`);
+        if (!confirmed) return;
         try {
             await apiRequest(`/admin/students/${studentId}`, { method: "DELETE" });
             showToast("info", "Deleted", `Student ${rollNumber} removed.`);
@@ -1192,8 +1210,35 @@
 
             const stopLat = Number(stop.latitude);
             const stopLng = Number(stop.longitude);
+            const eveningLat = Number(stop.evening_latitude);
+            const eveningLng = Number(stop.evening_longitude);
+            const hasEveningCoordinates = stop.evening_latitude !== null
+                && stop.evening_latitude !== undefined
+                && stop.evening_longitude !== null
+                && stop.evening_longitude !== undefined
+                && Number.isFinite(eveningLat)
+                && Number.isFinite(eveningLng);
             document.getElementById("editStopLat").value = stopLat;
             document.getElementById("editStopLng").value = stopLng;
+            document.getElementById("editStopEveningLat").value = hasEveningCoordinates ? eveningLat : "";
+            document.getElementById("editStopEveningLng").value = hasEveningCoordinates ? eveningLng : "";
+            document.getElementById("editStopDropCoordsDisplay").textContent = hasEveningCoordinates
+                ? `Drop: ${eveningLat.toFixed(5)}, ${eveningLng.toFixed(5)}`
+                : "Drop: not set";
+            editStopPickMode = "pickup";
+            if (editStopPickerDropMarker && editStopPickerMap) {
+                editStopPickerMap.removeLayer(editStopPickerDropMarker);
+            }
+            editStopPickerDropMarker = null;
+            document.getElementById("editStopPickupModeBtn").onclick = () => {
+                editStopPickMode = "pickup";
+                updateEditStopModeButtons();
+            };
+            document.getElementById("editStopDropModeBtn").onclick = () => {
+                editStopPickMode = "drop";
+                updateEditStopModeButtons();
+            };
+            updateEditStopModeButtons();
 
             document.getElementById("editStopModal")?.classList.remove("hidden");
 
@@ -1203,6 +1248,47 @@
         } catch (e) {
             showToast("error", "Error", "Could not load stop details for editing: " + e.message);
         }
+    }
+
+    function createStopPickerIcon(color) {
+        return L.divIcon({
+            className: "",
+            html: `<div style="width:20px;height:20px;border-radius:50%;background:${color};border:3px solid #ffffff;box-shadow:0 1px 5px rgba(0,0,0,.35);"></div>`,
+            iconSize: [20, 20],
+            iconAnchor: [10, 10]
+        });
+    }
+
+    function updateAddStopModeButtons() {
+        const pickupButton = document.getElementById("addStopPickupModeBtn");
+        const dropButton = document.getElementById("addStopDropModeBtn");
+
+        [[pickupButton, addStopPickMode === "pickup"], [dropButton, addStopPickMode === "drop"]].forEach(([button, active]) => {
+            if (!button) return;
+            button.classList.toggle("bg-brand", active);
+            button.classList.toggle("text-white", active);
+            button.classList.toggle("border-brand", active);
+            button.classList.toggle("bg-bg", !active);
+            button.classList.toggle("text-navy", !active);
+            button.classList.toggle("border-line", !active);
+            button.setAttribute("aria-pressed", String(active));
+        });
+    }
+
+    function updateEditStopModeButtons() {
+        const pickupButton = document.getElementById("editStopPickupModeBtn");
+        const dropButton = document.getElementById("editStopDropModeBtn");
+
+        [[pickupButton, editStopPickMode === "pickup"], [dropButton, editStopPickMode === "drop"]].forEach(([button, active]) => {
+            if (!button) return;
+            button.classList.toggle("bg-brand", active);
+            button.classList.toggle("text-white", active);
+            button.classList.toggle("border-brand", active);
+            button.classList.toggle("bg-bg", !active);
+            button.classList.toggle("text-navy", !active);
+            button.classList.toggle("border-line", !active);
+            button.setAttribute("aria-pressed", String(active));
+        });
     }
 
     function initEditStopMapPicker(defaultLat, defaultLng) {
@@ -1219,7 +1305,11 @@
             }).addTo(editStopPickerMap);
 
             editStopPickerMap.on("click", (e) => {
-                setEditStopPickerCoords(e.latlng.lat, e.latlng.lng);
+                if (editStopPickMode === "pickup") {
+                    setEditStopPickerCoords(e.latlng.lat, e.latlng.lng);
+                } else {
+                    setEditStopPickerDropCoords(e.latlng.lat, e.latlng.lng);
+                }
             });
         } else {
             editStopPickerMap.setView([lat, lng], 14);
@@ -1230,24 +1320,63 @@
         }, 200);
 
         setEditStopPickerCoords(lat, lng);
+        const eveningLat = Number(document.getElementById("editStopEveningLat")?.value);
+        const eveningLng = Number(document.getElementById("editStopEveningLng")?.value);
+        if (Number.isFinite(eveningLat) && Number.isFinite(eveningLng)) {
+            setEditStopPickerDropCoords(eveningLat, eveningLng);
+        }
     }
 
     function setEditStopPickerCoords(lat, lng) {
         const latInput = document.getElementById("editStopLat");
         const lngInput = document.getElementById("editStopLng");
-        const display = document.getElementById("editStopCoordsDisplay");
+        const display = document.getElementById("editStopPickupCoordsDisplay");
 
         if (latInput) latInput.value = lat;
         if (lngInput) lngInput.value = lng;
-        if (display) display.textContent = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+        if (display) display.textContent = `Pickup: ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
 
         if (editStopPickerMarker) {
             editStopPickerMarker.setLatLng([lat, lng]);
+            editStopPickerMarker.setIcon(createStopPickerIcon("#16a34a"));
         } else if (editStopPickerMap) {
-            editStopPickerMarker = L.marker([lat, lng], { draggable: true }).addTo(editStopPickerMap);
+            editStopPickerMarker = L.marker([lat, lng], { draggable: true, icon: createStopPickerIcon("#16a34a") }).addTo(editStopPickerMap);
             editStopPickerMarker.on("dragend", (e) => {
                 const pos = e.target.getLatLng();
                 setEditStopPickerCoords(pos.lat, pos.lng);
+            });
+        }
+    }
+
+    async function handleAdminLogout(event) {
+        if (event) event.preventDefault();
+
+        const confirmed = await confirm("Are you sure you want to log out?");
+        if (!confirmed) return;
+
+        localStorage.removeItem("kambus_token");
+        localStorage.removeItem("kambus_role");
+        localStorage.removeItem("kambus_user_id");
+        window.location.href = "index.html";
+    }
+
+    function setEditStopPickerDropCoords(lat, lng) {
+        const latInput = document.getElementById("editStopEveningLat");
+        const lngInput = document.getElementById("editStopEveningLng");
+        const display = document.getElementById("editStopDropCoordsDisplay");
+
+        if (latInput) latInput.value = lat;
+        if (lngInput) lngInput.value = lng;
+        if (display) display.textContent = `Drop: ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+
+        if (editStopPickerDropMarker) {
+            editStopPickerDropMarker.setLatLng([lat, lng]);
+            editStopPickerDropMarker.setIcon(createStopPickerIcon("#dc2626"));
+        } else if (editStopPickerMap) {
+            editStopPickerDropMarker = L.marker([lat, lng], { draggable: true, icon: createStopPickerIcon("#dc2626") }).addTo(editStopPickerMap);
+            editStopPickerDropMarker.on("dragend", (e) => {
+                const pos = e.target.getLatLng();
+                setEditStopPickerDropCoords(pos.lat, pos.lng);
             });
         }
     }
@@ -1261,6 +1390,8 @@
         const stopOrder = parseInt(form.stop_order.value);
         const latitude = parseFloat(form.latitude.value);
         const longitude = parseFloat(form.longitude.value);
+        const eveningLat = parseFloat(document.getElementById("editStopEveningLat")?.value);
+        const eveningLng = parseFloat(document.getElementById("editStopEveningLng")?.value);
 
         if (isNaN(latitude) || isNaN(longitude)) {
             showToast("error", "Invalid Coordinates", "Please enter valid numeric latitude and longitude.");
@@ -1268,15 +1399,20 @@
         }
 
         try {
+            const body = {
+                name,
+                route_id: routeId,
+                stop_order: stopOrder,
+                latitude,
+                longitude
+            };
+            if (!isNaN(eveningLat) && !isNaN(eveningLng)) {
+                body.evening_latitude = eveningLat;
+                body.evening_longitude = eveningLng;
+            }
             await apiRequest(`/admin/stops/${stopId}`, {
                 method: "PATCH",
-                body: {
-                    name,
-                    route_id: routeId,
-                    stop_order: stopOrder,
-                    latitude,
-                    longitude
-                }
+                body
             });
 
             showToast("success", "Stop Updated", `Stop "${name}" has been updated.`);
@@ -1305,7 +1441,11 @@
             }).addTo(stopPickerMap);
 
             stopPickerMap.on("click", (e) => {
-                setStopPickerCoords(e.latlng.lat, e.latlng.lng);
+                if (addStopPickMode === "pickup") {
+                    setStopPickerCoords(e.latlng.lat, e.latlng.lng);
+                } else {
+                    setStopPickerDropCoords(e.latlng.lat, e.latlng.lng);
+                }
             });
         } else {
             stopPickerMap.setView([lat, lng], 13);
@@ -1322,19 +1462,41 @@
     function setStopPickerCoords(lat, lng) {
         const latInput = document.getElementById("addStopLat");
         const lngInput = document.getElementById("addStopLng");
-        const display = document.getElementById("addStopCoordsDisplay");
+        const display = document.getElementById("addStopPickupCoordsDisplay");
 
         if (latInput) latInput.value = lat;
         if (lngInput) lngInput.value = lng;
-        if (display) display.textContent = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+        if (display) display.textContent = `Pickup: ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
 
         if (stopPickerMarker) {
             stopPickerMarker.setLatLng([lat, lng]);
+            stopPickerMarker.setIcon(createStopPickerIcon("#16a34a"));
         } else if (stopPickerMap) {
-            stopPickerMarker = L.marker([lat, lng], { draggable: true }).addTo(stopPickerMap);
+            stopPickerMarker = L.marker([lat, lng], { draggable: true, icon: createStopPickerIcon("#16a34a") }).addTo(stopPickerMap);
             stopPickerMarker.on("dragend", (e) => {
                 const pos = e.target.getLatLng();
                 setStopPickerCoords(pos.lat, pos.lng);
+            });
+        }
+    }
+
+    function setStopPickerDropCoords(lat, lng) {
+        const latInput = document.getElementById("addStopEveningLat");
+        const lngInput = document.getElementById("addStopEveningLng");
+        const display = document.getElementById("addStopDropCoordsDisplay");
+
+        if (latInput) latInput.value = lat;
+        if (lngInput) lngInput.value = lng;
+        if (display) display.textContent = `Drop: ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+
+        if (stopPickerDropMarker) {
+            stopPickerDropMarker.setLatLng([lat, lng]);
+            stopPickerDropMarker.setIcon(createStopPickerIcon("#dc2626"));
+        } else if (stopPickerMap) {
+            stopPickerDropMarker = L.marker([lat, lng], { draggable: true, icon: createStopPickerIcon("#dc2626") }).addTo(stopPickerMap);
+            stopPickerDropMarker.on("dragend", (e) => {
+                const pos = e.target.getLatLng();
+                setStopPickerDropCoords(pos.lat, pos.lng);
             });
         }
     }
@@ -1347,6 +1509,8 @@
         const stopOrder = parseInt(form.stop_order.value);
         const latitude = parseFloat(document.getElementById("addStopLat")?.value);
         const longitude = parseFloat(document.getElementById("addStopLng")?.value);
+        const eveningLat = parseFloat(document.getElementById("addStopEveningLat")?.value);
+        const eveningLng = parseFloat(document.getElementById("addStopEveningLng")?.value);
 
         if (isNaN(latitude) || isNaN(longitude)) {
             showToast("error", "Location Required", "Please click on the map to place the stop pin.");
@@ -1354,14 +1518,14 @@
         }
 
         try {
+            const body = { name, latitude, longitude, stop_order: stopOrder };
+            if (!isNaN(eveningLat) && !isNaN(eveningLng)) {
+                body.evening_latitude = eveningLat;
+                body.evening_longitude = eveningLng;
+            }
             await apiRequest(`/admin/routes/${routeId}/stops`, {
                 method: "POST",
-                body: {
-                    name,
-                    latitude,
-                    longitude,
-                    stop_order: stopOrder
-                }
+                body
             });
 
             showToast("success", "Stop Created", `Stop "${name}" added to route.`);
@@ -1377,12 +1541,15 @@
     }
 
     async function deleteStop(stopId, stopName) {
-        if (!confirm(`Are you sure you want to delete stop "${stopName}"?`)) {
-            return;
-        }
+        const confirmed = await confirm(`Are you sure you want to delete stop "${stopName}"?`);
+        if (!confirmed) return;
         try {
-            await apiRequest(`/admin/stops/${stopId}`, { method: "DELETE" });
-            showToast("info", "Stop Deleted", `Stop "${stopName}" removed.`);
+            const result = await apiRequest(`/admin/stops/${stopId}`, { method: "DELETE" });
+            if (result.action === "deactivated") {
+                showToast("info", "Stop Deactivated", result.message || `Stop "${stopName}" has historical references and was deactivated instead of deleted.`);
+            } else {
+                showToast("info", "Stop Deleted", `Stop "${stopName}" removed.`);
+            }
             loadStops();
             loadStopsDropdown();
             loadRoutesDropdown();
@@ -1509,9 +1676,8 @@
     }
 
     async function deleteRoute(routeId, routeName) {
-        if (!confirm(`Are you sure you want to delete route "${routeName}"? Stops and bus links will be cleared.`)) {
-            return;
-        }
+        const confirmed = await confirm(`Are you sure you want to delete route "${routeName}"? Stops and bus links will be cleared.`);
+        if (!confirmed) return;
         try {
             await apiRequest(`/admin/routes/${routeId}`, { method: "DELETE" });
             showToast("info", "Route Deleted", `Route "${routeName}" removed.`);
@@ -1881,7 +2047,8 @@
         const question = isLive
             ? `Delete the temporary stop change for ${who}?\n\nIt stops applying now and the student is told they are back on their regular stop and bus. This cannot be undone.`
             : `Delete this temporary stop change for ${who}? This cannot be undone.`;
-        if (!confirm(question)) return;
+        const confirmed = await confirm(question);
+        if (!confirmed) return;
 
         try {
             await apiRequest(`/admin/temporary-stop-requests/${requestId}`, { method: "DELETE" });
@@ -2616,7 +2783,8 @@
         const question = disabling
             ? `Disable ${admin.name}? They will not be able to sign in. An admin who is signed in now keeps access for up to an hour.`
             : `Enable ${admin.name}? They will be able to sign in again.`;
-        if (!confirm(question)) return;
+        const confirmed = await confirm(question);
+        if (!confirmed) return;
 
         try {
             await apiRequest(`/admin/admins/${adminId}/${disabling ? "disable" : "enable"}`, { method: "POST" });
@@ -2688,6 +2856,7 @@
         loadDriversDropdown,
         loadRoutesDropdown,
         loadStopsDropdown,
+        handleAdminLogout,
         openAddBusModal,
         openBusModal,
         submitUpdateBusGeneralProps,

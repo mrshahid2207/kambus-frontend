@@ -455,8 +455,7 @@ async function fetchAndDrawStudentRoute(force = false) {
 
     try {
         const sortedStops = [...routeStops]
-            .filter(s => Number.isFinite(Number(s.latitude)) && Number.isFinite(Number(s.longitude)))
-            .sort((a, b) => Number(a.stop_order || 0) - Number(b.stop_order || 0));
+            .filter(s => Number.isFinite(Number(s.latitude)) && Number.isFinite(Number(s.longitude)));
 
         const waypoints = [
             ...sortedStops.map(s => ({
@@ -2766,7 +2765,7 @@ async function cancelTemporaryStopChange() {
             confirmText: "Cancel Change",
             cancelText: "Keep It"
         })
-        : confirm("Cancel this temporary stop change?");
+        : await confirm("Cancel this temporary stop change?");
 
     if (!approved) return;
 
