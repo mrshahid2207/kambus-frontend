@@ -241,6 +241,7 @@
             case "notifications":
                 initAnnouncementComposer();
                 loadAnnouncementHistory();
+                loadAdminBusChanges();
                 break;
             case "alerts":
                 loadAlerts();
@@ -2285,9 +2286,29 @@
                 break;
             case "TEMPLATE_B":
                 fieldsHtml = `
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">Replacement Bus Number</label>
-                        <input type="text" id="annFieldReplacementBus" placeholder="e.g. 5" value="5" class="w-full p-2.5 border border-slate-300 rounded text-xs" oninput="window.KambusAdmin.previewAnnouncementText()">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Source Bus</label>
+                            <select id="annFieldSourceBus" class="bus-select-dropdown w-full p-2.5 border border-slate-300 rounded text-xs" onchange="window.KambusAdmin.previewAnnouncementText(); window.KambusAdmin.calculateAffectedStudents()">
+                                <option value="">-- Select Source Bus --</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Replacement Bus</label>
+                            <select id="annFieldReplacementBusSelect" class="bus-select-dropdown w-full p-2.5 border border-slate-300 rounded text-xs" onchange="window.KambusAdmin.previewAnnouncementText()">
+                                <option value="">-- Select Replacement Bus --</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Start Date</label>
+                            <input type="date" id="annFieldStartDate" value="${new Date().toISOString().split('T')[0]}" class="w-full p-2.5 border border-slate-300 rounded text-xs" onchange="window.KambusAdmin.previewAnnouncementText()">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">End Date</label>
+                            <input type="date" id="annFieldEndDate" value="${new Date().toISOString().split('T')[0]}" class="w-full p-2.5 border border-slate-300 rounded text-xs" onchange="window.KambusAdmin.previewAnnouncementText()">
+                        </div>
                     </div>
                 `;
                 break;
@@ -2334,6 +2355,9 @@
         }
 
         container.innerHTML = fieldsHtml;
+        if (templateKey === "TEMPLATE_B") {
+            loadBusesDropdown().then(previewAnnouncementText);
+        }
         previewAnnouncementText();
     }
 
@@ -2357,7 +2381,19 @@
         msg = msg.replace("{target}", targetType === "all" ? "All Routes" : (targetType === "route" ? routeName : `Bus ${busNum}`));
         msg = msg.replace("{time}", document.getElementById("annFieldTime")?.value || "08:00 AM");
         msg = msg.replace("{date_range}", document.getElementById("annFieldDuration")?.value || "Today");
-        msg = msg.replace("{replacement_bus}", document.getElementById("annFieldReplacementBus")?.value || "5");
+        const sourceBusSelect = document.getElementById("annFieldSourceBus");
+        const replacementBusSelect = document.getElementById("annFieldReplacementBusSelect");
+        const replacementBusInput = document.getElementById("annFieldReplacementBus");
+        const sourceBusNumber = sourceBusSelect?.options[sourceBusSelect.selectedIndex]?.text.match(/Bus\s+([^\s(]+)/)?.[1] || "Source Bus";
+        const replacementBusNumber = replacementBusSelect?.options[replacementBusSelect.selectedIndex]?.text.match(/Bus\s+([^\s(]+)/)?.[1] || replacementBusInput?.value || "Replacement Bus";
+        const startDate = document.getElementById("annFieldStartDate")?.value || "today";
+        const endDate = document.getElementById("annFieldEndDate")?.value || startDate;
+
+        if (templateKey === "TEMPLATE_B") {
+            msg = `Students of Bus ${sourceBusNumber} will travel in Bus No. ${replacementBusNumber} from ${startDate} to ${endDate}.`;
+        }
+
+        msg = msg.replace("{replacement_bus}", replacementBusNumber);
         msg = msg.replace("{date}", document.getElementById("annFieldDate")?.value || "today");
         msg = msg.replace("{new_time}", document.getElementById("annFieldNewTime")?.value || "08:30 AM");
         msg = msg.replace("{old_time}", document.getElementById("annFieldOldTime")?.value || "08:00 AM");
@@ -2373,10 +2409,14 @@
     }
 
     async function calculateAffectedStudents() {
-        const targetType = document.getElementById("announcementTargetType")?.value || "all";
+        const templateKey = document.getElementById("announcementTemplateSelect")?.value || "TEMPLATE_A";
+        let targetType = document.getElementById("announcementTargetType")?.value || "all";
         let targetId = null;
 
-        if (targetType === "bus") {
+        if (templateKey === "TEMPLATE_B") {
+            targetType = "bus";
+            targetId = parseInt(document.getElementById("annFieldSourceBus")?.value) || null;
+        } else if (targetType === "bus") {
             targetId = document.getElementById("announcementTargetBus")?.value || null;
             if (targetId) targetId = parseInt(targetId);
         } else if (targetType === "route") {
@@ -2423,19 +2463,46 @@
         }
 
         try {
-            const res = await apiRequest("/admin/notifications/broadcast", {
-                method: "POST",
-                body: {
-                    template_type: templateKey,
-                    title: title,
-                    message: message,
-                    target_type: targetType,
-                    target_id: targetId
+            let res;
+            if (templateKey === "TEMPLATE_B") {
+                const sourceBusId = parseInt(document.getElementById("annFieldSourceBus")?.value) || null;
+                const targetBusId = parseInt(document.getElementById("annFieldReplacementBusSelect")?.value) || null;
+                const startDate = document.getElementById("annFieldStartDate")?.value;
+                const endDate = document.getElementById("annFieldEndDate")?.value;
+
+                if (!sourceBusId || !targetBusId || !startDate || !endDate) {
+                    showToast("error", "Validation", "Source bus, replacement bus, start date, and end date are required.");
+                    return;
                 }
-            });
+
+                res = await apiRequest("/admin/bus-changes", {
+                    method: "POST",
+                    body: {
+                        source_bus_id: sourceBusId,
+                        target_bus_id: targetBusId,
+                        start_date: startDate,
+                        end_date: endDate,
+                        title,
+                        message,
+                        template_type: "TEMPLATE_B"
+                    }
+                });
+            } else {
+                res = await apiRequest("/admin/notifications/broadcast", {
+                    method: "POST",
+                    body: {
+                        template_type: templateKey,
+                        title: title,
+                        message: message,
+                        target_type: targetType,
+                        target_id: targetId
+                    }
+                });
+            }
 
             showToast("success", "Announcement Sent", res.message);
             loadAnnouncementHistory();
+            if (templateKey === "TEMPLATE_B") loadAdminBusChanges();
         } catch (error) {
             showToast("error", "Broadcast Failed", error.message);
         }
@@ -2469,6 +2536,50 @@
             `).join("");
         } catch (e) {
             console.warn("History load failed:", e);
+        }
+    }
+
+    async function loadAdminBusChanges() {
+        const container = document.getElementById("adminBusChangesList");
+        if (!container) return;
+
+        try {
+            const data = await apiRequest("/admin/bus-changes");
+            const changes = data.bus_changes || [];
+
+            if (changes.length === 0) {
+                container.innerHTML = `<div class="p-4 text-center text-xs text-slate-400">No bus changes logged.</div>`;
+                return;
+            }
+
+            container.innerHTML = changes.map(change => `
+                <div class="p-3.5 bg-slate-50 border border-slate-200/80 rounded">
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="text-xs font-black text-slate-900">Bus ${escapeHtml(change.source_bus_number || "-")} → Bus ${escapeHtml(change.target_bus_number || "-")}</span>
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold ${change.status === "active" ? "bg-ok/10 text-ok" : "bg-slate-200 text-slate-600"}">${escapeHtml(change.status)}</span>
+                    </div>
+                    <p class="text-xs text-slate-600 mt-1">${escapeHtml(change.start_date)} to ${escapeHtml(change.end_date)}</p>
+                    <div class="flex items-center justify-between text-[10px] text-slate-400 mt-2">
+                        <span>${formatDateTime(change.created_at)}</span>
+                        ${change.status === "active" ? `<button type="button" onclick="window.KambusAdmin.cancelAdminBusChange(${Number(change.id)})" class="px-2.5 py-1 bg-white text-danger border border-danger/20 hover:bg-danger/10 rounded text-[10px] font-bold">Cancel</button>` : ""}
+                    </div>
+                </div>
+            `).join("");
+        } catch (error) {
+            container.innerHTML = `<div class="p-4 text-xs text-red-500">Failed to load bus changes: ${escapeHtml(error.message)}</div>`;
+        }
+    }
+
+    async function cancelAdminBusChange(changeId) {
+        const confirmed = await confirm("Cancel this bus change and revert it immediately?");
+        if (!confirmed) return;
+
+        try {
+            const res = await apiRequest(`/admin/bus-changes/${changeId}/cancel`, { method: "POST" });
+            showToast("success", "Bus Change Cancelled", res.message);
+            loadAdminBusChanges();
+        } catch (error) {
+            showToast("error", "Cancellation Failed", error.message);
         }
     }
 
@@ -2903,6 +3014,7 @@
         previewAnnouncementText,
         calculateAffectedStudents,
         submitBroadcastAnnouncement,
+        cancelAdminBusChange,
         acknowledgeAlert,
         executeGlobalSearch
     };
