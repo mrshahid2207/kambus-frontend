@@ -74,6 +74,25 @@ let lastEtaMinutes = null;
 
 let stoppedSince = null;
 let lastLocationReceivedAt = null;
+let studentAssignmentRequest = 0;
+let studentAssignmentVersion = 0;
+
+function clearStudentAssignmentTracking() {
+    studentAssignmentVersion += 1;
+    busTripActive = false;
+    busData = lastKnownLocation = lastKnownSpeed = null;
+    lastMovingEtaMinutes = lastEtaMinutes = stoppedSince = lastLocationReceivedAt = null;
+    hasArrivedAtAssignedStop = false;
+    assignedStop = null;
+    routeStops = [];
+    temporaryMyBusStops = null;
+    removeBusMarker();
+    if (stopMarker && map) map.removeLayer(stopMarker);
+    stopMarker = null;
+    routePolylineLayer?.clearLayers();
+    setEtaBanner("Updating bus assignment", "ETA unavailable");
+    updateMyStopLive("Updating…");
+}
 
 // ========================================================================
 // TRAVEL STATUS
@@ -406,6 +425,7 @@ function updateCollegeMarker() {
 // ========================================================================
 
 async function loadRouteStops() {
+    const version = studentAssignmentVersion;
     const token = getToken();
     if (!token) return;
 
@@ -416,20 +436,25 @@ async function loadRouteStops() {
                 "Accept": "application/json"
             }
         });
+        if (version !== studentAssignmentVersion) return;
 
         if (!response.ok) {
             console.warn(`Route stops unavailable or not assigned yet (HTTP ${response.status})`);
             routeStops = [];
+            temporaryMyBusStops = null;
             routeStopsBusId = null;
             return;
         }
 
         const data = await response.json();
+        if (version !== studentAssignmentVersion) return;
         routeStops = Array.isArray(data.stops) ? data.stops : [];
+        temporaryMyBusStops = Array.isArray(data.map_stops) ? data.map_stops : routeStops;
         routeStopsBusId = data.bus_id ?? null;
         renderRouteStops();
         fetchAndDrawStudentRoute(true);
     } catch (error) {
+        if (version !== studentAssignmentVersion) return;
         console.error("Failed to load route stops from API:", error);
     }
 }
@@ -454,6 +479,7 @@ async function fetchAndDrawStudentRoute(force = false) {
     }
 
     isStudentRouteFetchInFlight = true;
+    const version = studentAssignmentVersion;
     lastStudentRouteFetchAt = now;
 
     try {
@@ -485,6 +511,7 @@ async function fetchAndDrawStudentRoute(force = false) {
         if (!data.routes || !data.routes.length) throw new Error("No road route found in OSRM response");
 
         const geoJsonRoute = data.routes[0].geometry;
+        if (version !== studentAssignmentVersion) return;
 
         if (routePolylineLayer) {
             routePolylineLayer.clearLayers();
@@ -494,6 +521,7 @@ async function fetchAndDrawStudentRoute(force = false) {
         console.warn("Student road routing notice:", error.message);
     } finally {
         isStudentRouteFetchInFlight = false;
+        if (version !== studentAssignmentVersion) fetchAndDrawStudentRoute(true);
     }
 }
 
@@ -619,7 +647,7 @@ function updateBusOnMap(data) {
         busMarker.bindPopup(`
             <div style="text-align:center">
                 <strong>Assigned Bus</strong><br>
-                Bus: ${studentAssignment?.bus_number || data.bus_id || "Active"}<br>
+                Bus: ${studentAssignment?.bus_number || data.bus_id || "Unassigned"}<br>
                 Speed: ${data.speed !== null && data.speed !== undefined ? data.speed : "—"} km/h
             </div>
         `);
@@ -635,9 +663,10 @@ function updateBusOnMap(data) {
     const endLng = longitude;
     const duration = 4500;
     const startTime = performance.now();
+    const animatedMarker = busMarker;
 
     function animateBus(currentTime) {
-        if (!busMarker) return;
+        if (!busMarker || busMarker !== animatedMarker) return;
 
         const elapsed = currentTime - startTime;
         const progress = Math.min(elapsed / duration, 1);
@@ -661,7 +690,7 @@ function updateBusOnMap(data) {
     busMarker.setPopupContent(`
         <div style="text-align:center">
             <strong>Assigned Bus</strong><br>
-            Bus: ${studentAssignment?.bus_number || data.bus_id || "Active"}<br>
+            Bus: ${studentAssignment?.bus_number || data.bus_id || "Unassigned"}<br>
             Speed: ${data.speed !== null && data.speed !== undefined ? data.speed : "—"} km/h<br>
             <small>Updated: ${data.timestamp ? new Date(data.timestamp).toLocaleTimeString() : "Live"}</small>
             ${data.is_waiting ? "<br><strong class=\"text-danger\">Waiting at stop</strong>" : ""}
@@ -677,6 +706,7 @@ async function fetchBusLocation() {
         return;
     }
 
+    const version = studentAssignmentVersion;
     const token = getToken();
     if (!token) return;
 
@@ -690,6 +720,7 @@ async function fetchBusLocation() {
         });
 
         const data = await response.json();
+        if (version !== studentAssignmentVersion) return;
 
         if (!response.ok) {
             console.warn(`[WARN] Bus location fetch status HTTP ${response.status}:`, data);
@@ -727,6 +758,7 @@ async function fetchBusLocation() {
             latitude: Number(data.latitude),
             longitude: Number(data.longitude),
             speed: Number.isFinite(parsedSpeed) ? parsedSpeed : null,
+            heading: data.heading ?? data.bearing ?? null,
             timestamp: data.timestamp,
             bus_id: assignedBusId,
             trip_id: data.trip_id ?? null,
@@ -742,9 +774,11 @@ async function fetchBusLocation() {
         }
 
         busData = locationData;
+        updateTemporaryMapHeading();
         updateBusOnMap(locationData);
         updateEtaBanner(locationData);
     } catch (error) {
+        if (version !== studentAssignmentVersion) return;
         console.error("[ERROR] Failed to fetch live bus location:", error);
         updateEtaBanner(null);
     }
@@ -755,6 +789,7 @@ async function fetchBusLocation() {
 // ========================================================================
 
 async function loadActiveAlternativeAllotment() {
+    const request = studentAssignmentRequest;
     const token = getToken();
     if (!token) {
         activeAlternativeAllotment = null;
@@ -771,6 +806,7 @@ async function loadActiveAlternativeAllotment() {
         });
 
         const data = await response.json().catch(() => ({}));
+        if (request !== studentAssignmentRequest) return null;
 
         if (!response.ok) {
             console.warn("[WARN] Alternative bus status unavailable:", data);
@@ -782,6 +818,7 @@ async function loadActiveAlternativeAllotment() {
         updateMissedBusButtonUI();
         return activeAlternativeAllotment;
     } catch (error) {
+        if (request !== studentAssignmentRequest) return null;
         console.warn("[WARN] Failed to load alternative bus allotment:", error);
         activeAlternativeAllotment = null;
         updateMissedBusButtonUI();
@@ -790,6 +827,7 @@ async function loadActiveAlternativeAllotment() {
 }
 
 async function loadStudentBus() {
+    const request = ++studentAssignmentRequest;
     const token = getToken();
     if (!token) {
         setEtaBanner("Location unavailable", "ETA unavailable");
@@ -806,44 +844,25 @@ async function loadStudentBus() {
         });
 
         const data = await response.json();
+        if (request !== studentAssignmentRequest) return false;
 
         if (!response.ok || !data.bus_id) {
             console.error("[ERROR] Student bus unavailable:", data);
-            setEtaBanner("Bus unavailable", "ETA unavailable");
+            if (data?.detail === "No bus assigned to this student") {
+                setEtaBanner("No bus assigned yet", "Contact the transport office");
+            } else {
+                setEtaBanner("Bus unavailable", "ETA unavailable");
+            }
             return false;
         }
 
-        regularStudentAssignment = data;
-        const alternative = await loadActiveAlternativeAllotment();
-
-        if (alternative) {
-            assignedBusId = Number(alternative.alternative_bus_id);
-            studentAssignment = {
-                ...data,
-                bus_id: alternative.alternative_bus_id,
-                bus_number: alternative.alternative_bus_number || data.bus_number,
-                alternative_bus: true,
-                original_bus_number: alternative.original_bus_number || data.bus_number,
-                alternative_eta_minutes: alternative.eta_minutes ?? null
-            };
-            busTripActive = alternative.trip_active === true;
-
-            updateStudentDashboard(studentAssignment);
-            await loadMyStop(!assignedStop);
-            await loadRouteStops();
-
-            if (!busTripActive) {
-                removeBusMarker();
-                setEtaBanner("Alternative trip ended", "Returning to regular bus");
-                return true;
-            }
-
-            // The /student/my-bus endpoint returns the regular bus location.
-            // For an alternative allotment, fetchBusLocation() must load the alternative bus location.
-            await fetchBusLocation();
-            return true;
+        // The backend resolves the full effective bus, driver and route together.
+        if (Number(assignedBusId) !== Number(data.bus_id) || studentAssignment?.allotment_id !== data.allotment_id) {
+            clearStudentAssignmentTracking();
         }
-
+        regularStudentAssignment = data.alternative_bus
+            ? { ...data, bus_id: data.original_bus_id, bus_number: data.original_bus_number }
+            : data;
         assignedBusId = data.bus_id;
         studentAssignment = data;
         busTripActive = data.active_trip === true;
@@ -851,7 +870,11 @@ async function loadStudentBus() {
         updateStudentDashboard(data);
 
         await loadMyStop(!assignedStop);
+        if (request !== studentAssignmentRequest) return false;
         await loadRouteStops();
+        if (request !== studentAssignmentRequest) return false;
+        await loadActiveAlternativeAllotment();
+        if (request !== studentAssignmentRequest) return false;
 
         if (!busTripActive) {
             removeBusMarker();
@@ -878,8 +901,10 @@ async function loadStudentBus() {
             updateEtaBanner(initialLocation);
         }
 
+        await fetchBusLocation();
         return true;
     } catch (error) {
+        if (request !== studentAssignmentRequest) return false;
         console.error("[ERROR] Failed to load assigned bus from API:", error);
         setEtaBanner("Bus unavailable", "ETA unavailable");
         return false;
@@ -927,6 +952,7 @@ function updateMyStopLive(eta) {
 }
 
 async function loadMyStop(showLoading = true) {
+    const version = studentAssignmentVersion;
     const token = getToken();
     if (!token) return false;
 
@@ -949,6 +975,7 @@ async function loadMyStop(showLoading = true) {
         });
 
         const stopData = await response.json();
+        if (version !== studentAssignmentVersion) return false;
 
         if (!response.ok) {
             assignedStop = null;
@@ -1011,6 +1038,7 @@ async function loadMyStop(showLoading = true) {
         updateStopMarker();
         return true;
     } catch (error) {
+        if (version !== studentAssignmentVersion) return false;
         console.error("[ERROR] Unable to load assigned stop from API:", error);
         assignedStop = null;
 
@@ -1406,6 +1434,12 @@ if (wsReconnectTimer) {
             try {
                 if (event.data === "pong") return;
                 const data = JSON.parse(event.data);
+                if (data.type === "alternative_bus_allotted") {
+                    clearStudentAssignmentTracking();
+                    loadStudentBus();
+                    window.KambusNotificationCenter?.refresh();
+                    return;
+                }
 
                 // 1. EMERGENCY SOS ALERT FROM DRIVER
                 if (data.type === "emergency_sos") {
@@ -2079,10 +2113,7 @@ function updateMissedBusButtonUI() {
     if (activeAlternativeAllotment?.active) {
         button.classList.add("hidden");
         if (subtitle) {
-            const eta = Number(activeAlternativeAllotment.eta_minutes);
-            subtitle.textContent = Number.isFinite(eta)
-                ? `Bus ${activeAlternativeAllotment.alternative_bus_number || "—"} • ${activeAlternativeAllotment.stop_name || "your stop"} • ~${eta} min`
-                : `Bus ${activeAlternativeAllotment.alternative_bus_number || "—"} assigned at ${activeAlternativeAllotment.stop_name || "your stop"}`;
+            subtitle.textContent = `Alternative bus allotted: ${activeAlternativeAllotment.alternative_bus_number || "—"} • ${activeAlternativeAllotment.stop_name || "your stop"}`;
             subtitle.classList.remove("hidden");
         }
         return;
@@ -2179,13 +2210,8 @@ async function requestAlternativeBus() {
 
         closeMissedBusModal();
         updateMissedBusButtonUI();
-        featureNotify(
-            "success",
-            "Alternative bus allotted",
-            `Bus ${data.alternative_bus_number || "—"} has been automatically selected${Number.isFinite(Number(data.eta_minutes)) ? ` • ETA ~${data.eta_minutes} min` : ""}.`
-        );
-
         // Refresh the dashboard so the map and header immediately use the alternative bus.
+        clearStudentAssignmentTracking();
         await loadStudentBus();
     } catch (error) {
         console.error("[ERROR] Missed bus allotment failed:", error);
@@ -2214,15 +2240,46 @@ function formatDateForInput(date) {
 
 /** State for the picker map and selected point */
 let tempStopPickerMap = null;
-let tempStopPickerMarker = null;
+let pickupMarker = null; // Selection layer: never cleared by route/direction rendering.
+let temporaryArrowLayer = null;
+let temporaryRenderedPaths = [];
+let temporaryHeadingUp = true;
+let temporaryBusMarker = null;
 let tempStopPickerLat = null;
 let tempStopPickerLng = null;
 let tempStopPickerAddress = null;
 let tempStopRouteStopMarkers = [];
 let tempStopPickerRoutePolyline = null;
+let tempStopPickerExplorerRoutes = null;
+let temporaryRouteRenderVersion = 0;
+let temporaryAllBusRoutes = null;
+let temporaryMyBusStops = null;
+let temporaryRouteSelection = null;
+let temporaryRouteView = "my";
 let temporaryStopInputMode = "pin";
 let temporaryStopRouteCheck = null;
 let temporarySelectedCandidateBusId = null;
+let temporaryStopDirection = "morning";
+const temporaryStopDrafts = {
+    morning: { mode: "pin", latitude: null, longitude: null, address: null, stopId: null, routeCheck: null, candidateBusId: null },
+    evening: { mode: "pin", latitude: null, longitude: null, address: null, stopId: null, routeCheck: null, candidateBusId: null }
+};
+
+function temporaryDirectionColor() {
+    return temporaryStopDirection === "evening" ? "#dc2626" : "#16a34a";
+}
+
+function hasTemporaryCoordinates(latitude, longitude) {
+    return latitude != null && longitude != null && String(latitude).trim() !== "" && String(longitude).trim() !== "" &&
+        Number.isFinite(Number(latitude)) && Number.isFinite(Number(longitude)) &&
+        Math.abs(Number(latitude)) <= 90 && Math.abs(Number(longitude)) <= 180;
+}
+
+function temporarySelectedBusStops() {
+    if (temporaryRouteView === "my" || temporaryRouteView === "all") return temporaryMyBusStops || routeStops;
+    const bus = temporaryAllBusRoutes?.find(bus => Number(bus.bus_id) === Number(temporaryRouteView));
+    return bus?.map_stops || bus?.stops || [];
+}
 
 const BUS_MAP_COLORS = [
     "#173541", "#D97706", "#15803D", "#7C3AED",
@@ -2243,24 +2300,125 @@ function getBusMapColor(busId) {
     return `hsl(${Math.abs(hash) % 360} 62% 38%)`;
 }
 
-function getTemporaryStopPickerRouteStops() {
-    return routeStops.filter(stop =>
-        Number.isFinite(Number(stop.latitude)) && Number.isFinite(Number(stop.longitude))
-    );
+function getTemporaryStopPickerRouteStops(stops = routeStops) {
+    return [...stops].filter(stop => !stop.directions || stop.directions.includes(temporaryStopDirection)).sort((a, b) => Number(a.stop_order || 0) - Number(b.stop_order || 0))
+        .map(stop => {
+            const evening = temporaryStopDirection === "evening";
+            return {
+                ...stop,
+                latitude: evening ? (stop.evening_latitude ?? stop.morning_latitude ?? stop.latitude) : (stop.morning_latitude !== undefined ? stop.morning_latitude : stop.latitude),
+                longitude: evening ? (stop.evening_longitude ?? stop.morning_longitude ?? stop.longitude) : (stop.morning_longitude !== undefined ? stop.morning_longitude : stop.longitude)
+            };
+        }).filter(stop => hasTemporaryCoordinates(stop.latitude, stop.longitude));
 }
 
-function drawTemporaryStopPickerRouteFallback(mapInstance, stops, color) {
-    if (tempStopPickerMap !== mapInstance || stops.length < 2) return;
-    tempStopPickerRoutePolyline = L.polyline(
-        stops.map(stop => [Number(stop.latitude), Number(stop.longitude)]),
-        { color, weight: 4, opacity: 0.8, lineJoin: "round" }
-    ).addTo(mapInstance);
+function getTemporaryRouteWaypoints(stops) {
+    const waypoints = [...stops.filter(stop =>
+        Math.abs(Number(stop.latitude) - COLLEGE_LOCATION.latitude) >= 0.0001 ||
+        Math.abs(Number(stop.longitude) - COLLEGE_LOCATION.longitude) >= 0.0001), COLLEGE_LOCATION];
+    return temporaryStopDirection === "evening" ? waypoints.reverse() : waypoints;
 }
 
-async function drawTemporaryStopPickerRoute(mapInstance, stops, color) {
-    if (stops.length < 2) return;
+// Bearings and offsets are display-only; API stops and submitted coordinates stay intact.
+function temporarySegmentBearing(a, b) {
+    const rad = Math.PI / 180;
+    const delta = (b[1] - a[1]) * rad;
+    return Math.atan2(Math.sin(delta) * Math.cos(b[0] * rad),
+        Math.cos(a[0] * rad) * Math.sin(b[0] * rad) -
+        Math.sin(a[0] * rad) * Math.cos(b[0] * rad) * Math.cos(delta)) / rad;
+}
 
-    const coordString = stops
+function offsetTemporaryEveningPath(points, metres = 6) {
+    return points.map((point, index) => {
+        const next = points.slice(index + 1).find(p => p[0] !== point[0] || p[1] !== point[1]);
+        const previous = points.slice(0, index).reverse().find(p => p[0] !== point[0] || p[1] !== point[1]);
+        if (!next && !previous) return [...point];
+        const angle = (temporarySegmentBearing(next ? point : previous, next || point) + 90) * Math.PI / 180;
+        const distance = metres / 6371000;
+        const lat = point[0] * Math.PI / 180;
+        const shiftedLat = Math.asin(Math.sin(lat) * Math.cos(distance) + Math.cos(lat) * Math.sin(distance) * Math.cos(angle));
+        const shiftedLng = point[1] * Math.PI / 180 + Math.atan2(Math.sin(angle) * Math.sin(distance) * Math.cos(lat),
+            Math.cos(distance) - Math.sin(lat) * Math.sin(shiftedLat));
+        return [shiftedLat * 180 / Math.PI, shiftedLng * 180 / Math.PI];
+    });
+}
+
+function renderTemporaryRouteArrows() {
+    if (!temporaryArrowLayer || !tempStopPickerMap) return;
+    temporaryArrowLayer.clearLayers();
+    const zoom = tempStopPickerMap.getZoom();
+    temporaryRenderedPaths.forEach(({ points, color }) => {
+        let untilArrow = 45;
+        for (let i = 1; i < points.length; i++) {
+            const a = tempStopPickerMap.project(points[i - 1], zoom);
+            const b = tempStopPickerMap.project(points[i], zoom);
+            const dx = b.x - a.x, dy = b.y - a.y, length = Math.hypot(dx, dy);
+            if (!length) continue;
+            for (; untilArrow <= length; untilArrow += 90) {
+                const x = a.x + dx * untilArrow / length, y = a.y + dy * untilArrow / length;
+                const ux = dx / length, uy = dy / length;
+                const arrow = [[x - ux * 7 - uy * 4, y - uy * 7 + ux * 4], [x, y],
+                    [x - ux * 7 + uy * 4, y - uy * 7 - ux * 4]];
+                L.polyline(arrow.map(p => tempStopPickerMap.unproject(p, zoom)),
+                    { color, weight: 2, opacity: 1, interactive: false }).addTo(temporaryArrowLayer);
+            }
+            untilArrow -= length;
+        }
+    });
+}
+
+function updateTemporaryMapHeading() {
+    if (!tempStopPickerMap) return;
+    const selectedBusId = temporaryRouteView === "my" || temporaryRouteView === "all" ? routeStopsBusId : Number(temporaryRouteView);
+    const path = temporaryRenderedPaths.find(path => Number(path.busId) === Number(selectedBusId));
+    if (!path || path.travelPoints.length < 2) return;
+    const live = busData && Number(busData.bus_id) === Number(selectedBusId) &&
+        hasTemporaryCoordinates(busData.latitude, busData.longitude) &&
+        Date.now() - Date.parse(busData.timestamp) < 90000 ? busData : null;
+    const points = path.travelPoints;
+    let segment = 0;
+    if (live) {
+        const p = tempStopPickerMap.project([live.latitude, live.longitude]);
+        let nearest = Infinity;
+        for (let i = 1; i < points.length; i++) {
+            const a = tempStopPickerMap.project(points[i - 1]), b = tempStopPickerMap.project(points[i]);
+            const dx = b.x - a.x, dy = b.y - a.y, length2 = dx * dx + dy * dy;
+            if (!length2) continue;
+            const t = Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / length2));
+            const distance = Math.hypot(p.x - a.x - t * dx, p.y - a.y - t * dy);
+            if (distance < nearest) { nearest = distance; segment = i - 1; }
+        }
+    }
+    const heading = live?.heading != null && Number.isFinite(Number(live.heading)) && Number(live.heading) >= 0
+        ? Number(live.heading) : temporarySegmentBearing(points[segment], points[segment + 1]);
+    // leaflet-rotate's positive angle rotates the map clockwise; heading-up is its inverse.
+    if (temporaryHeadingUp) {
+        tempStopPickerMap.setBearing(-heading);
+        tempStopPickerMap.panTo(live ? [live.latitude, live.longitude] : points[segment], { animate: false });
+    }
+    if (live) {
+        if (!temporaryBusMarker) temporaryBusMarker = L.marker([live.latitude, live.longitude], { icon: busIcon }).addTo(tempStopPickerMap);
+        else temporaryBusMarker.setLatLng([live.latitude, live.longitude]);
+    } else if (temporaryBusMarker) {
+        tempStopPickerMap.removeLayer(temporaryBusMarker);
+        temporaryBusMarker = null;
+    }
+}
+
+function setTemporaryMapHeading(enabled) {
+    temporaryHeadingUp = enabled;
+    if (enabled) updateTemporaryMapHeading();
+    else if (tempStopPickerMap) tempStopPickerMap.setBearing(0);
+}
+window.setTemporaryMapHeading = setTemporaryMapHeading;
+
+async function drawTemporaryStopPickerRoute(mapInstance, stops, color, version = temporaryRouteRenderVersion, busId = routeStopsBusId) {
+    const direction = temporaryStopDirection;
+    if (!stops.length) return;
+
+    const waypoints = getTemporaryRouteWaypoints(stops);
+    if (waypoints.length < 2) return;
+    const coordString = waypoints
         .map(stop => `${Number(stop.longitude)},${Number(stop.latitude)}`)
         .join(";");
     const url = `https://router.project-osrm.org/route/v1/driving/${coordString}?overview=full&geometries=geojson&steps=false`;
@@ -2274,17 +2432,110 @@ async function drawTemporaryStopPickerRoute(mapInstance, stops, color) {
         if (!Array.isArray(coordinates) || coordinates.length < 2) {
             throw new Error("No road route found in OSRM response");
         }
-        if (tempStopPickerMap !== mapInstance) return;
+        if (tempStopPickerMap !== mapInstance || version !== temporaryRouteRenderVersion) return;
 
+        const travelPoints = coordinates.map(([longitude, latitude]) => [latitude, longitude]);
+        const points = direction === "evening" ? offsetTemporaryEveningPath(travelPoints) : travelPoints;
+        temporaryRenderedPaths.push({ points, travelPoints, color, busId });
         tempStopPickerRoutePolyline = L.polyline(
-            coordinates.map(([longitude, latitude]) => [latitude, longitude]),
+            points,
             { color, weight: 4, opacity: 0.8, lineJoin: "round" }
-        ).addTo(mapInstance);
+        ).addTo(tempStopPickerExplorerRoutes || mapInstance);
+        renderTemporaryRouteArrows();
+        updateTemporaryMapHeading();
     } catch (error) {
         console.warn("Temporary stop picker road routing notice:", error.message);
-        drawTemporaryStopPickerRouteFallback(mapInstance, stops, color);
+        // Do not misrepresent straight stop-to-stop segments as a road route.
+        if (tempStopPickerMap === mapInstance && version === temporaryRouteRenderVersion) {
+            featureNotify("warning", "Road route unavailable", "Unable to load road geometry. Choose the route again to retry.");
+        }
     }
 }
+
+async function loadTemporaryStopExplorerRoutes() {
+    const token = getToken();
+    if (!token) return [];
+    try {
+        const response = await fetch(`${API_BASE}/student/all-bus-routes`, {
+            headers: { "Accept": "application/json", "Authorization": `Bearer ${token}` }
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.detail || "Unable to load bus routes.");
+        temporaryAllBusRoutes = Array.isArray(data.buses) ? data.buses : [];
+        temporaryRouteSelection = data.temporary_stop || null;
+        const select = document.getElementById("temporaryRouteView");
+        if (select) {
+            select.innerHTML = `<option value="my">My bus</option><option value="all">All buses</option>${temporaryAllBusRoutes
+                .map(bus => `<option value="${Number(bus.bus_id)}">Bus ${escapeTemporaryStopText(bus.bus_number)}</option>`)
+                .join("")}`;
+            select.value = temporaryRouteView;
+        }
+        return temporaryAllBusRoutes;
+    } catch (error) {
+        console.warn("Temporary stop route explorer notice:", error.message);
+        return [];
+    }
+}
+
+function renderTemporaryRouteExplorer() {
+    if (!tempStopPickerMap || !tempStopPickerExplorerRoutes) return;
+    const version = ++temporaryRouteRenderVersion;
+    tempStopPickerExplorerRoutes.clearLayers();
+    temporaryArrowLayer?.clearLayers();
+    temporaryRenderedPaths = [];
+    if (temporaryBusMarker) { tempStopPickerMap.removeLayer(temporaryBusMarker); temporaryBusMarker = null; }
+    tempStopPickerRoutePolyline = null;
+    tempStopRouteStopMarkers.forEach(marker => tempStopPickerMap.removeLayer(marker));
+    tempStopRouteStopMarkers = [];
+
+    const status = document.getElementById("temporaryRouteMapStatus");
+    const selection = temporaryStopChange || temporaryRouteSelection;
+    const missingDirection = selection && Array.isArray(selection.directions) && !selection.directions.includes(temporaryStopDirection);
+    if (status) status.textContent = "";
+    if (missingDirection && status) status.textContent = `No ${temporaryStopDirection} stop registered`;
+
+    if (temporaryRouteView === "all") {
+        temporaryAllBusRoutes?.forEach(bus => drawTemporaryStopPickerRoute(
+            tempStopPickerMap, getTemporaryStopPickerRouteStops(bus.map_stops || bus.stops || []), temporaryDirectionColor(), version, bus.bus_id
+        ));
+    }
+
+    const specificBus = temporaryRouteView !== "my" && temporaryRouteView !== "all";
+    const selectedBusId = specificBus ? Number(temporaryRouteView) : routeStopsBusId;
+    const selectedBus = !specificBus
+        ? { bus_id: routeStopsBusId, stops: temporaryMyBusStops || routeStops }
+        : temporaryAllBusRoutes?.find(bus => Number(bus.bus_id) === selectedBusId);
+    if (!selectedBus) return;
+    const stops = getTemporaryStopPickerRouteStops(selectedBus.map_stops || selectedBus.stops || []);
+    const selectedLatitude = selection?.[`${temporaryStopDirection}_temporary_latitude`];
+    const selectedLongitude = selection?.[`${temporaryStopDirection}_temporary_longitude`];
+    if (!specificBus && hasTemporaryCoordinates(selectedLatitude, selectedLongitude) &&
+        !stops.some(stop => Number(stop.latitude) === Number(selectedLatitude) && Number(stop.longitude) === Number(selectedLongitude))) {
+        stops.push({ latitude: selectedLatitude, longitude: selectedLongitude, name: selection[`${temporaryStopDirection}_temporary_stop_name`], affected_directions: [temporaryStopDirection] });
+    }
+    const color = temporaryDirectionColor();
+    if (!stops.length && status) status.textContent = `No ${temporaryStopDirection} stops registered for this bus`;
+    if (temporaryRouteView !== "all") {
+        drawTemporaryStopPickerRoute(tempStopPickerMap, stops, color, version, selectedBusId);
+    }
+    const markerStops = stops;
+    markerStops.forEach(stop => {
+        const color = stop.affected_directions?.includes(temporaryStopDirection) ? "#f97316" : "#2563eb";
+        const marker = L.circleMarker([Number(stop.latitude), Number(stop.longitude)], {
+            radius: 7, color, fillColor: color, fillOpacity: 0.8, weight: 2
+        }).addTo(tempStopPickerMap);
+        marker.bindPopup(`<div class="text-xs font-semibold">${escapeTemporaryStopText(stop.name)}</div>`);
+        tempStopRouteStopMarkers.push(marker);
+    });
+
+}
+
+function setTemporaryRouteView(value) {
+    temporaryRouteView = value;
+    renderTemporaryCurrentRoute();
+    renderTemporaryRouteExplorer();
+}
+window.setTemporaryRouteView = setTemporaryRouteView;
 
 function escapeTemporaryStopText(value) {
     const element = document.createElement("span");
@@ -2292,9 +2543,101 @@ function escapeTemporaryStopText(value) {
     return element.innerHTML;
 }
 
+function saveTemporaryStopDraft() {
+    const draft = temporaryStopDrafts[temporaryStopDirection];
+    draft.mode = temporaryStopInputMode;
+    if (draft.mode === "pin") {
+        const latitude = document.getElementById("temporaryPinLatitude")?.value;
+        const longitude = document.getElementById("temporaryPinLongitude")?.value;
+        tempStopPickerLat = hasTemporaryCoordinates(latitude, longitude) ? Number(latitude) : null;
+        tempStopPickerLng = hasTemporaryCoordinates(latitude, longitude) ? Number(longitude) : null;
+    }
+    draft.latitude = tempStopPickerLat;
+    draft.longitude = tempStopPickerLng;
+    draft.address = tempStopPickerAddress;
+    draft.stopId = Number(document.getElementById("temporaryRegisteredStop")?.value) || null;
+    draft.routeCheck = temporaryStopRouteCheck;
+    draft.candidateBusId = temporarySelectedCandidateBusId;
+}
+
+function temporaryStopInputFromDraft(direction) {
+    const draft = temporaryStopDrafts[direction];
+    if (draft.mode === "registered" && draft.stopId) return { stop_id: draft.stopId };
+    if (draft.mode === "pin" && hasTemporaryCoordinates(draft.latitude, draft.longitude)) {
+        return { latitude: Number(draft.latitude), longitude: Number(draft.longitude), address: draft.address || null };
+    }
+    return null;
+}
+
+function renderTemporaryDirectionSummary() {
+    ["morning", "evening"].forEach(direction => {
+        const summary = document.getElementById(`temporary${direction[0].toUpperCase()}${direction.slice(1)}Summary`);
+        const draft = temporaryStopDrafts[direction];
+        if (!summary) return;
+        if (draft.mode === "registered" && draft.stopId) {
+            const stop = [...routeStops, ...(temporaryAllBusRoutes || []).flatMap(bus => bus.stops || [])].find(item => Number(item.stop_id) === Number(draft.stopId));
+            summary.textContent = stop?.name || "Registered stop selected";
+        } else if (hasTemporaryCoordinates(draft.latitude, draft.longitude)) {
+            summary.textContent = draft.address || "Map pin selected";
+        } else {
+            summary.textContent = "Not selected";
+        }
+    });
+}
+
+function setTemporaryStopDirection(direction) {
+    if (!["morning", "evening"].includes(direction) || direction === temporaryStopDirection) return;
+    saveTemporaryStopDraft();
+    temporaryStopDirection = direction;
+    const draft = temporaryStopDrafts[direction];
+    temporaryStopInputMode = draft.mode;
+    tempStopPickerLat = draft.latitude;
+    tempStopPickerLng = draft.longitude;
+    tempStopPickerAddress = draft.address;
+    const savedRouteCheck = draft.routeCheck;
+    const savedCandidateBusId = draft.candidateBusId;
+    const select = document.getElementById("temporaryRegisteredStop");
+    if (select) select.value = draft.stopId || "";
+    document.getElementById("temporaryMorningDirectionBtn")?.classList.toggle("is-active", direction === "morning");
+    document.getElementById("temporaryEveningDirectionBtn")?.classList.toggle("is-active", direction === "evening");
+    setTemporaryStopInputMode(temporaryStopInputMode, false);
+    // Mode rendering clears the active validation UI; retain this direction's
+    // completed route check so switching sections does not invalidate it.
+    temporaryStopRouteCheck = savedRouteCheck;
+    temporarySelectedCandidateBusId = savedCandidateBusId;
+    draft.routeCheck = savedRouteCheck;
+    draft.candidateBusId = savedCandidateBusId;
+    const result = document.getElementById("temporaryRouteCheckResult");
+    const candidates = document.getElementById("temporaryCandidateBuses");
+    if (result) {
+        result.className = savedRouteCheck ? "kx-notice" : "hidden";
+        result.textContent = savedRouteCheck?.message || "";
+    }
+    if (candidates) candidates.innerHTML = "";
+    if (savedRouteCheck && !savedRouteCheck.on_route) {
+        renderTemporaryStopCandidates(savedRouteCheck.candidate_buses || []);
+        temporarySelectedCandidateBusId = savedCandidateBusId;
+        draft.candidateBusId = savedCandidateBusId;
+        candidates?.querySelectorAll("input[name='temporaryCandidateBus']").forEach(input => {
+            input.checked = Number(input.value) === Number(savedCandidateBusId);
+        });
+    }
+    renderTemporaryDirectionSummary();
+    const latitudeInput = document.getElementById("temporaryPinLatitude");
+    const longitudeInput = document.getElementById("temporaryPinLongitude");
+    if (latitudeInput) latitudeInput.value = draft.latitude ?? "";
+    if (longitudeInput) longitudeInput.value = draft.longitude ?? "";
+    renderTemporaryCurrentRoute();
+    renderTemporaryRouteExplorer();
+    updateTemporaryStopSubmitState();
+}
+window.setTemporaryStopDirection = setTemporaryStopDirection;
+
 function resetTemporaryStopRouteCheck() {
     temporaryStopRouteCheck = null;
     temporarySelectedCandidateBusId = null;
+    temporaryStopDrafts[temporaryStopDirection].routeCheck = null;
+    temporaryStopDrafts[temporaryStopDirection].candidateBusId = null;
 
     const result = document.getElementById("temporaryRouteCheckResult");
     const candidates = document.getElementById("temporaryCandidateBuses");
@@ -2312,8 +2655,38 @@ function resetTemporaryStopRouteCheck() {
     }
 }
 
-function setTemporaryStopInputMode(mode) {
+function updateTemporaryStopSubmitState() {
+    const directions = ["morning", "evening"].filter(direction => temporaryStopInputFromDraft(direction));
+    const ready = directions.length > 0 && directions.every(direction => {
+        const draft = temporaryStopDrafts[direction];
+        return draft.routeCheck && (draft.routeCheck.on_route || draft.candidateBusId);
+    });
+    const submit = document.getElementById("confirmTemporaryStopBtn");
+    if (!submit) return;
+    if (ready) enableTemporaryStopSubmit("Confirm Stop Change");
+    else {
+        submit.disabled = true;
+        submit.classList.add("opacity-50", "cursor-not-allowed");
+    }
+}
+
+function clearTemporaryStopDirection() {
+    temporaryStopDrafts[temporaryStopDirection] = { mode: "pin", latitude: null, longitude: null, address: null, stopId: null, routeCheck: null, candidateBusId: null };
+    tempStopPickerLat = tempStopPickerLng = tempStopPickerAddress = null;
+    ["temporaryPinLatitude", "temporaryPinLongitude", "temporaryRegisteredStop"].forEach(id => {
+        const input = document.getElementById(id);
+        if (input) input.value = "";
+    });
+    setTemporaryStopInputMode("pin");
+    renderTemporaryDirectionSummary();
+    renderTemporaryRouteExplorer();
+    updateTemporaryStopSubmitState();
+}
+window.clearTemporaryStopDirection = clearTemporaryStopDirection;
+
+function setTemporaryStopInputMode(mode, reset = true) {
     temporaryStopInputMode = mode;
+    temporaryStopDrafts[temporaryStopDirection].mode = mode;
     const registeredFields = document.getElementById("temporaryRegisteredStopFields");
     const pinCoordinates = document.getElementById("temporaryPinCoordinates");
     const checkPinButton = document.getElementById("checkTemporaryPinBtn");
@@ -2326,7 +2699,7 @@ function setTemporaryStopInputMode(mode) {
     document.getElementById("manualCoordinatesDetails")?.classList.toggle("hidden", mode !== "pin");
     if (registeredButton) registeredButton.className = mode === "registered" ? "kx-seg-btn is-active" : "kx-seg-btn";
     if (pinButton) pinButton.className = mode === "pin" ? "kx-seg-btn is-active" : "kx-seg-btn";
-    resetTemporaryStopRouteCheck();
+    if (reset) resetTemporaryStopRouteCheck();
 }
 window.setTemporaryStopInputMode = setTemporaryStopInputMode;
 
@@ -2336,9 +2709,9 @@ function getTemporaryStopRequestInput() {
         return Number.isInteger(stopId) && stopId > 0 ? { stop_id: stopId } : null;
     }
 
-    const latitude = Number(document.getElementById("temporaryPinLatitude")?.value);
-    const longitude = Number(document.getElementById("temporaryPinLongitude")?.value);
-    return Number.isFinite(latitude) && Number.isFinite(longitude) ? { latitude, longitude } : null;
+    const latitude = document.getElementById("temporaryPinLatitude")?.value;
+    const longitude = document.getElementById("temporaryPinLongitude")?.value;
+    return hasTemporaryCoordinates(latitude, longitude) ? { latitude: Number(latitude), longitude: Number(longitude) } : null;
 }
 
 function renderTemporaryCurrentRoute() {
@@ -2346,12 +2719,14 @@ function renderTemporaryCurrentRoute() {
     const select = document.getElementById("temporaryRegisteredStop");
     if (!routeBox || !select) return;
 
-    const busName = regularStudentAssignment?.bus_number || studentAssignment?.bus_number || "Your bus";
-    const sortedStops = [...routeStops].sort((a, b) => Number(a.stop_order || 0) - Number(b.stop_order || 0));
+    const selectedBus = temporaryAllBusRoutes?.find(bus => Number(bus.bus_id) === Number(temporaryRouteView));
+    const busName = selectedBus?.bus_number || regularStudentAssignment?.bus_number || studentAssignment?.bus_number || "Your bus";
+    const sortedStops = getTemporaryStopPickerRouteStops(temporarySelectedBusStops());
     routeBox.textContent = `${busName} normal route: ${sortedStops.map(stop => stop.name).join(" → ") || "No stops configured"}`;
     select.innerHTML = `<option value="">Select a registered stop</option>${sortedStops.map(stop =>
         `<option value="${Number(stop.stop_id)}">${escapeTemporaryStopText(stop.stop_order)}. ${escapeTemporaryStopText(stop.name)}</option>`
     ).join("")}`;
+    select.value = temporaryStopDrafts[temporaryStopDirection].stopId || "";
 }
 
 // -- All Bus Routes Reference Panel (read-only, lazy-loaded) -----------
@@ -2424,6 +2799,7 @@ function renderTemporaryStopCandidates(candidates) {
     }
 
     temporarySelectedCandidateBusId = Number(candidates[0].bus_id);
+    temporaryStopDrafts[temporaryStopDirection].candidateBusId = temporarySelectedCandidateBusId;
     container.innerHTML = candidates.map(candidate => {
         const eta = Number.isFinite(Number(candidate.eta_minutes)) ? `ETA ~${candidate.eta_minutes} min` : "Live ETA unavailable";
         const occupancy = candidate.capacity == null ? `Occupancy: ${candidate.occupancy ?? "unavailable"}` : `Occupancy: ${candidate.occupancy ?? "—"}/${candidate.capacity}`;
@@ -2439,7 +2815,10 @@ function renderTemporaryStopCandidates(candidates) {
         </label>`;
     }).join("");
     container.querySelectorAll("input[name='temporaryCandidateBus']").forEach(input => {
-        input.addEventListener("change", event => { temporarySelectedCandidateBusId = Number(event.target.value); });
+        input.addEventListener("change", event => {
+            temporarySelectedCandidateBusId = Number(event.target.value);
+            temporaryStopDrafts[temporaryStopDirection].candidateBusId = temporarySelectedCandidateBusId;
+        });
     });
     enableTemporaryStopSubmit("Confirm Stop Change");
 }
@@ -2450,17 +2829,23 @@ async function checkTemporaryStopRoute() {
     if (!token) return featureNotify("warning", "Session expired", "Please login again.");
     if (!input) return featureNotify("warning", "Choose a stop", "Select a registered stop or provide valid map coordinates.");
 
+    saveTemporaryStopDraft();
+    const direction = temporaryStopDirection;
+    const draft = temporaryStopDrafts[direction];
     resetTemporaryStopRouteCheck();
     try {
         const response = await fetch(`${API_BASE}/student/temporary-stop-change/check-route`, {
             method: "POST",
             headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-            body: JSON.stringify(input)
+            body: JSON.stringify({ ...input, trip_type: direction })
         });
         const data = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(data.detail || "Unable to check this route.");
 
+        if (direction !== temporaryStopDirection || draft !== temporaryStopDrafts[direction] ||
+            JSON.stringify(input) !== JSON.stringify(getTemporaryStopRequestInput())) return;
         temporaryStopRouteCheck = data;
+        temporaryStopDrafts[temporaryStopDirection].routeCheck = data;
         const result = document.getElementById("temporaryRouteCheckResult");
         if (result) {
             result.classList.remove("hidden");
@@ -2474,6 +2859,7 @@ async function checkTemporaryStopRoute() {
         }
         if (data.on_route) enableTemporaryStopSubmit("Confirm Stop");
         else renderTemporaryStopCandidates(data.candidate_buses || []);
+        updateTemporaryStopSubmitState();
     } catch (error) {
         console.error("[ERROR] Temporary stop route check failed:", error);
         featureNotify("error", "Route check failed", error.message || "Please try again.");
@@ -2493,90 +2879,101 @@ function initTempStopPickerMap() {
         centre = [routeStops[0].latitude, routeStops[0].longitude];
     }
 
-    // Destroy previous instance so we can re-create cleanly
+    // Reuse the map and tiles; only route and marker layers change.
     if (tempStopPickerMap) {
-        tempStopPickerMap.remove();
-        tempStopPickerMap = null;
-        tempStopPickerMarker = null;
-        tempStopRouteStopMarkers = [];
-        tempStopPickerRoutePolyline = null;
+        tempStopPickerMap.invalidateSize({ animate: false, pan: false });
+        renderTemporaryRouteExplorer();
+        return;
     }
 
     // Must invalidate after modal becomes visible
     setTimeout(() => {
+        if (tempStopPickerMap) return;
         tempStopPickerMap = L.map("tempStopPickerMap", {
             zoomControl: true,
-            attributionControl: false
-        }).setView(centre, 14);
+            attributionControl: false,
+            rotate: true,
+            rotateControl: false,
+            touchRotate: false,
+            compassBearing: false
+        }).setView(centre, 16);
+        const pickerMap = tempStopPickerMap;
 
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
             maxZoom: 19
         }).addTo(tempStopPickerMap);
 
-        const pickerMapInstance = tempStopPickerMap;
-        const pickerRouteStops = getTemporaryStopPickerRouteStops();
-        const busColor = getBusMapColor(routeStopsBusId);
+        tempStopPickerExplorerRoutes = L.layerGroup().addTo(tempStopPickerMap);
+        temporaryArrowLayer = L.layerGroup().addTo(tempStopPickerMap);
+        tempStopPickerMap.on("zoomend", renderTemporaryRouteArrows);
 
-        // Draw the route underneath its stop markers. This deliberately excludes
-        // College: the picker is for the bus-stop route, not the campus extension.
-        drawTemporaryStopPickerRoute(pickerMapInstance, pickerRouteStops, busColor);
-
-        // Show existing route stops using their bus's stable map colour.
-        tempStopRouteStopMarkers = [];
-        if (pickerRouteStops.length > 0) {
-            pickerRouteStops.forEach(stop => {
-                if (!stop.latitude || !stop.longitude) return;
-                const circle = L.circleMarker([stop.latitude, stop.longitude], {
-                    radius: 7,
-                    color: busColor,
-                    fillColor: busColor,
-                    fillOpacity: 0.8,
-                    weight: 2
-                }).addTo(tempStopPickerMap);
-                circle.bindPopup(`<div class="text-xs font-semibold">${stop.name}</div>`);
-                tempStopRouteStopMarkers.push(circle);
-            });
-        }
+        // Explorer routes are separate from pins and stop markers. The default
+        // view is the student's bus, rendered as OSRM road geometry.
+        renderTemporaryRouteExplorer();
 
         // Allow user to click the map to place / move the draggable pin
         tempStopPickerMap.on("click", (e) => {
             if (temporaryStopInputMode === "pin") placeTempStopMarker(e.latlng.lat, e.latlng.lng);
         });
 
-        // If a previous selection existed, restore it
-        if (tempStopPickerLat !== null && tempStopPickerLng !== null) {
-            placeTempStopMarker(tempStopPickerLat, tempStopPickerLng, tempStopPickerAddress);
-        }
-
+        // The modal body is a flex scroll container. Wait for its final layout
+        // and then invalidate again so Leaflet measures the resized map.
         tempStopPickerMap.invalidateSize();
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                if (tempStopPickerMap === pickerMap) {
+                    pickerMap.invalidateSize({ animate: false, pan: false });
+                }
+            });
+        });
+        setTimeout(() => {
+            if (tempStopPickerMap === pickerMap) pickerMap.invalidateSize({ animate: false, pan: false });
+        }, 320);
     }, 120);
 }
 
-function placeTempStopMarker(lat, lng, addressHint) {
+function selectTemporaryPickup() {
+    if (temporaryStopInputMode === "registered") {
+        const id = Number(document.getElementById("temporaryRegisteredStop")?.value);
+        const stop = getTemporaryStopPickerRouteStops(temporarySelectedBusStops()).find(stop => Number(stop.stop_id) === id);
+        if (stop) placeTempStopMarker(Number(stop.latitude), Number(stop.longitude), stop.name);
+    } else {
+        const input = getTemporaryStopRequestInput();
+        if (input) placeTempStopMarker(input.latitude, input.longitude, "Selected coordinates");
+    }
+}
+
+function placeTempStopMarker(lat, lng, addressHint, restore = false) {
     if (!tempStopPickerMap) return;
 
-    tempStopPickerLat = lat;
-    tempStopPickerLng = lng;
-    const latitudeInput = document.getElementById("temporaryPinLatitude");
-    const longitudeInput = document.getElementById("temporaryPinLongitude");
-    if (latitudeInput) latitudeInput.value = Number(lat).toFixed(6);
-    if (longitudeInput) longitudeInput.value = Number(lng).toFixed(6);
-    resetTemporaryStopRouteCheck();
+    const direction = temporaryStopDirection;
+    const draft = temporaryStopDrafts[direction];
+    if (!restore) {
+        tempStopPickerLat = lat;
+        tempStopPickerLng = lng;
+        draft.latitude = lat;
+        draft.longitude = lng;
+        const latitudeInput = document.getElementById("temporaryPinLatitude");
+        const longitudeInput = document.getElementById("temporaryPinLongitude");
+        if (latitudeInput) latitudeInput.value = Number(lat).toFixed(6);
+        if (longitudeInput) longitudeInput.value = Number(lng).toFixed(6);
+        resetTemporaryStopRouteCheck();
+    }
 
-    if (!tempStopPickerMarker) {
+    if (!pickupMarker) {
         const icon = L.divIcon({
             className: "",
-            html: `<div style="width:28px;height:28px;background:#0284C7;border:2px solid #FFFFFF;border-radius:50% 50% 50% 0;transform:rotate(-45deg);"></div>`,
+            html: `<div style="width:28px;height:28px;background:#16a34a;border:2px solid #FFFFFF;border-radius:50% 50% 50% 0;transform:rotate(-45deg);"></div>`,
             iconSize: [28, 28],
             iconAnchor: [14, 28]
         });
-        tempStopPickerMarker = L.marker([lat, lng], { draggable: true, icon }).addTo(tempStopPickerMap);
-        tempStopPickerMarker.on("dragend", (e) => {
+        pickupMarker = L.marker([lat, lng], { draggable: true, icon }).addTo(tempStopPickerMap);
+        pickupMarker.on("dragend", (e) => {
             const pos = e.target.getLatLng();
             placeTempStopMarker(pos.lat, pos.lng);
         });
     } else {
-        tempStopPickerMarker.setLatLng([lat, lng]);
+        pickupMarker.setLatLng([lat, lng]);
     }
 
     // Update label
@@ -2585,8 +2982,12 @@ function placeTempStopMarker(lat, lng, addressHint) {
     if (labelBox) labelBox.classList.remove("hidden");
 
     if (addressHint) {
-        tempStopPickerAddress = addressHint;
+        if (!restore) {
+            tempStopPickerAddress = addressHint;
+            draft.address = addressHint;
+        }
         if (addrEl) addrEl.textContent = addressHint;
+        renderTemporaryDirectionSummary();
     } else {
         if (addrEl) addrEl.textContent = "Selected Map Location (resolving address…)";
         // Best-effort reverse geocode via Nominatim
@@ -2596,11 +2997,16 @@ function placeTempStopMarker(lat, lng, addressHint) {
             .then(r => r.json())
             .catch(() => null)
             .then(data => {
+                if (draft !== temporaryStopDrafts[direction] || draft.latitude !== lat || draft.longitude !== lng) return;
                 const name = data?.display_name
                     ? data.display_name.split(",").slice(0, 3).join(", ")
                     : "Selected Map Location";
-                tempStopPickerAddress = name;
-                if (addrEl) addrEl.textContent = name;
+                draft.address = name;
+                if (temporaryStopDirection === direction) {
+                    tempStopPickerAddress = name;
+                    if (addrEl) addrEl.textContent = name;
+                }
+                renderTemporaryDirectionSummary();
             });
     }
 }
@@ -2630,9 +3036,11 @@ async function openTemporaryStopModal() {
     renderTemporaryStopStatus();
     modal.classList.remove("hidden");
 
-    await loadRouteStops();
+    await Promise.all([loadRouteStops(), loadTemporaryStopExplorerRoutes()]);
     renderTemporaryCurrentRoute();
-    setTemporaryStopInputMode(temporaryStopInputMode);
+    setTemporaryStopInputMode(temporaryStopInputMode, false);
+    renderTemporaryDirectionSummary();
+    updateTemporaryStopSubmitState();
 
     // Initialize or reinitialize the map picker AFTER the modal is visible
     initTempStopPickerMap();
@@ -2752,9 +3160,30 @@ async function submitTemporaryStopChange() {
     const startDate = startInput?.value;
     const endDate = endInput?.value;
 
-    const requestInput = getTemporaryStopRequestInput();
-    if (!requestInput || !temporaryStopRouteCheck) {
-        featureNotify("warning", "Check the route first", "Select a stop or location and check its route before submitting.");
+    saveTemporaryStopDraft();
+    const morningInput = temporaryStopInputFromDraft("morning");
+    const eveningInput = temporaryStopInputFromDraft("evening");
+    const primaryDirection = morningInput ? "morning" : "evening";
+    const primaryInput = morningInput || eveningInput;
+    const primaryDraft = temporaryStopDrafts[primaryDirection];
+    if (!primaryInput || !primaryDraft.routeCheck) {
+        featureNotify("warning", "Check the route first", "Select at least one stop or location and check its route before submitting.");
+        return;
+    }
+    if ((morningInput && !temporaryStopDrafts.morning.routeCheck) ||
+        (eveningInput && !temporaryStopDrafts.evening.routeCheck)) {
+        featureNotify("warning", "Check both locations", "Run the route check for each temporary stop you selected.");
+        return;
+    }
+
+    // Only selected directions are submitted. Two locations need a shared bus.
+    const candidateBusIds = ["morning", "evening"]
+        .filter(direction => temporaryStopInputFromDraft(direction))
+        .map(direction => temporaryStopDrafts[direction].candidateBusId)
+        .filter(Boolean);
+    const uniqueCandidateBusIds = [...new Set(candidateBusIds)];
+    if (uniqueCandidateBusIds.length > 1) {
+        featureNotify("warning", "Choose one shared bus", "Both temporary stops must be served by the same bus.");
         return;
     }
 
@@ -2782,9 +3211,9 @@ async function submitTemporaryStopChange() {
                 "Authorization": `Bearer ${token}`
             },
             body: JSON.stringify({
-                ...requestInput,
-                ...(temporaryStopInputMode === "pin" ? { address: tempStopPickerAddress || null } : {}),
-                ...(!temporaryStopRouteCheck.on_route ? { target_bus_id: temporarySelectedCandidateBusId } : {}),
+                ...(morningInput ? { morning_location: morningInput } : {}),
+                ...(eveningInput ? { evening_location: eveningInput } : {}),
+                ...(uniqueCandidateBusIds.length ? { target_bus_id: uniqueCandidateBusIds[0] } : {}),
                 start_date: startDate,
                 end_date: endDate
             })
@@ -2805,6 +3234,9 @@ async function submitTemporaryStopChange() {
         tempStopPickerLat = null;
         tempStopPickerLng = null;
         tempStopPickerAddress = null;
+        ["morning", "evening"].forEach(direction => {
+            temporaryStopDrafts[direction] = { mode: "pin", latitude: null, longitude: null, address: null, stopId: null, routeCheck: null, candidateBusId: null };
+        });
 
         closeTemporaryStopModal();
         featureNotify(
@@ -2854,6 +3286,19 @@ async function cancelTemporaryStopChange() {
     studentFeatureSubmitting = true;
 
     try {
+        // Check before DELETE so validation still sees the replacement
+        // we are reverting from, before the backend restores the assignment.
+        let revertedStopCheck = null;
+        if (temporaryStopChange.active) {
+            const checkResponse = await fetch(`${API_BASE}/student/temporary-stop-change/check-route`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+                body: JSON.stringify({ stop_id: temporaryStopChange.original_stop_id })
+            });
+            revertedStopCheck = await checkResponse.json().catch(() => ({}));
+            if (!checkResponse.ok) throw new Error(revertedStopCheck.detail || "Unable to validate your original stop.");
+        }
+
         const response = await fetch(`${API_BASE}/student/temporary-stop-change`, {
             method: "DELETE",
             headers: {
@@ -2864,10 +3309,28 @@ async function cancelTemporaryStopChange() {
         if (!response.ok) throw new Error(data.detail || "Unable to cancel the temporary stop.");
 
         temporaryStopChange = null;
+        temporaryRouteSelection = null;
         renderTemporaryStopStatus();
         closeTemporaryStopModal();
-        featureNotify("success", "Temporary stop cancelled", "Your original stop is active again.");
-        await loadMyStop(true);
+        // Reload bus, driver, route and stop together, just as submission does.
+        clearStudentAssignmentTracking();
+        assignedBusId = null;
+        studentAssignment = null;
+        regularStudentAssignment = null;
+        activeAlternativeAllotment = null;
+        updateStudentDashboard({});
+        updateMissedBusButtonUI();
+        setMyStopState("Updating assigned stop…", "Updating route…", "Bus: —", "Driver: —");
+        if (!await loadStudentBus()) {
+            featureNotify("warning", "Temporary stop cancelled", "Unable to reload your registered assignment. Please refresh to try again.");
+            return;
+        }
+        if (revertedStopCheck && !revertedStopCheck.on_route &&
+            !(revertedStopCheck.candidate_buses || []).some(candidate => candidate.is_own_bus)) {
+            featureNotify("warning", "Temporary stop cancelled", "This bus does not travel through this stop. Your temporary bus allotment has been cleared.");
+        } else {
+            featureNotify("success", "Temporary stop cancelled", "Your original stop is active again.");
+        }
     } catch (error) {
         console.error("[ERROR] Temporary stop cancellation failed:", error);
         featureNotify("error", "Unable to cancel", error.message || "Please try again.");
@@ -2909,7 +3372,8 @@ document.addEventListener("DOMContentLoaded", () => {
         await loadRouteStops();
     });
 
-    // 3. Start Live Tracking & Data Loads
+    // 3. Start the existing dashboard loads together so the screen fills quickly.
+    // The existing inline loading labels remain visible until each request resolves.
     startLiveTracking();
     loadTravelStatus();
     loadTemporaryStopChange();
@@ -2925,9 +3389,15 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         }
     });
-    document.getElementById("temporaryRegisteredStop")?.addEventListener("change", resetTemporaryStopRouteCheck);
-    document.getElementById("temporaryPinLatitude")?.addEventListener("input", resetTemporaryStopRouteCheck);
-    document.getElementById("temporaryPinLongitude")?.addEventListener("input", resetTemporaryStopRouteCheck);
+    document.getElementById("temporaryRegisteredStop")?.addEventListener("change", () => {
+        selectTemporaryPickup();
+        saveTemporaryStopDraft();
+        resetTemporaryStopRouteCheck();
+        renderTemporaryDirectionSummary();
+        updateTemporaryStopSubmitState();
+    });
+    document.getElementById("temporaryPinLatitude")?.addEventListener("input", () => { resetTemporaryStopRouteCheck(); selectTemporaryPickup(); });
+    document.getElementById("temporaryPinLongitude")?.addEventListener("input", () => { resetTemporaryStopRouteCheck(); selectTemporaryPickup(); });
     initNotificationWebSocket();    
     checkActiveDriverAlerts();
     setInterval(checkActiveDriverAlerts, 10000);
@@ -2936,6 +3406,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // Window resize & orientation change handlers to ensure map renders smoothly
 window.addEventListener("resize", () => {
+    if (tempStopPickerMap) tempStopPickerMap.invalidateSize({ animate: false, pan: false });
     if (map) {
         map.invalidateSize();
     }

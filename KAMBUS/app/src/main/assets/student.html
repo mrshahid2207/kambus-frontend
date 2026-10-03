@@ -499,6 +499,7 @@
         .kx-body {
             display: flex; flex-direction: column; gap: 12px;
             padding: 4px 18px 18px;
+            min-height: 0;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
         }
@@ -651,9 +652,13 @@
         }
         .kx-map {
             position: relative; isolation: isolate;
-            height: 296px; border-radius: 16px; overflow: hidden; border: 1.5px solid #e2e8f0;
+            height: 70vh; min-height: 360px; flex: 0 0 70vh;
+            border-radius: 16px; overflow: hidden; border: 1.5px solid #e2e8f0;
         }
         .kx-map > #tempStopPickerMap { width: 100%; height: 100%; }
+        .kx-direction-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .kx-direction-summary > div { padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 11px; color: #475569; }
+        .kx-direction-summary strong { display: block; color: #173541; font-size: 12px; margin-bottom: 2px; }
         .kx-seg {
             display: grid; grid-template-columns: 1fr 1fr; gap: 4px;
             padding: 4px; border-radius: 14px; background: #f1f5f9;
@@ -933,10 +938,15 @@
             }
         }
 
+        header { background: rgba(255,255,255,.94) !important; backdrop-filter: blur(14px); box-shadow: 0 1px 0 rgba(23,53,65,.08),0 8px 20px rgba(23,53,65,.04) !important; }
+        #actionFooter { box-shadow: 0 -10px 28px rgba(23,53,65,.07) !important; }
+        #driverRow { box-shadow: 0 7px 18px rgba(23,53,65,.05); }
+        #actionGrid .action-btn { box-shadow: 0 5px 13px rgba(23,53,65,.045); transition: transform .16s ease, box-shadow .16s ease; }
+        #actionGrid .action-btn:active { transform: scale(.98); }
     </style>
 </head>
 <body class="bg-bg text-navy min-h-screen flex flex-col font-sans">
-
+    <p id="missedBusStatus" role="status" class="hidden" style="position:fixed;top:calc(env(safe-area-inset-top, 0px) + 8px);left:12px;right:12px;z-index:3000;padding:12px;background:#ecfdf5;color:#14532d;border:1px solid #86efac;border-radius:6px;font-size:12px;box-shadow:0 2px 8px #0002;"></p>
 <!-- TOP HEADER -->
 <header class="bg-white border-b border-slate-200 px-3.5 py-2.5 sticky top-0 z-50 flex items-center justify-between shadow-xs">
     <!-- Logo & Title -->
@@ -1117,7 +1127,7 @@
         </button>
     </div>
 
-    <p id="missedBusStatus" class="hidden"></p>
+
     <p id="temporaryStopActionStatus" class="hidden"></p>
 </footer>
 
@@ -1257,6 +1267,32 @@
             <div class="kx-map">
                 <div id="tempStopPickerMap"></div>
             </div>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:12px" aria-label="Map legend">
+                <span><b style="color:#2563eb">●</b> Normal stop</span>
+                <span><b style="color:#f97316">●</b> Temp/replacement stop (including missed bus)</span>
+                <span><b style="color:#16a34a">●</b> Pickup</span>
+                <button type="button" onclick="setTemporaryMapHeading(false)">Reset north</button>
+                <button type="button" onclick="setTemporaryMapHeading(true)">Follow heading</button>
+            </div>
+            <p id="temporaryRouteMapStatus" role="status" class="text-xs text-slate-600"></p>
+
+            <div>
+                <label for="temporaryRouteView" class="kx-label">Explore bus routes</label>
+                <select id="temporaryRouteView" onchange="setTemporaryRouteView(this.value)" class="kx-input">
+                    <option value="my">My bus</option>
+                </select>
+            </div>
+
+            <div class="kx-seg" aria-label="Temporary stop direction">
+                <button id="temporaryMorningDirectionBtn" type="button" onclick="setTemporaryStopDirection('morning')" class="kx-seg-btn is-active">Morning pickup</button>
+                <button id="temporaryEveningDirectionBtn" type="button" onclick="setTemporaryStopDirection('evening')" class="kx-seg-btn">Evening drop-off</button>
+            </div>
+            <div class="kx-direction-summary">
+                <div><strong>Morning pickup</strong><span id="temporaryMorningSummary">Not selected</span></div>
+                <div><strong>Evening drop-off</strong><span id="temporaryEveningSummary">Not selected</span></div>
+            </div>
+            <p class="text-xs text-slate-600">Choose morning only, evening only, or both. Check each selected location before submitting.</p>
+            <button type="button" onclick="clearTemporaryStopDirection()" class="kx-btn kx-btn--soft kx-btn--sm">Clear this direction</button>
 
             <div class="kx-seg">
                 <button id="temporaryRegisteredModeBtn" type="button" onclick="setTemporaryStopInputMode('registered')" class="kx-seg-btn">Registered stop</button>
@@ -1411,6 +1447,7 @@
 
 <!-- SCRIPTS -->
 <script src="vendor/leaflet/leaflet.js"></script>
+<script src="vendor/leaflet/leaflet-rotate.js"></script>
 <script src="kambus-ui.js"></script>
 <script src="notification-center.js"></script>
 <script src="student.js"></script>
