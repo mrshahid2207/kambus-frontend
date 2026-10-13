@@ -80,9 +80,58 @@
                 <span>Sign In</span>
                 <svg class="w-4 h-4" aria-hidden="true"><use href="icons.svg#icon-arrow-right"/></svg>
             </button>
+            <p id="signupLinkRow" class="text-center text-xs text-ink-muted mt-3">
+                New student? <button type="button" onclick="openSignupModal()" class="text-brand font-semibold hover:underline">Register here</button>
+            </p>
         </form>
       </section><p class="login-footer">KITS Warangal &middot; KAMBUS</p>
     </main>
+
+    <!-- STUDENT SIGNUP MODAL -->
+    <div id="signupModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl max-w-sm w-full p-6 border border-slate-200 shadow-xl max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="text-base font-semibold text-navy">Student Registration</h3>
+                <button type="button" onclick="closeSignupModal()" class="text-ink-muted hover:text-navy text-lg font-bold">&times;</button>
+            </div>
+            <form id="signupForm" onsubmit="handleSignup(event)" class="space-y-3 text-xs">
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Full Name</label>
+                    <input type="text" id="regName" required placeholder="Your full name" class="login-input w-full px-3 py-2 border border-line rounded">
+                </div>
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Roll Number</label>
+                    <input type="text" id="regRoll" required placeholder="e.g. 21KIT123" class="login-input w-full px-3 py-2 border border-line rounded uppercase">
+                </div>
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Gender</label>
+                    <select id="regGender" required class="login-input w-full px-3 py-2 border border-line rounded bg-white">
+                        <option value="">Select Gender</option>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Email</label>
+                    <input type="email" id="regEmail" required placeholder="student@kitsw.ac.in" class="login-input w-full px-3 py-2 border border-line rounded">
+                </div>
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Phone Number</label>
+                    <input type="tel" id="regPhone" required placeholder="10-digit phone" class="login-input w-full px-3 py-2 border border-line rounded">
+                </div>
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Password</label>
+                    <input type="password" id="regPassword" required minlength="6" placeholder="Min 6 characters" class="login-input w-full px-3 py-2 border border-line rounded">
+                </div>
+                <div id="signupMsg" class="hidden text-xs p-2 rounded"></div>
+                <div class="pt-2 flex gap-2">
+                    <button type="button" onclick="closeSignupModal()" class="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-navy font-semibold rounded">Cancel</button>
+                    <button type="submit" id="btnRegSubmit" class="flex-1 py-2 bg-navy hover:bg-navy/90 text-white font-semibold rounded">Register</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <script>
         const API_BASE = "https://kambus-backend.onrender.com";
@@ -255,9 +304,58 @@
             }
         }
 
-        function notifyUser(type, title, message) {
-            if (typeof KambusNotify !== "undefined" && KambusNotify.notify) {
-                KambusNotify.notify({ type, title, message });
+        function openSignupModal() {
+            document.getElementById("signupModal")?.classList.remove("hidden");
+        }
+
+        function closeSignupModal() {
+            document.getElementById("signupModal")?.classList.add("hidden");
+            const msg = document.getElementById("signupMsg");
+            if (msg) { msg.classList.add("hidden"); msg.textContent = ""; }
+        }
+
+        async function handleSignup(e) {
+            e.preventDefault();
+            const btn = document.getElementById("btnRegSubmit");
+            const msg = document.getElementById("signupMsg");
+            const name = document.getElementById("regName").value.trim();
+            const rollNumber = document.getElementById("regRoll").value.trim().toUpperCase();
+            const gender = document.getElementById("regGender").value;
+            const email = document.getElementById("regEmail").value.trim();
+            const phone = document.getElementById("regPhone").value.trim();
+            const password = document.getElementById("regPassword").value;
+
+            if (!gender) {
+                msg.className = "text-xs p-2 rounded bg-rose-50 text-rose-700 block";
+                msg.textContent = "Please select your gender.";
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = "Registering...";
+            msg.classList.add("hidden");
+
+            try {
+                const res = await fetch(`${API_BASE}/auth/student/signup`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ name, roll_number: rollNumber, gender, email, phone, password })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.detail || "Registration failed");
+
+                msg.className = "text-xs p-2 rounded bg-emerald-50 text-emerald-700 block";
+                msg.textContent = data.message || "Registration submitted! Check email for OTP.";
+                setTimeout(() => {
+                    closeSignupModal();
+                    notifyUser("ok", "Account Created", "Please verify your account to sign in.");
+                }, 1500);
+            } catch (err) {
+                msg.className = "text-xs p-2 rounded bg-rose-50 text-rose-700 block";
+                msg.textContent = err.message;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "Register";
             }
         }
     </script>

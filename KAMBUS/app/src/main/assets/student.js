@@ -1005,6 +1005,10 @@ async function loadMyStop(showLoading = true) {
             temporary_end_date: stopData.temporary_end_date || null
         };
 
+        if (stopData.needs_gender) {
+            document.getElementById("genderPromptModal")?.classList.remove("hidden");
+        }
+
         const assignment = studentAssignment || {};
         const isTemp = assignedStop.is_temporary === true;
 
@@ -1884,14 +1888,27 @@ window.closeDriverComplaintModal = closeDriverComplaintModal;
 function resetDriverComplaintModal() {
     driverComplaintSubmitting = false;
 
+    if (typeof setComplaintTargetType === "function") {
+        setComplaintTargetType("driver");
+    }
+
     const optionsView = document.getElementById("driverComplaintOptionsView");
     const otherView = document.getElementById("driverComplaintOtherView");
+    const studentView = document.getElementById("studentComplaintFormView");
 
     if (optionsView) optionsView.classList.remove("hidden");
     if (otherView) otherView.classList.add("hidden");
+    if (studentView) studentView.classList.add("hidden");
 
     const textarea = document.getElementById("driverComplaintOtherText");
     if (textarea) textarea.value = "";
+
+    const studentSelect = document.getElementById("complaintTargetStudentSelect");
+    if (studentSelect) studentSelect.value = "";
+    const studentDesc = document.getElementById("studentComplaintDescText");
+    if (studentDesc) studentDesc.value = "";
+    const studentErr = document.getElementById("studentComplaintError");
+    if (studentErr) studentErr.classList.add("hidden");
 
     const errorElement = document.getElementById("driverComplaintOtherError");
     if (errorElement) errorElement.classList.add("hidden");
@@ -1907,6 +1924,138 @@ function resetDriverComplaintModal() {
         btn.disabled = false;
     });
 }
+
+let complaintTargetType = "driver";
+
+window.setComplaintTargetType = async function(type) {
+    complaintTargetType = type;
+    const driverBtn = document.getElementById("complaintTargetDriverBtn");
+    const studentBtn = document.getElementById("complaintTargetStudentBtn");
+    const driverView = document.getElementById("driverComplaintOptionsView");
+    const studentView = document.getElementById("studentComplaintFormView");
+    const otherView = document.getElementById("driverComplaintOtherView");
+
+    if (otherView) otherView.classList.add("hidden");
+
+    if (type === "driver") {
+        if (driverBtn) {
+            driverBtn.className = "flex-1 py-1.5 rounded-lg bg-white shadow-xs text-slate-900 text-center transition";
+        }
+        if (studentBtn) {
+            studentBtn.className = "flex-1 py-1.5 rounded-lg text-slate-500 hover:text-slate-900 text-center transition";
+        }
+        if (driverView) driverView.classList.remove("hidden");
+        if (studentView) studentView.classList.add("hidden");
+    } else {
+        if (studentBtn) {
+            studentBtn.className = "flex-1 py-1.5 rounded-lg bg-white shadow-xs text-slate-900 text-center transition";
+        }
+        if (driverBtn) {
+            driverBtn.className = "flex-1 py-1.5 rounded-lg text-slate-500 hover:text-slate-900 text-center transition";
+        }
+        if (driverView) driverView.classList.add("hidden");
+        if (studentView) studentView.classList.remove("hidden");
+
+        const select = document.getElementById("complaintTargetStudentSelect");
+        if (select && select.options.length <= 1) {
+            const token = typeof getToken === "function" ? getToken() : localStorage.getItem("kambus_token");
+            if (token) {
+                try {
+                    const res = await fetch(`${API_BASE}/student/bus-peers`, {
+                        headers: { "Authorization": `Bearer ${token}` }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        const peers = data.peers || [];
+                        select.innerHTML = `<option value="">-- Select student on your bus --</option>` +
+                            peers.map(p => `<option value="${p.student_id}">${escapeHtml(p.name)} (${escapeHtml(p.roll_number || 'No roll')})</option>`).join("");
+                    }
+                } catch (e) {
+                    console.error("Failed to load bus peers:", e);
+                }
+            }
+        }
+    }
+};
+
+window.submitStudentComplaint = async function() {
+    const studentSelect = document.getElementById("complaintTargetStudentSelect");
+    const reasonSelect = document.getElementById("studentComplaintReasonSelect");
+    const audienceSelect = document.getElementById("studentComplaintAudienceSelect");
+    const descText = document.getElementById("studentComplaintDescText");
+    const errorEl = document.getElementById("studentComplaintError");
+    const submitBtn = document.getElementById("studentComplaintSubmitBtn");
+
+    const targetStudentId = studentSelect ? parseInt(studentSelect.value, 10) : null;
+    const reason = reasonSelect ? reasonSelect.value : "harassment";
+    const audience = audienceSelect ? audienceSelect.value : "both";
+    const description = descText ? descText.value.trim() : "";
+
+    if (!targetStudentId || isNaN(targetStudentId)) {
+        if (errorEl) {
+            errorEl.textContent = "Please select the target student.";
+            errorEl.classList.remove("hidden");
+        }
+        return;
+    }
+
+    if (!description) {
+        if (errorEl) {
+            errorEl.textContent = "Please provide details for the report.";
+            errorEl.classList.remove("hidden");
+        }
+        return;
+    }
+
+    if (errorEl) errorEl.classList.add("hidden");
+
+    const token = typeof getToken === "function" ? getToken() : localStorage.getItem("kambus_token");
+    if (!token) return;
+
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Submitting...";
+    }
+
+    try {
+        const res = await fetch(`${API_BASE}/student/driver-complaint`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                target_student_id: targetStudentId,
+                reason,
+                audience,
+                description
+            })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            throw new Error(data.detail || "Failed to submit report.");
+        }
+
+        closeDriverComplaintModal();
+        if (typeof KambusNotify !== "undefined") {
+            KambusNotify.notify({
+                type: "success",
+                title: "Report Submitted",
+                message: "Your confidential report has been submitted and peer verification initiated."
+            });
+        }
+    } catch (e) {
+        if (errorEl) {
+            errorEl.textContent = e.message || "Failed to submit report.";
+            errorEl.classList.remove("hidden");
+        }
+    } finally {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = "Submit Report";
+        }
+    }
+};
 
 function showOtherComplaintInput() {
     const optionsView = document.getElementById("driverComplaintOptionsView");
@@ -3215,7 +3364,8 @@ async function submitTemporaryStopChange() {
                 ...(eveningInput ? { evening_location: eveningInput } : {}),
                 ...(uniqueCandidateBusIds.length ? { target_bus_id: uniqueCandidateBusIds[0] } : {}),
                 start_date: startDate,
-                end_date: endDate
+                end_date: endDate,
+                request_type: currentStopChangeType || "temporary"
             })
         });
 
@@ -3417,3 +3567,128 @@ window.addEventListener("orientationchange", () => {
         if (map) map.invalidateSize();
     }, 200);
 });
+
+window.submitStudentGender = async function(gender) {
+    const token = localStorage.getItem("kambus_token");
+    if (!token) return;
+    try {
+        const res = await fetch(`${API_BASE}/student/gender`, {
+            method: "PATCH",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify({ gender })
+        });
+        if (res.ok) {
+            document.getElementById("genderPromptModal")?.classList.add("hidden");
+            if (typeof showToast === "function") {
+                showToast("success", "Profile Updated", "Gender saved successfully.");
+            }
+        }
+    } catch (e) {
+        console.error("Failed to update gender:", e);
+    }
+};
+
+let currentStopChangeType = "temporary";
+window.setStopChangeType = function(type) {
+    currentStopChangeType = type;
+    const tempBtn = document.getElementById("temporaryChangeTypeBtn");
+    const permBtn = document.getElementById("permanentChangeTypeBtn");
+    if (tempBtn && permBtn) {
+        tempBtn.classList.toggle("is-active", type === "temporary");
+        permBtn.classList.toggle("is-active", type === "permanent");
+    }
+};
+
+// ========================================================================
+// MESSAGE ADMIN HANDLERS
+// ========================================================================
+window.openMessageAdminModal = function() {
+    const modal = document.getElementById("messageAdminModal");
+    if (!modal) return;
+    const textarea = document.getElementById("adminMessageText");
+    if (textarea) textarea.value = "";
+    document.getElementById("adminMessageError")?.classList.add("hidden");
+    document.getElementById("adminMessageSuccess")?.classList.add("hidden");
+    const submitBtn = document.getElementById("adminMessageSubmitBtn");
+    if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Send Message";
+    }
+    modal.classList.remove("hidden");
+    setTimeout(() => textarea?.focus(), 50);
+};
+
+window.closeMessageAdminModal = function() {
+    const modal = document.getElementById("messageAdminModal");
+    if (modal) modal.classList.add("hidden");
+};
+
+window.submitMessageToAdmin = async function() {
+    const textarea = document.getElementById("adminMessageText");
+    const categorySelect = document.getElementById("adminMessageCategory");
+    const errorEl = document.getElementById("adminMessageError");
+    const successEl = document.getElementById("adminMessageSuccess");
+    const submitBtn = document.getElementById("adminMessageSubmitBtn");
+
+    const message = textarea ? textarea.value.trim() : "";
+    const category = categorySelect ? categorySelect.value : "general";
+
+    if (!message) {
+        if (errorEl) {
+            errorEl.textContent = "Please type a message before sending.";
+            errorEl.classList.remove("hidden");
+        }
+        return;
+    }
+    if (errorEl) errorEl.classList.add("hidden");
+
+    const token = typeof getToken === "function" ? getToken() : localStorage.getItem("kambus_token");
+    if (!token) {
+        if (typeof showToast === "function") showToast("error", "Error", "You are not logged in.");
+        return;
+    }
+
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Sending...";
+    }
+
+    try {
+        const res = await fetch(`${API_BASE}/student/message-admin`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify({ message, category })
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+            if (successEl) {
+                successEl.classList.remove("hidden");
+            }
+            if (typeof showToast === "function") {
+                showToast("success", "Message Sent", "Your message was sent to the transport admin.");
+            }
+            setTimeout(() => {
+                window.closeMessageAdminModal();
+            }, 1000);
+        } else {
+            throw new Error(data.detail || "Failed to send message.");
+        }
+    } catch (err) {
+        if (errorEl) {
+            errorEl.textContent = err.message || "Failed to send message.";
+            errorEl.classList.remove("hidden");
+        }
+    } finally {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = "Send Message";
+        }
+    }
+};
+

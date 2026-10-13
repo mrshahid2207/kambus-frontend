@@ -975,6 +975,12 @@
             <span id="notificationBadge" class="hidden absolute top-1 right-1 w-2 h-2 rounded-full bg-rose-500 border border-white"></span>
         </button>
 
+        <!-- Message Admin Button -->
+        <button type="button" onclick="openMessageAdminModal()" class="btn-pass" aria-label="Message Admin" title="Message Admin">
+            <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            <span>Admin</span>
+        </button>
+
         <!-- My Pass Button -->
         <button type="button" onclick="togglePassModal()" class="btn-pass" aria-label="My Pass">
             <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
@@ -1283,6 +1289,11 @@
                 </select>
             </div>
 
+            <div class="kx-seg" aria-label="Stop change type" style="margin-bottom: 8px;">
+                <button id="temporaryChangeTypeBtn" type="button" onclick="setStopChangeType('temporary')" class="kx-seg-btn is-active">Temporary (Date range)</button>
+                <button id="permanentChangeTypeBtn" type="button" onclick="setStopChangeType('permanent')" class="kx-seg-btn">Permanent (Update registered)</button>
+            </div>
+
             <div class="kx-seg" aria-label="Temporary stop direction">
                 <button id="temporaryMorningDirectionBtn" type="button" onclick="setTemporaryStopDirection('morning')" class="kx-seg-btn is-active">Morning pickup</button>
                 <button id="temporaryEveningDirectionBtn" type="button" onclick="setTemporaryStopDirection('evening')" class="kx-seg-btn">Evening drop-off</button>
@@ -1375,19 +1386,86 @@
     </div>
 </div>
 
+<!-- GENDER BACKFILL MODAL -->
+<div id="genderPromptModal" class="hidden kambus-modal-backdrop" style="z-index: 2200;">
+    <div class="kx-sheet" style="max-width: 380px; margin: auto;">
+        <div class="kx-head">
+            <div class="kx-head-icon" style="background:#e0e7ff; color:#3730a3;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+            <div class="kx-head-text">
+                <h3 class="kx-title">Complete Your Profile</h3>
+                <p class="kx-sub">Please select your gender</p>
+            </div>
+        </div>
+        <div class="kx-body" style="padding: 16px;">
+            <div class="kx-list" style="gap: 10px;">
+                <button type="button" onclick="submitStudentGender('male')" class="kx-option" style="justify-content: center; font-weight: 600; color: #1e3a8a; background: #eff6ff;">
+                    Male
+                </button>
+                <button type="button" onclick="submitStudentGender('female')" class="kx-option" style="justify-content: center; font-weight: 600; color: #831843; background: #fdf2f8;">
+                    Female
+                </button>
+                <button type="button" onclick="submitStudentGender('other')" class="kx-option" style="justify-content: center; font-weight: 600; color: #334155; background: #f1f5f9;">
+                    Other
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- DRIVER COMPLAINT MODAL -->
 <div id="driverComplaintModal" class="hidden kambus-modal-backdrop" style="z-index: 2100;">
     <div class="kx-sheet">
         <div class="kx-head">
             <div class="kx-head-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
             <div class="kx-head-text">
-                <h3 class="kx-title">Report driver</h3>
-                <p class="kx-sub">Tell us what went wrong</p>
+                <h3 id="complaintModalTitle" class="kx-title">Report issue</h3>
+                <p id="complaintModalSub" class="kx-sub">Tell us what went wrong</p>
             </div>
             <button type="button" onclick="closeDriverComplaintModal()" class="kx-close" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
         </div>
 
         <div class="kx-body">
+            <!-- Target Selector: Driver vs Student -->
+            <div class="flex items-center p-1 bg-slate-100 rounded-xl mb-3 text-xs font-bold">
+                <button type="button" id="complaintTargetDriverBtn" onclick="setComplaintTargetType('driver')" class="flex-1 py-1.5 rounded-lg bg-white shadow-xs text-slate-900 text-center transition">
+                    Driver
+                </button>
+                <button type="button" id="complaintTargetStudentBtn" onclick="setComplaintTargetType('student')" class="flex-1 py-1.5 rounded-lg text-slate-500 hover:text-slate-900 text-center transition">
+                    Student (Peer)
+                </button>
+            </div>
+
+            <!-- STUDENT COMPLAINT FORM VIEW -->
+            <div id="studentComplaintFormView" class="hidden kx-stack">
+                <label for="complaintTargetStudentSelect" class="kx-label">Target Student (Peer on Bus)</label>
+                <select id="complaintTargetStudentSelect" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-800 bg-white">
+                    <option value="">-- Select student on your bus --</option>
+                </select>
+
+                <label for="studentComplaintReasonSelect" class="kx-label">Reason</label>
+                <select id="studentComplaintReasonSelect" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-800 bg-white">
+                    <option value="harassment">Harassment</option>
+                    <option value="nuisance">Nuisance</option>
+                    <option value="other">Other Issue</option>
+                </select>
+
+                <label for="studentComplaintAudienceSelect" class="kx-label">Poll Audience (Who verifies this?)</label>
+                <select id="studentComplaintAudienceSelect" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-800 bg-white">
+                    <option value="both">Both (All bus students)</option>
+                    <option value="girls">Girls Only</option>
+                    <option value="boys">Boys Only</option>
+                </select>
+
+                <label for="studentComplaintDescText" class="kx-label">Description *</label>
+                <textarea id="studentComplaintDescText" rows="3" maxlength="500" placeholder="Provide details clearly..." class="kx-textarea"></textarea>
+                <p id="studentComplaintError" class="hidden kx-error">Please fill in all required fields.</p>
+
+                <div class="kx-row">
+                    <button type="button" onclick="closeDriverComplaintModal()" class="kx-btn kx-btn--ghost">Cancel</button>
+                    <button type="button" id="studentComplaintSubmitBtn" onclick="submitStudentComplaint()" class="kx-btn kx-btn--primary">Submit Report</button>
+                </div>
+            </div>
+
             <div id="driverComplaintOptionsView" class="kx-list">
                 <button type="button" class="driverComplaintOptionBtn kx-option" onclick="submitDriverComplaint('driver_not_on_time')">
                     <span class="kx-option-icon kx-option-icon--amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg></span>
@@ -1439,6 +1517,42 @@
                 <div class="kx-row">
                     <button type="button" onclick="cancelOtherComplaint()" class="kx-btn kx-btn--ghost">Cancel</button>
                     <button type="button" id="driverComplaintOtherSubmitBtn" onclick="submitOtherDriverComplaint()" class="kx-btn kx-btn--primary">Submit Complaint</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MESSAGE ADMIN MODAL -->
+<div id="messageAdminModal" class="hidden kambus-modal-backdrop" style="z-index: 2100;">
+    <div class="kx-sheet">
+        <div class="kx-head">
+            <div class="kx-head-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            </div>
+            <div class="kx-head-text">
+                <h3 class="kx-title">Message Transport Admin</h3>
+                <p class="kx-sub">Send a message or query to the transport desk</p>
+            </div>
+            <button type="button" onclick="closeMessageAdminModal()" class="kx-close" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+
+        <div class="kx-body">
+            <div class="kx-stack">
+                <label for="adminMessageCategory" class="kx-label">Category</label>
+                <select id="adminMessageCategory" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-800 bg-white">
+                    <option value="general">General</option>
+                    <option value="bus-related">Bus-related</option>
+                </select>
+
+                <label for="adminMessageText" class="kx-label">Your Message</label>
+                <textarea id="adminMessageText" rows="4" maxlength="2000" placeholder="Type your message to the transport admin..." class="kx-textarea"></textarea>
+                <p id="adminMessageError" class="hidden kx-error">Please type a message before sending.</p>
+                <p id="adminMessageSuccess" class="hidden text-xs font-semibold text-emerald-600">Message sent successfully!</p>
+
+                <div class="kx-row">
+                    <button type="button" onclick="closeMessageAdminModal()" class="kx-btn kx-btn--ghost">Cancel</button>
+                    <button type="button" id="adminMessageSubmitBtn" onclick="submitMessageToAdmin()" class="kx-btn kx-btn--primary">Send Message</button>
                 </div>
             </div>
         </div>
@@ -1843,9 +1957,11 @@
         const waitModal = document.getElementById("waitModal");
         const passModal = document.getElementById("passModal");
         const complaintModal = document.getElementById("driverComplaintModal");
+        const messageModal = document.getElementById("messageAdminModal");
         if (event.target === waitModal) closeWaitModal();
         if (event.target === passModal) togglePassModal();
         if (event.target === complaintModal) closeDriverComplaintModal();
+        if (event.target === messageModal && typeof closeMessageAdminModal === "function") closeMessageAdminModal();
     });
 
     document.addEventListener("keydown", event => {
@@ -1855,6 +1971,8 @@
         if (passModal && !passModal.classList.contains("hidden")) togglePassModal();
         const complaintModal = document.getElementById("driverComplaintModal");
         if (complaintModal && !complaintModal.classList.contains("hidden")) closeDriverComplaintModal();
+        const messageModal = document.getElementById("messageAdminModal");
+        if (messageModal && !messageModal.classList.contains("hidden") && typeof closeMessageAdminModal === "function") closeMessageAdminModal();
     });
 </script>
 </body>

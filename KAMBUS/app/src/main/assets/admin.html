@@ -226,6 +226,9 @@
                 <button type="button" data-section="students" onclick="window.KambusAdmin.showSection('students')" class="admin-nav-btn">
                     <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-user-graduate"/></svg> <span>Students</span>
                 </button>
+                <button type="button" data-section="parents" onclick="window.KambusAdmin.showSection('parents')" class="admin-nav-btn">
+                    <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-users"/></svg> <span>Parents</span>
+                </button>
                 <button type="button" data-section="routes" onclick="window.KambusAdmin.showSection('routes')" class="admin-nav-btn">
                     <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-route"/></svg> <span>Routes</span>
                 </button>
@@ -245,6 +248,9 @@
                 </button>
 
                 <p class="text-[10px] font-semibold tracking-wider uppercase text-ink-muted px-3 mt-4 mb-2">Communications</p>
+                <button type="button" data-section="messages" onclick="window.KambusAdmin.showSection('messages')" class="admin-nav-btn">
+                    <svg class="w-4 h-4 shrink-0 text-brand" aria-hidden="true"><use href="icons.svg#icon-clipboard-question"/></svg> <span>Student Messages</span>
+                </button>
                 <button type="button" data-section="notifications" onclick="window.KambusAdmin.showSection('notifications')" class="admin-nav-btn">
                     <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-bullhorn"/></svg> <span>Announcements</span>
                 </button>
@@ -451,6 +457,31 @@
                 </div>
             </section>
 
+            <!-- SECTION: PARENT MANAGEMENT -->
+            <section id="section-parents" class="admin-section space-y-5">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                        <h2 class="text-xl font-semibold text-navy tracking-tight">Parent Directory</h2>
+                        <p class="text-xs text-ink-muted">Create parent accounts and manage links to students.</p>
+                    </div>
+                    <button type="button" onclick="window.KambusAdmin.openAddParentModal()" class="px-4 py-2 bg-brand hover:bg-brandDark text-white text-xs font-semibold rounded border border-line flex items-center gap-2 self-start sm:self-auto">
+                        <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-user-plus"/></svg> <span>Add Parent</span>
+                    </button>
+                </div>
+
+                <!-- Filters Bar -->
+                <div class="bg-surface border border-line/90 rounded p-3.5 border border-line flex flex-col sm:flex-row gap-3">
+                    <div class="flex-1">
+                        <input type="text" id="parentSearchInput" placeholder="Search by name, phone, login ID, or email..." oninput="window.KambusAdmin.loadParents()" class="w-full px-3 py-2 border border-line rounded text-xs focus:border-brand focus:ring-1 focus:ring-brand">
+                    </div>
+                </div>
+
+                <!-- Parent List Container -->
+                <div id="parentsList">
+                    <div class="p-8 text-center text-xs text-ink-muted">Loading parents...</div>
+                </div>
+            </section>
+
             <!-- SECTION 5:  ROUTE MANAGEMENT -->
             <section id="section-routes" class="admin-section space-y-5">
                 <div class="flex items-center justify-between gap-3">
@@ -593,8 +624,11 @@
                     <div class="flex items-center gap-2">
                         <select id="tempStopFilterStatus" onchange="window.KambusAdmin.filterTempStopLogs()" class="p-2 border border-line rounded text-xs font-semibold bg-surface text-navy">
                             <option value="all">All Statuses</option>
+                            <option value="pending_admin_approval">Pending Approval</option>
                             <option value="active">Active</option>
                             <option value="scheduled">Scheduled</option>
+                            <option value="approved">Approved</option>
+                            <option value="rejected">Rejected</option>
                             <option value="cancelled">Cancelled</option>
                             <option value="expired">Expired</option>
                         </select>
@@ -609,8 +643,9 @@
                         <thead class="bg-bg border-b border-line text-[10px] font-semibold uppercase tracking-wider text-ink-muted">
                             <tr>
                                 <th class="px-4 py-3">Student</th>
+                                <th class="px-4 py-3">Type</th>
                                 <th class="px-4 py-3">Original Stop</th>
-                                <th class="px-4 py-3">Temporary Stop</th>
+                                <th class="px-4 py-3">New Stop</th>
                                 <th class="px-4 py-3">Target Bus</th>
                                 <th class="px-4 py-3">Effective Dates</th>
                                 <th class="px-4 py-3">Match Detail</th>
@@ -619,7 +654,7 @@
                             </tr>
                         </thead>
                         <tbody id="tempStopLogsList">
-                            <tr><td colspan="8" class="p-8 text-center text-xs text-ink-muted">Loading temporary stop logs...</td></tr>
+                            <tr><td colspan="9" class="p-8 text-center text-xs text-ink-muted">Loading stop change logs...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -640,6 +675,66 @@
                 <!-- Live Map Container -->
                 <div class="bg-surface border border-line/90 rounded overflow-hidden border border-line">
                     <div id="adminLiveMap" style="height: 600px; width: 100%;"></div>
+                </div>
+            </section>
+
+            <!-- SECTION 7b: STUDENT MESSAGES -->
+            <section id="section-messages" class="admin-section space-y-5">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                        <h2 class="text-xl font-semibold text-navy tracking-tight">Student Messages & Inquiries</h2>
+                        <p class="text-xs text-ink-muted">Direct inbox for student feedback and transport messages.</p>
+                    </div>
+                    <button type="button" onclick="window.KambusAdmin.loadMessages()" class="px-3.5 py-2 bg-bg hover:bg-slate-200 text-navy text-xs font-semibold rounded border border-line flex items-center gap-2 self-start sm:self-auto transition">
+                        <svg class="w-4 h-4 shrink-0 text-xs" aria-hidden="true"><use href="icons.svg#icon-refresh"/></svg> <span>Refresh</span>
+                    </button>
+                </div>
+
+                <!-- KPI Summary Cards -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div class="bg-surface border border-line/90 rounded p-4">
+                        <span class="text-[10px] font-semibold text-ink-muted uppercase tracking-wider">Total Messages</span>
+                        <div class="flex items-baseline justify-between mt-1">
+                            <span id="messagesStatTotal" class="text-2xl font-semibold text-navy">0</span>
+                        </div>
+                    </div>
+                    <div class="bg-surface border border-line/90 rounded p-4">
+                        <span class="text-[10px] font-semibold text-ink-muted uppercase tracking-wider">Unread</span>
+                        <div class="flex items-baseline justify-between mt-1">
+                            <span id="messagesStatUnread" class="text-2xl font-semibold text-warn">0</span>
+                        </div>
+                    </div>
+                    <div class="bg-surface border border-line/90 rounded p-4">
+                        <span class="text-[10px] font-semibold text-ink-muted uppercase tracking-wider">Bus-Related</span>
+                        <div class="flex items-baseline justify-between mt-1">
+                            <span id="messagesStatBusRelated" class="text-2xl font-semibold text-brand">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filter Bar -->
+                <div class="bg-surface border border-line/90 rounded p-3.5 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                    <div class="flex items-center gap-2 flex-1">
+                        <label for="messageFilterCategory" class="text-xs font-semibold text-navy shrink-0">Category:</label>
+                        <select id="messageFilterCategory" onchange="window.KambusAdmin.loadMessages()" class="w-full px-3 py-2 border border-line rounded text-xs focus:border-brand">
+                            <option value="">All Categories</option>
+                            <option value="general">General</option>
+                            <option value="bus-related">Bus-related</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <label for="messageFilterStatus" class="text-xs font-semibold text-navy shrink-0">Status:</label>
+                        <select id="messageFilterStatus" onchange="window.KambusAdmin.loadMessages()" class="px-3 py-2 border border-line rounded text-xs focus:border-brand">
+                            <option value="">All Statuses</option>
+                            <option value="unread">Unread Only</option>
+                            <option value="read">Read Only</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Messages List Container -->
+                <div id="messagesList" class="space-y-3">
+                    <div class="p-8 text-center text-xs text-ink-muted">Loading messages...</div>
                 </div>
             </section>
 
@@ -1091,6 +1186,15 @@
                     <input type="text" name="roll_number" placeholder="e.g. 21KIT123" class="w-full p-2.5 border border-line rounded uppercase font-mono" required>
                 </div>
                 <div>
+                    <label class="block font-semibold text-navy mb-1">Gender</label>
+                    <select name="gender" class="w-full p-2.5 border border-line rounded" required>
+                        <option value="">Select Gender</option>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div>
                     <label class="block font-semibold text-navy mb-1">Department</label>
                     <input type="text" name="department" placeholder="e.g. CSE / ECE" class="w-full p-2.5 border border-line rounded">
                 </div>
@@ -1138,6 +1242,15 @@
                     <input type="text" name="roll_number" id="editStudentRoll" class="w-full p-2.5 border border-line rounded uppercase font-mono" required>
                 </div>
                 <div>
+                    <label class="block font-semibold text-navy mb-1">Gender</label>
+                    <select name="gender" id="editStudentGender" class="w-full p-2.5 border border-line rounded">
+                        <option value="">Unspecified</option>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div>
                     <label class="block font-semibold text-navy mb-1">Department</label>
                     <input type="text" name="department" id="editStudentDepartment" placeholder="e.g. CSE / ECE" class="w-full p-2.5 border border-line rounded">
                 </div>
@@ -1177,9 +1290,17 @@
                     <input type="tel" name="phone" class="w-full p-2.5 border border-line rounded" required>
                 </div>
                 <div>
+                    <label class="block font-semibold text-navy mb-1">Campus</label>
+                    <select name="campus_id" id="addAdminCampusSelect" class="w-full p-2.5 border border-line rounded bg-white font-semibold" required>
+                        <option value="1">Campus 1 - KITS Warangal</option>
+                        <option value="2">Campus 2</option>
+                    </select>
+                </div>
+                <div>
                     <label class="block font-semibold text-navy mb-1">Password <span class="text-ink-muted font-normal">(at least 10 characters)</span></label>
                     <input type="password" name="password" minlength="10" class="w-full p-2.5 border border-line rounded" required>
                 </div>
+
                 <div class="pt-3 flex gap-2">
                     <button type="button" onclick="document.getElementById('addAdminModal').classList.add('hidden')" class="flex-1 py-2.5 bg-bg hover:bg-slate-200 text-navy font-semibold rounded">Cancel</button>
                     <button type="submit" class="flex-1 py-2.5 bg-brand hover:bg-brandDark text-white font-semibold rounded shadow">Create Admin</button>
@@ -1450,6 +1571,108 @@
             <div class="pt-2 flex justify-end">
                 <button type="button" onclick="document.getElementById('complaintDetailModal').classList.add('hidden')" class="px-4 py-2 bg-bg hover:bg-slate-200 text-navy font-semibold text-xs rounded">Close</button>
             </div>
+        </div>
+    </div>
+
+    <!-- ADD PARENT MODAL -->
+    <div id="addParentModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-surface rounded max-w-md w-full p-6 border border-line border border-slate-100">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-base font-semibold text-navy">Add New Parent</h3>
+                <button type="button" onclick="document.getElementById('addParentModal').classList.add('hidden')" class="text-ink-muted hover:text-ink">
+                    <svg class="w-4 h-4 shrink-0 text-lg" aria-hidden="true"><use href="icons.svg#icon-xmark"/></svg>
+                </button>
+            </div>
+            <form onsubmit="window.KambusAdmin.submitAddParent(event)" class="space-y-3 text-xs">
+                <div id="addParentError" class="hidden p-2.5 bg-danger/10 border border-danger/20 rounded text-danger text-xs font-semibold"></div>
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Full Name *</label>
+                    <input type="text" name="name" id="addParentName" placeholder="e.g. Meera Sharma" class="w-full p-2.5 border border-line rounded font-semibold" required>
+                </div>
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Phone Number *</label>
+                    <input type="tel" name="phone" id="addParentPhone" placeholder="e.g. 9876543210" class="w-full p-2.5 border border-line rounded" required>
+                </div>
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Password *</label>
+                    <input type="password" name="password" id="addParentPassword" placeholder="••••••••" class="w-full p-2.5 border border-line rounded" required>
+                </div>
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Email <span class="text-ink-muted font-normal">(Optional)</span></label>
+                    <input type="email" name="email" id="addParentEmail" placeholder="e.g. parent@example.com" class="w-full p-2.5 border border-line rounded">
+                </div>
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Login ID <span class="text-ink-muted font-normal">(Optional)</span></label>
+                    <input type="text" name="login_id" id="addParentLoginId" placeholder="e.g. dps-parent-9876543210" class="w-full p-2.5 border border-line rounded font-mono">
+                    <p class="text-[11px] text-ink-muted mt-1">If left blank, an ID will be auto-generated based on campus and phone.</p>
+                </div>
+                <div class="pt-3 flex gap-2">
+                    <button type="button" onclick="document.getElementById('addParentModal').classList.add('hidden')" class="flex-1 py-2.5 bg-bg hover:bg-slate-200 text-navy font-semibold rounded">Cancel</button>
+                    <button type="submit" id="btnSubmitAddParent" class="flex-1 py-2.5 bg-brand hover:bg-brandDark text-white font-semibold rounded shadow">Create Parent</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- LINK CHILD MODAL -->
+    <div id="linkChildModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-surface rounded max-w-lg w-full p-6 border border-line border border-slate-100">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h3 class="text-base font-semibold text-navy">Link Student to Parent</h3>
+                    <p id="linkChildParentInfo" class="text-xs text-brand font-semibold mt-0.5"></p>
+                </div>
+                <button type="button" onclick="document.getElementById('linkChildModal').classList.add('hidden')" class="text-ink-muted hover:text-ink">
+                    <svg class="w-4 h-4 shrink-0 text-lg" aria-hidden="true"><use href="icons.svg#icon-xmark"/></svg>
+                </button>
+            </div>
+            <form onsubmit="window.KambusAdmin.submitLinkChild(event)" class="space-y-3.5 text-xs">
+                <input type="hidden" id="linkParentId">
+                <input type="hidden" id="linkSelectedStudentId">
+
+                <div id="linkChildError" class="hidden p-2.5 bg-danger/10 border border-danger/20 rounded text-danger text-xs font-semibold"></div>
+
+                <!-- Student Type-Ahead Search -->
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Search Student (Type name or roll number) *</label>
+                    <div class="relative">
+                        <input type="text" id="linkStudentSearchInput" placeholder="Type to search students..." oninput="window.KambusAdmin.onSearchLinkStudents(event)" autocomplete="off" class="w-full px-3 py-2.5 border border-line rounded text-xs focus:border-brand focus:ring-1 focus:ring-brand">
+                    </div>
+                </div>
+
+                <!-- Selected Student Display -->
+                <div id="selectedStudentPreview" class="hidden p-3 bg-brand/5 border border-brand/20 rounded">
+                    <p class="text-[11px] font-bold text-slate-500 uppercase">Selected Student:</p>
+                    <div class="flex items-center justify-between mt-1">
+                        <div>
+                            <span id="selectedStudentName" class="font-bold text-navy text-xs"></span>
+                            <span id="selectedStudentRoll" class="ml-2 font-mono font-bold text-brand uppercase text-xs"></span>
+                        </div>
+                        <button type="button" onclick="window.KambusAdmin.clearSelectedLinkStudent()" class="text-xs text-danger hover:underline">Change</button>
+                    </div>
+                </div>
+
+                <!-- Search Results List -->
+                <div id="linkStudentResultsContainer" class="border border-line rounded max-h-48 overflow-y-auto divide-y divide-line/70 bg-white">
+                    <div class="p-4 text-center text-xs text-slate-400">Type above to search students on this campus.</div>
+                </div>
+
+                <!-- Relationship Type -->
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Relationship Type</label>
+                    <select id="linkRelationshipType" class="w-full p-2.5 border border-line rounded bg-white">
+                        <option value="Father">Father</option>
+                        <option value="Mother">Mother</option>
+                        <option value="Guardian">Guardian</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+                <div class="pt-3 flex gap-2">
+                    <button type="button" onclick="document.getElementById('linkChildModal').classList.add('hidden')" class="flex-1 py-2.5 bg-bg hover:bg-slate-200 text-navy font-semibold rounded">Cancel</button>
+                    <button type="submit" id="btnSubmitLinkChild" class="flex-1 py-2.5 bg-brand hover:bg-brandDark text-white font-semibold rounded shadow">Link Student</button>
+                </div>
+            </form>
         </div>
     </div>
 

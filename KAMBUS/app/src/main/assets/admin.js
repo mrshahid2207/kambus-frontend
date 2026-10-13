@@ -220,6 +220,9 @@
             case "students":
                 loadStudents();
                 break;
+            case "parents":
+                loadParents();
+                break;
             case "routes":
                 loadRoutes();
                 break;
@@ -237,6 +240,9 @@
                 break;
             case "live-map":
                 setTimeout(initLiveMap, 100);
+                break;
+            case "messages":
+                loadMessages();
                 break;
             case "notifications":
                 initAnnouncementComposer();
@@ -962,6 +968,7 @@
                                     <th class="p-3.5">Student</th>
                                     <th class="p-3.5">Roll No</th>
                                     <th class="p-3.5">Department</th>
+                                    <th class="p-3.5">Gender</th>
                                     <th class="p-3.5">Assigned Bus</th>
                                     <th class="p-3.5">Assigned Stop</th>
                                     <th class="p-3.5">Today Status</th>
@@ -977,6 +984,7 @@
                                         </td>
                                         <td class="p-3.5 font-mono font-bold text-brand uppercase">${escapeHtml(s.roll_number)}</td>
                                         <td class="p-3.5 text-slate-600 font-semibold">${escapeHtml(s.department || '-')}</td>
+                                        <td class="p-3.5 capitalize text-slate-600 font-semibold">${escapeHtml(s.gender || '-')}</td>
                                         <td class="p-3.5">
                                             ${s.bus_number ? `<span class="px-2 py-0.5 bg-brand/10 border border-brand/20 rounded text-navy font-bold text-[11px]">Bus ${escapeHtml(s.bus_number)}</span>` : '<span class="text-slate-300">Unassigned</span>'}
                                         </td>
@@ -1066,6 +1074,8 @@
         document.getElementById("editStudentDepartment").value = student.department || "";
         document.getElementById("editStudentPhone").value = student.phone || "";
         document.getElementById("editStudentPassword").value = "";
+        const genderEl = document.getElementById("editStudentGender");
+        if (genderEl) genderEl.value = student.gender || "";
 
         document.getElementById("editStudentModal")?.classList.remove("hidden");
     }
@@ -1079,8 +1089,9 @@
         const department = form.elements.department.value.trim();
         const phone = form.elements.phone.value.trim();
         const password = form.elements.password.value;
+        const gender = form.elements.gender ? form.elements.gender.value : null;
 
-        const body = { name, roll_number: rollNumber, department, phone };
+        const body = { name, roll_number: rollNumber, department, phone, gender: gender || null };
         if (password) {
             body.password = password;
         }
@@ -1104,6 +1115,7 @@
         const form = event.target;
         const name = form.name.value.trim();
         const rollNumber = form.roll_number.value.trim().toUpperCase();
+        const gender = form.gender ? form.gender.value : null;
         const department = form.department.value.trim();
         const phone = form.phone.value.trim();
         const password = form.password.value;
@@ -1116,6 +1128,7 @@
                 body: {
                     name,
                     roll_number: rollNumber,
+                    gender,
                     department,
                     phone,
                     password,
@@ -1143,6 +1156,417 @@
             loadDashboard();
         } catch (e) {
             showToast("error", "Delete Failed", e.message);
+        }
+    }
+
+    // =========================================================================
+    // 4B. PARENT MANAGEMENT
+    // =========================================================================
+
+    let cachedParents = [];
+    let selectedLinkParentId = null;
+    let selectedLinkStudentId = null;
+    let linkStudentSearchDebounceTimer = null;
+    const expandedParentIds = new Set();
+
+    async function loadParents() {
+        const container = document.getElementById("parentsList");
+        if (!container) return;
+
+        const search = document.getElementById("parentSearchInput")?.value.trim();
+        let query = "/admin/parents";
+        if (search) {
+            query += `?q=${encodeURIComponent(search)}`;
+        }
+
+        try {
+            const data = await apiRequest(query);
+            const parents = data.parents || [];
+            cachedParents = parents;
+
+            if (parents.length === 0) {
+                container.innerHTML = `<div class="p-8 text-center text-xs text-slate-400 bg-white border border-slate-200/90 rounded">No parents matching criteria.</div>`;
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="bg-white border border-slate-200/90 rounded overflow-hidden shadow-xs">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs border-collapse">
+                            <thead class="bg-slate-50 border-b border-slate-200/80 text-[11px] font-black text-slate-500 uppercase tracking-wider">
+                                <tr>
+                                    <th class="p-3.5">Parent</th>
+                                    <th class="p-3.5">Phone</th>
+                                    <th class="p-3.5">Email</th>
+                                    <th class="p-3.5">Linked Children</th>
+                                    <th class="p-3.5 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                ${parents.map(p => {
+                                    const isExpanded = expandedParentIds.has(p.id);
+                                    return `
+                                    <tr class="hover:bg-slate-50/80 transition" id="parent-row-${p.id}">
+                                        <td class="p-3.5">
+                                            <span class="font-bold text-slate-900">${escapeHtml(p.name)}</span>
+                                            <p class="text-[11px] text-slate-400 font-mono">${escapeHtml(p.login_id || '-')}</p>
+                                        </td>
+                                        <td class="p-3.5 font-mono font-semibold text-slate-700">${escapeHtml(p.phone)}</td>
+                                        <td class="p-3.5 text-slate-600">${escapeHtml(p.email || '-')}</td>
+                                        <td class="p-3.5">
+                                            <span id="parent-child-count-badge-${p.id}" class="px-2 py-0.5 rounded-full text-[10px] font-black ${p.linked_children_count > 0 ? 'bg-ok/10 text-ok' : 'bg-slate-100 text-slate-500'}">
+                                                ${p.linked_children_count} child${p.linked_children_count === 1 ? '' : 'ren'}
+                                            </span>
+                                        </td>
+                                        <td class="p-3.5 text-right space-x-1">
+                                            <button type="button" onclick="window.KambusAdmin.toggleParentChildren(${p.id}, ${jsArg(p.name)})" class="px-2.5 py-1 bg-slate-100 hover:bg-navy hover:text-white rounded text-[11px] font-bold text-slate-700 transition">
+                                                ${isExpanded ? 'Hide Children' : 'Children'}
+                                            </button>
+                                            <button type="button" onclick="window.KambusAdmin.openLinkChildModal(${p.id}, ${jsArg(p.name)})" class="px-2.5 py-1 bg-brand hover:bg-brandDark text-white rounded text-[11px] font-bold transition">
+                                                Link Child
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr id="parent-children-row-${p.id}" class="${isExpanded ? '' : 'hidden'} bg-slate-50/70 border-b border-slate-200">
+                                        <td colspan="5" class="p-3 sm:px-6">
+                                            <div id="parent-children-container-${p.id}" class="space-y-2">
+                                                ${isExpanded ? '<div class="text-slate-400 text-xs py-2">Loading children...</div>' : ''}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    `;
+                                }).join("")}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+
+            for (const pid of expandedParentIds) {
+                const parent = parents.find(p => p.id === pid);
+                if (parent) {
+                    loadParentChildrenList(parent.id, parent.name);
+                }
+            }
+        } catch (error) {
+            container.innerHTML = `<div class="p-8 text-center text-xs text-red-500">Failed to load parents: ${escapeHtml(error.message)}</div>`;
+        }
+    }
+
+    async function toggleParentChildren(parentId, parentName) {
+        const row = document.getElementById(`parent-children-row-${parentId}`);
+        if (!row) return;
+
+        if (expandedParentIds.has(parentId)) {
+            expandedParentIds.delete(parentId);
+            row.classList.add("hidden");
+            const btn = document.querySelector(`#parent-row-${parentId} button:first-child`);
+            if (btn) btn.textContent = "Children";
+        } else {
+            expandedParentIds.add(parentId);
+            row.classList.remove("hidden");
+            const btn = document.querySelector(`#parent-row-${parentId} button:first-child`);
+            if (btn) btn.textContent = "Hide Children";
+            await loadParentChildrenList(parentId, parentName);
+        }
+    }
+
+    async function loadParentChildrenList(parentId, parentName) {
+        const container = document.getElementById(`parent-children-container-${parentId}`);
+        if (!container) return;
+
+        container.innerHTML = `<div class="text-slate-400 text-xs py-2">Loading linked children...</div>`;
+
+        try {
+            const data = await apiRequest(`/admin/parents/${parentId}/children`);
+            const children = data.children || [];
+
+            const countBadge = document.getElementById(`parent-child-count-badge-${parentId}`);
+            if (countBadge) {
+                countBadge.className = `px-2 py-0.5 rounded-full text-[10px] font-black ${children.length > 0 ? 'bg-ok/10 text-ok' : 'bg-slate-100 text-slate-500'}`;
+                countBadge.textContent = `${children.length} child${children.length === 1 ? '' : 'ren'}`;
+            }
+
+            if (children.length === 0) {
+                container.innerHTML = `
+                    <div class="flex items-center justify-between p-3 bg-white border border-slate-200 rounded text-xs">
+                        <span class="text-slate-400">No children linked to this parent yet.</span>
+                        <button type="button" onclick="window.KambusAdmin.openLinkChildModal(${parentId}, ${jsArg(parentName)})" class="text-brand font-semibold hover:underline">
+                            + Link a Student
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="bg-white border border-slate-200 rounded overflow-hidden">
+                    <div class="px-3 py-2 bg-slate-100/80 border-b border-slate-200 flex items-center justify-between">
+                        <span class="text-[11px] font-black text-slate-600 uppercase tracking-wider">Linked Children (${children.length})</span>
+                        <button type="button" onclick="window.KambusAdmin.openLinkChildModal(${parentId}, ${jsArg(parentName)})" class="text-[11px] text-brand font-bold hover:underline">
+                            + Link Another Child
+                        </button>
+                    </div>
+                    <div class="divide-y divide-slate-100">
+                        ${children.map(c => `
+                            <div class="p-3 flex items-center justify-between gap-3 text-xs">
+                                <div>
+                                    <span class="font-bold text-slate-900">${escapeHtml(c.name || 'Unnamed Student')}</span>
+                                    <span class="ml-2 font-mono font-bold text-brand uppercase text-[11px]">${escapeHtml(c.roll_number)}</span>
+                                    <span class="ml-2 px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px] font-semibold">${escapeHtml(c.relationship_type || 'Child')}</span>
+                                </div>
+                                <button type="button" onclick="window.KambusAdmin.unlinkChild(${parentId}, ${c.student_id}, ${jsArg(c.name || c.roll_number)}, ${jsArg(parentName)})" class="px-2 py-1 text-danger hover:bg-danger/10 rounded font-semibold text-[11px] transition">
+                                    Unlink
+                                </button>
+                            </div>
+                        `).join("")}
+                    </div>
+                </div>
+            `;
+        } catch (error) {
+            container.innerHTML = `<div class="p-3 text-xs text-red-500">Failed to load linked children: ${escapeHtml(error.message)}</div>`;
+        }
+    }
+
+    function openAddParentModal() {
+        const errorEl = document.getElementById("addParentError");
+        if (errorEl) {
+            errorEl.classList.add("hidden");
+            errorEl.textContent = "";
+        }
+        const nameEl = document.getElementById("addParentName");
+        const phoneEl = document.getElementById("addParentPhone");
+        const passwordEl = document.getElementById("addParentPassword");
+        const emailEl = document.getElementById("addParentEmail");
+        const loginIdEl = document.getElementById("addParentLoginId");
+        if (nameEl) nameEl.value = "";
+        if (phoneEl) phoneEl.value = "";
+        if (passwordEl) passwordEl.value = "";
+        if (emailEl) emailEl.value = "";
+        if (loginIdEl) loginIdEl.value = "";
+
+        document.getElementById("addParentModal")?.classList.remove("hidden");
+    }
+
+    async function submitAddParent(event) {
+        event.preventDefault();
+        const form = event.target;
+        const errorEl = document.getElementById("addParentError");
+        const submitBtn = document.getElementById("btnSubmitAddParent");
+
+        if (errorEl) {
+            errorEl.classList.add("hidden");
+            errorEl.textContent = "";
+        }
+
+        const name = form.name.value.trim();
+        const phone = form.phone.value.trim();
+        const password = form.password.value;
+        const email = form.email.value.trim();
+        const loginId = form.login_id.value.trim();
+
+        if (!name || !phone || !password) {
+            if (errorEl) {
+                errorEl.textContent = "Name, phone, and password are required.";
+                errorEl.classList.remove("hidden");
+            }
+            return;
+        }
+
+        if (submitBtn) submitBtn.disabled = true;
+
+        try {
+            const body = {
+                name,
+                phone,
+                password,
+                email: email || null,
+                login_id: loginId || null,
+            };
+
+            const created = await apiRequest("/parent/create", {
+                method: "POST",
+                body,
+            });
+
+            document.getElementById("addParentModal")?.classList.add("hidden");
+            showToast("success", "Parent Created", `Parent ${created.name} (${created.login_id}) successfully created.`);
+            loadParents();
+        } catch (error) {
+            if (errorEl) {
+                errorEl.textContent = error.message || "Failed to create parent account.";
+                errorEl.classList.remove("hidden");
+            } else {
+                showToast("error", "Failed to Add Parent", error.message);
+            }
+        } finally {
+            if (submitBtn) submitBtn.disabled = false;
+        }
+    }
+
+    function openLinkChildModal(parentId, parentName) {
+        selectedLinkParentId = parentId;
+        selectedLinkStudentId = null;
+
+        const parentIdInput = document.getElementById("linkParentId");
+        if (parentIdInput) parentIdInput.value = parentId;
+
+        const studentIdInput = document.getElementById("linkSelectedStudentId");
+        if (studentIdInput) studentIdInput.value = "";
+
+        const parentInfo = document.getElementById("linkChildParentInfo");
+        if (parentInfo) parentInfo.textContent = `Linking student for parent: ${parentName}`;
+
+        const searchInput = document.getElementById("linkStudentSearchInput");
+        if (searchInput) searchInput.value = "";
+
+        const errorEl = document.getElementById("linkChildError");
+        if (errorEl) {
+            errorEl.classList.add("hidden");
+            errorEl.textContent = "";
+        }
+
+        clearSelectedLinkStudent();
+        document.getElementById("linkChildModal")?.classList.remove("hidden");
+        searchStudentsForPicker("");
+    }
+
+    function onSearchLinkStudents(event) {
+        const query = event.target.value.trim();
+        clearTimeout(linkStudentSearchDebounceTimer);
+        linkStudentSearchDebounceTimer = setTimeout(() => {
+            searchStudentsForPicker(query);
+        }, 300);
+    }
+
+    async function searchStudentsForPicker(query) {
+        const container = document.getElementById("linkStudentResultsContainer");
+        if (!container) return;
+
+        container.innerHTML = `<div class="p-3 text-center text-xs text-slate-400">Searching students...</div>`;
+
+        try {
+            const endpoint = query ? `/admin/students?search=${encodeURIComponent(query)}` : "/admin/students";
+            const data = await apiRequest(endpoint);
+            const students = data.students || [];
+
+            if (students.length === 0) {
+                container.innerHTML = `<div class="p-3 text-center text-xs text-slate-400">No students found matching "${escapeHtml(query)}".</div>`;
+                return;
+            }
+
+            container.innerHTML = students.slice(0, 20).map(s => `
+                <div class="p-2.5 flex items-center justify-between hover:bg-slate-50 cursor-pointer transition" onclick="window.KambusAdmin.selectLinkStudent(${s.student_id}, ${jsArg(s.name)}, ${jsArg(s.roll_number)})">
+                    <div>
+                        <span class="font-bold text-navy text-xs">${escapeHtml(s.name)}</span>
+                        <span class="ml-2 font-mono font-bold text-brand uppercase text-[11px]">${escapeHtml(s.roll_number)}</span>
+                        <span class="ml-2 text-slate-400 text-[11px]">${escapeHtml(s.department || '')}</span>
+                    </div>
+                    <button type="button" class="px-2 py-0.5 bg-brand/10 hover:bg-brand hover:text-white text-brand rounded text-[11px] font-bold transition">
+                        Select
+                    </button>
+                </div>
+            `).join("");
+        } catch (error) {
+            container.innerHTML = `<div class="p-3 text-center text-xs text-red-500">Search error: ${escapeHtml(error.message)}</div>`;
+        }
+    }
+
+    function selectLinkStudent(studentId, name, rollNumber) {
+        selectedLinkStudentId = studentId;
+        const studentIdInput = document.getElementById("linkSelectedStudentId");
+        if (studentIdInput) studentIdInput.value = studentId;
+
+        const preview = document.getElementById("selectedStudentPreview");
+        const nameEl = document.getElementById("selectedStudentName");
+        const rollEl = document.getElementById("selectedStudentRoll");
+
+        if (nameEl) nameEl.textContent = name;
+        if (rollEl) rollEl.textContent = rollNumber;
+        if (preview) preview.classList.remove("hidden");
+
+        const errorEl = document.getElementById("linkChildError");
+        if (errorEl) errorEl.classList.add("hidden");
+    }
+
+    function clearSelectedLinkStudent() {
+        selectedLinkStudentId = null;
+        const studentIdInput = document.getElementById("linkSelectedStudentId");
+        if (studentIdInput) studentIdInput.value = "";
+        const preview = document.getElementById("selectedStudentPreview");
+        if (preview) preview.classList.add("hidden");
+    }
+
+    async function submitLinkChild(event) {
+        event.preventDefault();
+        const errorEl = document.getElementById("linkChildError");
+        const submitBtn = document.getElementById("btnSubmitLinkChild");
+
+        if (errorEl) {
+            errorEl.classList.add("hidden");
+            errorEl.textContent = "";
+        }
+
+        if (!selectedLinkParentId) {
+            if (errorEl) {
+                errorEl.textContent = "No parent selected.";
+                errorEl.classList.remove("hidden");
+            }
+            return;
+        }
+
+        if (!selectedLinkStudentId) {
+            if (errorEl) {
+                errorEl.textContent = "Please search and select a student to link.";
+                errorEl.classList.remove("hidden");
+            }
+            return;
+        }
+
+        const relationshipType = document.getElementById("linkRelationshipType")?.value || "Child";
+
+        if (submitBtn) submitBtn.disabled = true;
+
+        try {
+            await apiRequest("/parent/link-child", {
+                method: "POST",
+                body: {
+                    parent_id: parseInt(selectedLinkParentId),
+                    student_id: parseInt(selectedLinkStudentId),
+                    relationship_type: relationshipType,
+                },
+            });
+
+            document.getElementById("linkChildModal")?.classList.add("hidden");
+            showToast("success", "Child Linked", "Student linked to parent successfully.");
+
+            loadParents();
+        } catch (error) {
+            if (errorEl) {
+                errorEl.textContent = error.message || "Failed to link child.";
+                errorEl.classList.remove("hidden");
+            } else {
+                showToast("error", "Link Failed", error.message);
+            }
+        } finally {
+            if (submitBtn) submitBtn.disabled = false;
+        }
+    }
+
+    async function unlinkChild(parentId, studentId, childName, parentName) {
+        const confirmed = window.confirm(`Are you sure you want to unlink "${childName}" from parent "${parentName}"?`);
+        if (!confirmed) return;
+
+        try {
+            await apiRequest(`/parent/unlink-child?parent_id=${parentId}&student_id=${studentId}`, {
+                method: "DELETE",
+            });
+
+            showToast("info", "Unlinked", `Child "${childName}" was unlinked.`);
+            await loadParentChildrenList(parentId, parentName);
+            loadParents();
+        } catch (error) {
+            showToast("error", "Unlink Failed", error.message);
         }
     }
 
@@ -1812,10 +2236,14 @@
                 return "Skipped Scheduled Stop";
             case "rude_behavior":
                 return "Rude / Inappropriate Behavior";
+            case "harassment":
+                return "Harassment";
+            case "nuisance":
+                return "Nuisance / Misconduct";
             case "other":
                 return "Other Concern";
             default:
-                return escapeHtml(reason || "Complaint");
+                return escapeHtml((reason || "Complaint").replace(/_/g, " "));
         }
     }
 
@@ -1883,6 +2311,10 @@
                         <div>
                             <div class="flex items-center gap-2 flex-wrap">
                                 <span class="font-black text-sm text-slate-900">${formatComplaintReason(c.reason)}</span>
+                                ${c.target_student_id ? `
+                                    <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-800 border border-purple-200">Peer Report</span>
+                                    <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 capitalize">Audience: ${escapeHtml(c.audience || 'both')}</span>
+                                ` : ''}
                                 ${isCorroborated ? `
                                     <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-danger/10 text-danger border border-danger/20 flex items-center gap-1">
                                         <svg class="w-3.5 h-3.5 shrink-0 inline mr-1" aria-hidden="true"><use href="icons.svg#icon-alert"/></svg> CORROBORATED
@@ -1898,16 +2330,26 @@
                             </p>
                         </div>
 
-                        <!-- Driver Info Tag -->
-                        <div class="bg-slate-50 border border-slate-200 rounded p-2.5 flex items-center gap-3 shrink-0 self-start">
-                            <div>
-                                <p class="text-xs font-black text-slate-900">${escapeHtml(c.driver_name)}</p>
-                                <p class="text-[10px] font-mono text-slate-500">${escapeHtml(c.driver_code || '')} &bull; ${c.bus_number ? `Bus ${escapeHtml(c.bus_number)}` : 'Bus Unassigned'}</p>
+                        <!-- Target Info Tag -->
+                        ${c.target_student_id ? `
+                            <div class="bg-purple-50 border border-purple-200 rounded p-2.5 flex items-center gap-3 shrink-0 self-start">
+                                <div>
+                                    <span class="px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-purple-200 text-purple-900 uppercase">Target Student</span>
+                                    <p class="text-xs font-black text-slate-900 mt-0.5">${escapeHtml(c.target_student_name || 'Student #' + c.target_student_id)}</p>
+                                    <p class="text-[10px] font-mono text-slate-500">${escapeHtml(c.target_student_roll_number || '')}</p>
+                                </div>
                             </div>
-                            <span class="px-2 py-1 rounded-lg bg-warn/10 text-warn text-[10px] font-black" title="Driver total lifetime complaints">
-                                ${c.driver_total_complaints || 1} Total
-                            </span>
-                        </div>
+                        ` : `
+                            <div class="bg-slate-50 border border-slate-200 rounded p-2.5 flex items-center gap-3 shrink-0 self-start">
+                                <div>
+                                    <p class="text-xs font-black text-slate-900">${escapeHtml(c.driver_name || 'Driver')}</p>
+                                    <p class="text-[10px] font-mono text-slate-500">${escapeHtml(c.driver_code || '')} &bull; ${c.bus_number ? `Bus ${escapeHtml(c.bus_number)}` : 'Bus Unassigned'}</p>
+                                </div>
+                                <span class="px-2 py-1 rounded-lg bg-warn/10 text-warn text-[10px] font-black" title="Driver total lifetime complaints">
+                                    ${c.driver_total_complaints || 1} Total
+                                </span>
+                            </div>
+                        `}
                     </div>
 
                     <!-- Description -->
@@ -2034,10 +2476,21 @@
         }
 
         container.innerHTML = logs.map(l => {
+            const isPerm = l.request_type === "permanent";
+            const typeBadge = isPerm
+                ? '<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-purple-100 text-purple-700">PERMANENT</span>'
+                : '<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-sky-100 text-sky-700">TEMPORARY</span>';
+
             const statusBadge = l.status === "active"
                 ? '<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-ok/10 text-ok">ACTIVE</span>'
                 : l.status === "scheduled"
                 ? '<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-brand/10 text-brand">SCHEDULED</span>'
+                : l.status === "approved"
+                ? '<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-ok/10 text-ok">APPROVED</span>'
+                : l.status === "pending_admin_approval"
+                ? '<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-700">PENDING APPROVAL</span>'
+                : l.status === "rejected"
+                ? '<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-danger/10 text-danger">REJECTED</span>'
                 : l.status === "cancelled"
                 ? '<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-slate-100 text-slate-600">CANCELLED</span>'
                 : `<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-slate-100 text-slate-600">${escapeHtml(l.status.toUpperCase())}</span>`;
@@ -2046,9 +2499,17 @@
                 ? `<span class="text-brand font-semibold text-[11px]">~${l.match_distance_m != null ? Math.round(l.match_distance_m) + 'm off route' : 'Approximate'}</span>`
                 : '<span class="text-ok font-semibold text-[11px]">Exact Stop Match</span>';
 
+            const approvalActions = l.status === "pending_admin_approval"
+                ? `
+                    <button type="button" onclick="window.KambusAdmin.approveTemporaryStopRequest(${Number(l.request_id)})" class="px-2 py-1 bg-emerald-100 text-emerald-800 hover:bg-emerald-600 hover:text-white rounded text-[11px] font-bold mr-1 transition" title="Approve">Approve</button>
+                    <button type="button" onclick="window.KambusAdmin.rejectTemporaryStopRequest(${Number(l.request_id)})" class="px-2 py-1 bg-rose-100 text-rose-800 hover:bg-rose-600 hover:text-white rounded text-[11px] font-bold mr-1 transition" title="Reject">Reject</button>
+                  `
+                : '';
+
             return `
                 <tr class="border-b border-slate-100 hover:bg-slate-50/50">
                     <td class="px-4 py-3 font-bold text-slate-900">${escapeHtml(l.student_name)} <span class="text-slate-400 font-normal">(${escapeHtml(l.student_roll_number || '—')})</span></td>
+                    <td class="px-4 py-3">${typeBadge}</td>
                     <td class="px-4 py-3 text-slate-600">${escapeHtml(l.original_stop_name || '—')}</td>
                     <td class="px-4 py-3 font-bold text-navy">${escapeHtml(l.temporary_stop_name || '—')}</td>
                     <td class="px-4 py-3 font-bold text-slate-800">${escapeHtml(l.target_bus_number || 'Bus ' + (l.target_bus_id || '—'))}</td>
@@ -2056,13 +2517,34 @@
                     <td class="px-4 py-3">${matchDetail}</td>
                     <td class="px-4 py-3">${statusBadge}</td>
                     <td class="px-4 py-3 text-right">
-                        <button type="button" onclick="window.KambusAdmin.deleteTemporaryStopChange(${Number(l.request_id)})" class="p-1 text-slate-300 hover:text-danger transition" title="Delete this temporary stop change">
+                        ${approvalActions}
+                        <button type="button" onclick="window.KambusAdmin.deleteTemporaryStopChange(${Number(l.request_id)})" class="p-1 text-slate-300 hover:text-danger transition" title="Delete this stop change">
                             <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-trash"/></svg>
                         </button>
                     </td>
                 </tr>
             `;
         }).join("");
+    }
+
+    async function approveTemporaryStopRequest(requestId) {
+        try {
+            await apiRequest(`/admin/temporary-stop-requests/${requestId}/approve`, { method: "POST" });
+            showToast("success", "Approved", "Stop change request approved.");
+            loadTemporaryStopLogs();
+        } catch (e) {
+            showToast("error", "Approval Failed", e.message);
+        }
+    }
+
+    async function rejectTemporaryStopRequest(requestId) {
+        try {
+            await apiRequest(`/admin/temporary-stop-requests/${requestId}/reject`, { method: "POST" });
+            showToast("info", "Rejected", "Stop change request rejected.");
+            loadTemporaryStopLogs();
+        } catch (e) {
+            showToast("error", "Rejection Failed", e.message);
+        }
     }
 
     async function deleteTemporaryStopChange(requestId) {
@@ -2868,6 +3350,7 @@
                             <thead class="bg-slate-50 border-b border-slate-200/80 text-[11px] font-black text-slate-500 uppercase tracking-wider">
                                 <tr>
                                     <th class="p-3.5">Admin</th>
+                                    <th class="p-3.5">Campus</th>
                                     <th class="p-3.5">Admin ID (for sign-in)</th>
                                     <th class="p-3.5">Status</th>
                                     <th class="p-3.5">Created</th>
@@ -2878,8 +3361,11 @@
                                 ${cachedAdmins.map(a => `
                                     <tr class="hover:bg-slate-50/80 transition">
                                         <td class="p-3.5">
-                                            <span class="font-bold text-slate-900">${escapeHtml(a.name)}</span>
-                                            <p class="text-[11px] text-slate-400 font-mono">${escapeHtml(a.phone)}</p>
+                                             <span class="font-bold text-slate-900">${escapeHtml(a.name)}</span>
+                                             <p class="text-[11px] text-slate-400 font-mono">${escapeHtml(a.phone)}</p>
+                                        </td>
+                                        <td class="p-3.5">
+                                            <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">Campus ${escapeHtml(a.campus_id || '1')}</span>
                                         </td>
                                         <td class="p-3.5 font-mono font-bold text-brand">${escapeHtml(a.admin_id)}</td>
                                         <td class="p-3.5">
@@ -2912,13 +3398,15 @@
         const name = form.elements.name.value.trim();
         const phone = form.elements.phone.value.trim();
         const password = form.elements.password.value;
+        const campusIdVal = form.elements.campus_id ? form.elements.campus_id.value : null;
+        const campus_id = campusIdVal ? parseInt(campusIdVal, 10) : 1;
 
         try {
             const created = await apiRequest("/admin/create", {
                 method: "POST",
-                body: { name, phone, password }
+                body: { name, phone, password, campus_id }
             });
-            showToast("success", "Admin Created", `${created.name} can sign in on the Admin tab with Admin ID ${created.admin_id}.`);
+            showToast("success", "Admin Created", `${created.name} can sign in on the Admin tab with Admin ID ${created.admin_id} (Campus ${created.campus_id}).`);
             document.getElementById("addAdminModal")?.classList.add("hidden");
             form.reset();
             loadAdmins();
@@ -2926,6 +3414,7 @@
             showToast("error", "Failed to Add Admin", e.message);
         }
     }
+
 
     async function toggleAdminStatus(adminId) {
         const admin = cachedAdmins.find(a => a.admin_id === adminId);
@@ -2999,6 +3488,83 @@
         }, 10000);
     });
 
+    let cachedMessages = [];
+
+    async function loadMessages() {
+        const container = document.getElementById("messagesList");
+        if (!container) return;
+        container.innerHTML = `<div class="p-8 text-center text-xs text-slate-400">Loading messages...</div>`;
+
+        try {
+            const catFilter = document.getElementById("messageFilterCategory")?.value || "";
+            const statusFilter = document.getElementById("messageFilterStatus")?.value || "";
+
+            let queryParams = [];
+            if (catFilter) queryParams.push(`category=${encodeURIComponent(catFilter)}`);
+            if (statusFilter) queryParams.push(`status=${encodeURIComponent(statusFilter)}`);
+            const qs = queryParams.length ? `?${queryParams.join("&")}` : "";
+
+            const data = await apiRequest(`/admin/messages${qs}`);
+            cachedMessages = data.messages || [];
+
+            const statTotal = document.getElementById("messagesStatTotal");
+            const statUnread = document.getElementById("messagesStatUnread");
+            const statBusRelated = document.getElementById("messagesStatBusRelated");
+
+            if (statTotal) statTotal.textContent = cachedMessages.length;
+            if (statUnread) statUnread.textContent = cachedMessages.filter(m => m.status === "unread").length;
+            if (statBusRelated) statBusRelated.textContent = cachedMessages.filter(m => m.category === "bus-related").length;
+
+            if (cachedMessages.length === 0) {
+                container.innerHTML = `<div class="p-8 text-center text-xs text-slate-400 bg-white border border-slate-200/90 rounded">No student messages found.</div>`;
+                return;
+            }
+
+            container.innerHTML = cachedMessages.map(m => {
+                const isUnread = m.status === "unread";
+                const catBadge = m.category === "bus-related"
+                    ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-sky-100 text-sky-800 border border-sky-200">Bus-Related</span>`
+                    : `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">General</span>`;
+                const statusBadge = isUnread
+                    ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">Unread</span>`
+                    : `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">Read</span>`;
+
+                const dateStr = m.created_at ? new Date(m.created_at).toLocaleString() : "-";
+
+                return `
+                    <div class="bg-surface border ${isUnread ? 'border-amber-300 shadow-xs' : 'border-line'} rounded p-4 flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                        <div class="space-y-1.5 flex-1 min-w-0">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <span class="text-xs font-bold text-navy">${escapeHtml(m.student_name)}</span>
+                                <span class="text-[11px] text-ink-muted">(${escapeHtml(m.student_roll_number || 'No roll')})</span>
+                                ${catBadge}
+                                ${statusBadge}
+                                <span class="text-[10px] text-ink-muted ml-auto sm:ml-0">${escapeHtml(dateStr)}</span>
+                            </div>
+                            <p class="text-xs text-slate-800 whitespace-pre-wrap break-words leading-relaxed">${escapeHtml(m.message)}</p>
+                        </div>
+                        ${isUnread ? `
+                            <button type="button" onclick="window.KambusAdmin.markMessageRead(${m.id})" class="px-3 py-1.5 bg-brand hover:bg-brand/90 text-white text-xs font-semibold rounded shrink-0 self-start sm:self-center transition">
+                                Mark as Read
+                            </button>
+                        ` : ''}
+                    </div>
+                `;
+            }).join("");
+        } catch (e) {
+            container.innerHTML = `<div class="p-8 text-center text-xs text-red-500">Failed to load messages: ${escapeHtml(e.message)}</div>`;
+        }
+    }
+
+    async function markMessageRead(messageId) {
+        try {
+            await apiRequest(`/admin/messages/${messageId}/read`, { method: "PATCH" });
+            loadMessages();
+        } catch (e) {
+            alert(`Failed to update message: ${e.message}`);
+        }
+    }
+
     window.KambusAdmin = {
         showSection,
         toggleMobileSidebar,
@@ -3027,6 +3593,16 @@
         submitEditStudent,
         deleteStudent,
         submitAddStudent,
+        loadParents,
+        openAddParentModal,
+        submitAddParent,
+        openLinkChildModal,
+        onSearchLinkStudents,
+        selectLinkStudent,
+        clearSelectedLinkStudent,
+        submitLinkChild,
+        toggleParentChildren,
+        unlinkChild,
         loadStops,
         openAddStopModal,
         openEditStopModal,
@@ -3039,6 +3615,8 @@
         loadGeofenceLogs,
         loadTemporaryStopLogs,
         filterTempStopLogs,
+        approveTemporaryStopRequest,
+        rejectTemporaryStopRequest,
         deleteTemporaryStopChange,
         openAddAdminModal,
         submitAddAdmin,
@@ -3056,7 +3634,9 @@
         submitBroadcastAnnouncement,
         cancelAdminBusChange,
         acknowledgeAlert,
-        executeGlobalSearch
+        executeGlobalSearch,
+        loadMessages,
+        markMessageRead
     };
 
 })();
