@@ -38,19 +38,6 @@
 
         <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4" novalidate>
             <div>
-                <label for="campusSelect" class="block text-xs font-semibold mb-1.5 text-navy">Campus / Institution</label>
-                <div class="relative flex items-center">
-                    <span class="absolute left-3 text-ink-muted flex items-center pointer-events-none">
-                        <svg class="w-4 h-4" aria-hidden="true"><use href="icons.svg#icon-map-pin"/></svg>
-                    </span>
-                    <select id="campusSelect" onchange="handleCampusSelectionChange(this.value)"
-                            class="login-input w-full pl-9 pr-3 py-2 border border-line text-xs font-semibold text-navy bg-white focus:outline-none">
-                        <option value="">Loading campuses...</option>
-                    </select>
-                </div>
-            </div>
-
-            <div>
                 <label id="identityLabel" for="username" class="block text-xs font-semibold mb-1.5 text-navy">Driver Code, Admin ID, Phone or Email</label>
                 <div class="relative flex items-center">
                     <span class="absolute left-3 text-ink-muted flex items-center pointer-events-none">
@@ -85,21 +72,12 @@
                 <svg class="w-4 h-4" aria-hidden="true"><use href="icons.svg#icon-arrow-right"/></svg>
             </button>
         </form>
-      </section><p id="loginFooterCampus" class="login-footer">KITS Warangal &middot; KAMBUS</p>
+      </section><p class="login-footer">KITS Warangal &middot; KAMBUS</p>
     </main>
 
     <script>
         const API_BASE = "https://kambus-backend.onrender.com";
-        let activeCampuses = [];
-
-        function escapeHtml(str) {
-            if (!str) return "";
-            return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-        }
-
         document.addEventListener("DOMContentLoaded", () => {
-            loadCampuses();
-
             const isRemembered = localStorage.getItem("kambus_remember") === "true";
             const savedIdentifier = localStorage.getItem("kambus_saved_identifier");
             const rememberCheckbox = document.getElementById("rememberMe");
@@ -112,58 +90,6 @@
                 }
             }
         });
-
-        async function loadCampuses() {
-            const select = document.getElementById("campusSelect");
-            if (!select) return;
-
-            try {
-                const res = await fetch(`${API_BASE}/auth/campuses`);
-                if (res.ok) {
-                    const data = await res.json();
-                    if (Array.isArray(data) && data.length > 0) {
-                        activeCampuses = data;
-                        renderCampusOptions(data);
-                        return;
-                    }
-                }
-            } catch (err) {
-                console.warn("Could not load campuses from API, using default fallback", err);
-            }
-
-            // Fallback default if offline or initial load
-            activeCampuses = [{ id: 1, name: "KITS Warangal", slug: "kitsw", campus_type: "college" }];
-            renderCampusOptions(activeCampuses);
-        }
-
-        function renderCampusOptions(campuses) {
-            const select = document.getElementById("campusSelect");
-            if (!select) return;
-
-            const savedCampusId = localStorage.getItem("kambus_ops_campus_id");
-            select.innerHTML = campuses.map(c => {
-                const typeIcon = (c.campus_type === "school" || c.type === "school") ? "🏫 School" : "🎓 College";
-                return `<option value="${c.id}">${escapeHtml(c.name)} (${typeIcon})</option>`;
-            }).join("");
-
-            if (savedCampusId && campuses.some(c => String(c.id) === String(savedCampusId))) {
-                select.value = String(savedCampusId);
-            } else if (campuses.length > 0) {
-                select.value = String(campuses[0].id);
-            }
-            handleCampusSelectionChange(select.value);
-        }
-
-        function handleCampusSelectionChange(campusId) {
-            const parsedId = campusId ? parseInt(campusId, 10) : 1;
-            localStorage.setItem("kambus_ops_campus_id", String(parsedId));
-
-            const campus = activeCampuses.find(c => c.id === parsedId) || activeCampuses[0];
-            const footerCampus = document.getElementById("loginFooterCampus");
-            if (footerCampus && campus) {
-                footerCampus.textContent = `${campus.name} · KAMBUS`;
-            }
-        }
 
         function showLoginError(message) {
             const banner = document.getElementById("loginError");
@@ -196,9 +122,6 @@
             const rememberMe = document.getElementById("rememberMe")?.checked || false;
             const button = document.getElementById("btnSubmit");
 
-            const campusSelect = document.getElementById("campusSelect");
-            const selectedCampusId = campusSelect && campusSelect.value ? parseInt(campusSelect.value, 10) : 1;
-
             if (!identifier || !password) {
                 notifyUser("warn", "Required Fields", "Please enter your identifier and password.");
                 return;
@@ -219,8 +142,7 @@
                     },
                     body: JSON.stringify({
                         identifier: identifier,
-                        password: password,
-                        campus_id: selectedCampusId
+                        password: password
                     })
                 });
 
@@ -229,7 +151,7 @@
                     response = await fetch(`${API_BASE}/auth/login`, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ identifier: identifier, password: password, role: "driver", campus_id: selectedCampusId })
+                        body: JSON.stringify({ identifier: identifier, password: password, role: "driver" })
                     });
                     if (response.status === 401) {
                         const adminTry = await fetch(`${API_BASE}/auth/login`, {
@@ -270,7 +192,6 @@
                 localStorage.setItem("kambus_token", data.access_token);
                 localStorage.setItem("kambus_role", data.role);
                 localStorage.setItem("kambus_user_id", data.user_id);
-                localStorage.setItem("kambus_active_campus_id", String(selectedCampusId));
 
                 if (rememberMe) {
                     localStorage.setItem("kambus_remember", "true");

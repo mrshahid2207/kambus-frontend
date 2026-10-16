@@ -38,19 +38,6 @@
 
         <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4" novalidate>
             <div>
-                <label for="campusSelect" class="block text-xs font-semibold mb-1.5 text-navy">Campus / Institution</label>
-                <div class="relative flex items-center">
-                    <span class="absolute left-3 text-ink-muted flex items-center pointer-events-none">
-                        <svg class="w-4 h-4" aria-hidden="true"><use href="icons.svg#icon-map-pin"/></svg>
-                    </span>
-                    <select id="campusSelect" onchange="handleCampusSelectionChange(this.value)"
-                            class="login-input w-full pl-9 pr-3 py-2 border border-line text-xs font-semibold text-navy bg-white focus:outline-none">
-                        <option value="">Loading campuses...</option>
-                    </select>
-                </div>
-            </div>
-
-            <div>
                 <label id="identityLabel" for="username" class="block text-xs font-semibold mb-1.5 text-navy">Roll Number, Phone or ID</label>
                 <div class="relative flex items-center">
                     <span class="absolute left-3 text-ink-muted flex items-center pointer-events-none">
@@ -87,11 +74,8 @@
             <p id="signupLinkRow" class="text-center text-xs text-ink-muted mt-3">
                 New student? <button type="button" onclick="openSignupModal()" class="text-brand font-semibold hover:underline">Register here</button>
             </p>
-            <p id="schoolNoticeRow" class="hidden text-center text-[11px] text-ink-muted mt-3 bg-amber-50/70 border border-amber-200/80 rounded-lg p-2 text-amber-900">
-                🏫 School transport is managed via parent accounts. Contact your school transport office for enrollment.
-            </p>
         </form>
-      </section><p id="loginFooterCampus" class="login-footer">KITS Warangal &middot; KAMBUS</p>
+      </section><p class="login-footer">KITS Warangal &middot; KAMBUS</p>
     </main>
 
 
@@ -144,16 +128,8 @@
 
     <script>
         const API_BASE = "https://kambus-backend.onrender.com";
-        let activeCampuses = [];
-
-        function escapeHtml(str) {
-            if (!str) return "";
-            return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-        }
 
         document.addEventListener("DOMContentLoaded", () => {
-            loadCampuses();
-
             const isRemembered = localStorage.getItem("kambus_remember") === "true";
             const savedIdentifier = localStorage.getItem("kambus_saved_identifier");
             const rememberCheckbox = document.getElementById("rememberMe");
@@ -166,79 +142,6 @@
                 }
             }
         });
-
-        async function loadCampuses() {
-            const select = document.getElementById("campusSelect");
-            if (!select) return;
-
-            try {
-                const res = await fetch(`${API_BASE}/auth/campuses`);
-                if (res.ok) {
-                    const data = await res.json();
-                    if (Array.isArray(data) && data.length > 0) {
-                        activeCampuses = data;
-                        renderCampusOptions(data);
-                        return;
-                    }
-                }
-            } catch (err) {
-                console.warn("Could not load campuses from API, using default fallback", err);
-            }
-
-            // Fallback default if offline or initial load
-            activeCampuses = [{ id: 1, name: "KITS Warangal", slug: "kitsw", campus_type: "college" }];
-            renderCampusOptions(activeCampuses);
-        }
-
-        function renderCampusOptions(campuses) {
-            const select = document.getElementById("campusSelect");
-            if (!select) return;
-
-            const savedCampusId = localStorage.getItem("kambus_rider_campus_id");
-            select.innerHTML = campuses.map(c => {
-                const typeIcon = (c.campus_type === "school" || c.type === "school") ? "🏫 School" : "🎓 College";
-                return `<option value="${c.id}">${escapeHtml(c.name)} (${typeIcon})</option>`;
-            }).join("");
-
-            if (savedCampusId && campuses.some(c => String(c.id) === String(savedCampusId))) {
-                select.value = String(savedCampusId);
-            } else if (campuses.length > 0) {
-                select.value = String(campuses[0].id);
-            }
-            handleCampusSelectionChange(select.value);
-        }
-
-        function handleCampusSelectionChange(campusId) {
-            const parsedId = campusId ? parseInt(campusId, 10) : 1;
-            localStorage.setItem("kambus_rider_campus_id", String(parsedId));
-
-            const campus = activeCampuses.find(c => c.id === parsedId) || activeCampuses[0];
-            const isSchool = campus ? (campus.campus_type === "school" || campus.type === "school") : false;
-
-            const signupRow = document.getElementById("signupLinkRow");
-            const schoolNotice = document.getElementById("schoolNoticeRow");
-            const identityLabel = document.getElementById("identityLabel");
-            const usernameInput = document.getElementById("username");
-            const footerCampus = document.getElementById("loginFooterCampus");
-
-            if (isSchool) {
-                // School campus: HIDE student self-registration outright
-                if (signupRow) signupRow.classList.add("hidden");
-                if (schoolNotice) schoolNotice.classList.remove("hidden");
-                if (identityLabel) identityLabel.textContent = "Phone Number or Parent ID";
-                if (usernameInput) usernameInput.placeholder = "Enter registered phone or parent ID";
-            } else {
-                // College campus: SHOW student registration
-                if (signupRow) signupRow.classList.remove("hidden");
-                if (schoolNotice) schoolNotice.classList.add("hidden");
-                if (identityLabel) identityLabel.textContent = "Roll Number, Phone or ID";
-                if (usernameInput) usernameInput.placeholder = "Enter roll number, phone or ID";
-            }
-
-            if (footerCampus && campus) {
-                footerCampus.textContent = `${campus.name} · KAMBUS`;
-            }
-        }
 
         function showLoginError(message) {
             const banner = document.getElementById("loginError");
@@ -271,9 +174,6 @@
             const rememberMe = document.getElementById("rememberMe")?.checked || false;
             const button = document.getElementById("btnSubmit");
 
-            const campusSelect = document.getElementById("campusSelect");
-            const selectedCampusId = campusSelect && campusSelect.value ? parseInt(campusSelect.value, 10) : 1;
-
             if (!identifier || !password) {
                 notifyUser("warn", "Required Fields", "Please enter your identifier and password.");
                 return;
@@ -294,8 +194,7 @@
                     },
                     body: JSON.stringify({
                         identifier: identifier,
-                        password: password,
-                        campus_id: selectedCampusId
+                        password: password
                     })
                 });
 
@@ -304,13 +203,13 @@
                     response = await fetch(`${API_BASE}/auth/login`, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ identifier: identifier, password: password, role: "student", campus_id: selectedCampusId })
+                        body: JSON.stringify({ identifier: identifier, password: password, role: "student" })
                     });
                     if (response.status === 401) {
                         const parentTry = await fetch(`${API_BASE}/auth/login`, {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ identifier: identifier, password: password, role: "parent", campus_id: selectedCampusId })
+                            body: JSON.stringify({ identifier: identifier, password: password, role: "parent" })
                         });
                         if (parentTry.ok) {
                             response = parentTry;
@@ -345,7 +244,6 @@
                 localStorage.setItem("kambus_token", data.access_token);
                 localStorage.setItem("kambus_role", data.role);
                 localStorage.setItem("kambus_user_id", data.user_id);
-                localStorage.setItem("kambus_active_campus_id", String(selectedCampusId));
 
                 if (rememberMe) {
                     localStorage.setItem("kambus_remember", "true");
@@ -390,13 +288,6 @@
         }
 
         function openSignupModal() {
-            const campusSelect = document.getElementById("campusSelect");
-            const selectedCampusId = campusSelect && campusSelect.value ? parseInt(campusSelect.value, 10) : 1;
-            const campus = activeCampuses.find(c => c.id === selectedCampusId);
-            if (campus && (campus.campus_type === "school" || campus.type === "school")) {
-                notifyUser("warn", "Registration Restricted", "Student self-registration is disabled for school campuses. Contact your school transport office.");
-                return;
-            }
             document.getElementById("signupModal")?.classList.remove("hidden");
         }
 
@@ -417,9 +308,6 @@
             const phone = document.getElementById("regPhone").value.trim();
             const password = document.getElementById("regPassword").value;
 
-            const campusSelect = document.getElementById("campusSelect");
-            const selectedCampusId = campusSelect && campusSelect.value ? parseInt(campusSelect.value, 10) : 1;
-
             if (!gender) {
                 msg.className = "text-xs p-2 rounded bg-rose-50 text-rose-700 block";
                 msg.textContent = "Please select your gender.";
@@ -434,15 +322,7 @@
                 const res = await fetch(`${API_BASE}/auth/student/signup`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        name,
-                        roll_number: rollNumber,
-                        gender,
-                        email,
-                        phone,
-                        password,
-                        campus_id: selectedCampusId
-                    })
+                    body: JSON.stringify({ name, roll_number: rollNumber, gender, email, phone, password })
                 });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.detail || "Registration failed");
