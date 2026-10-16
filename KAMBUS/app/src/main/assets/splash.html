@@ -44,6 +44,10 @@
                         window.location.replace("admin.html");
                         return;
                     }
+                    if (role === "parent") {
+                        window.location.replace("parent.html");
+                        return;
+                    }
                 }
                 setTimeout(function () {
                     var el = document.getElementById("splashContent");

@@ -168,31 +168,56 @@
             </div>
         </div>
 
-        <div class="flex items-center gap-2">
+        <!-- Super-Admin Campus Context Switcher (Desktop: >= lg) -->
+        <div id="superAdminCampusSelectorContainer" class="hidden lg:flex items-center gap-2 px-2.5 py-1 bg-surface border border-line rounded-lg shadow-2xs max-w-xs xl:max-w-md shrink min-w-0">
+            <div class="flex items-center gap-1.5 text-xs text-brand font-semibold shrink-0">
+                <svg class="w-4 h-4 text-brand shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M9 9h1M9 13h1M9 17h1M14 9h1M14 13h1M14 17h1"/></svg>
+                <span class="hidden md:inline font-bold text-navy">Campus:</span>
+            </div>
+            <select id="superAdminCampusSelect" onchange="window.KambusAdmin.handleCampusContextChange(this.value)" class="flex-1 min-w-0 max-w-[170px] xl:max-w-[220px] text-xs font-semibold text-navy bg-white border border-line rounded px-2.5 py-1 focus:outline-none focus:ring-1 focus:ring-brand cursor-pointer truncate">
+                <option value="">-- Select Campus --</option>
+            </select>
+            <span id="superAdminActiveCampusBadge" class="hidden xl:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs shrink-0">
+                <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>No Campus Selected
+            </span>
+        </div>
+
+        <div class="flex items-center gap-2 shrink-0 ml-2">
             <!-- Global Search Quick Trigger -->
-            <button type="button" onclick="window.KambusAdmin.showSection('search')" class="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-bg hover:bg-slate-200/80 rounded text-xs font-semibold text-ink-muted transition">
+            <button type="button" onclick="window.KambusAdmin.showSection('search')" class="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-bg hover:bg-slate-200/80 rounded text-xs font-semibold text-ink-muted transition shrink-0">
                 <svg class="w-4 h-4 shrink-0 text-ink-muted" aria-hidden="true"><use href="icons.svg#icon-search"/></svg>
                 <span>Search...</span>
             </button>
 
             <!-- Notifications Bell -->
-            <button id="notificationBell" type="button" class="relative w-9 h-9 rounded bg-bg hover:bg-bg text-ink-muted border border-line flex items-center justify-center transition" aria-label="Notifications">
+            <button id="notificationBell" type="button" class="relative w-9 h-9 rounded bg-bg hover:bg-bg text-ink-muted border border-line flex items-center justify-center transition shrink-0" aria-label="Notifications">
                 <svg class="w-4 h-4 shrink-0 text-sm" aria-hidden="true"><use href="icons.svg#icon-bell"/></svg>
                 <span id="notificationBadge" class="hidden absolute -top-1 -right-1 min-w-[17px] h-[17px] px-1 rounded-full bg-danger text-white text-[9px] font-semibold flex items-center justify-center">0</span>
             </button>
 
             <!-- Refresh Button -->
-            <button type="button" onclick="window.location.reload()" class="w-9 h-9 sm:w-auto sm:px-3 sm:py-1.5 bg-ok hover:opacity-90 text-white font-semibold text-xs rounded border border-line flex items-center justify-center gap-1.5 transition" title="Refresh Dashboard">
+            <button type="button" onclick="window.location.reload()" class="w-9 h-9 sm:w-auto sm:px-3 sm:py-1.5 bg-ok hover:opacity-90 text-white font-semibold text-xs rounded border border-line flex items-center justify-center gap-1.5 transition shrink-0" title="Refresh Dashboard">
                 <svg class="w-4 h-4 shrink-0 text-xs" aria-hidden="true"><use href="icons.svg#icon-refresh"/></svg>
                 <span class="hidden sm:inline">Refresh</span>
             </button>
 
             <!-- Logout -->
-            <a href="index.html" onclick="window.KambusAdmin.handleAdminLogout(event)" class="w-9 h-9 rounded text-ink-muted hover:text-danger flex items-center justify-center transition" aria-label="Logout" title="Logout">
+            <a href="index.html" onclick="window.KambusAdmin.handleAdminLogout(event)" class="w-9 h-9 rounded bg-bg hover:bg-danger/10 text-ink-muted hover:text-danger flex items-center justify-center transition border border-line shrink-0" aria-label="Logout" title="Logout">
                 <svg class="w-4 h-4 shrink-0 text-sm" aria-hidden="true"><use href="icons.svg#icon-logout"/></svg>
             </a>
         </div>
     </header>
+
+    <!-- Super-Admin Mobile Campus Sub-Bar (< lg) -->
+    <div id="superAdminMobileCampusBar" class="hidden lg:hidden bg-surface border-b border-line px-4 py-2 items-center justify-between gap-2 shadow-2xs">
+        <div class="flex items-center gap-1.5 text-xs text-brand font-semibold shrink-0">
+            <svg class="w-4 h-4 text-brand shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M9 9h1M9 13h1M9 17h1M14 9h1M14 13h1M14 17h1"/></svg>
+            <span class="font-bold text-navy">Campus:</span>
+        </div>
+        <select id="superAdminMobileCampusSelect" onchange="window.KambusAdmin.handleCampusContextChange(this.value)" class="flex-1 min-w-0 text-xs font-semibold text-navy bg-white border border-line rounded px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand cursor-pointer truncate">
+            <option value="">-- Select Campus --</option>
+        </select>
+    </div>
 
     <!-- SIDEBAR OVERLAY FOR MOBILE -->
     <div id="sidebarOverlay" onclick="window.KambusAdmin.closeMobileSidebar()" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-90 hidden lg:hidden"></div>
@@ -226,8 +251,10 @@
                 <button type="button" data-section="students" onclick="window.KambusAdmin.showSection('students')" class="admin-nav-btn">
                     <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-user-graduate"/></svg> <span>Students</span>
                 </button>
-                <button type="button" data-section="parents" onclick="window.KambusAdmin.showSection('parents')" class="admin-nav-btn">
-                    <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-users"/></svg> <span>Parents</span>
+                <button type="button" id="navBtnParents" data-section="parents" onclick="window.KambusAdmin.showSection('parents')" class="admin-nav-btn">
+                    <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-users"/></svg>
+                    <span>Parents</span>
+                    <span class="text-[9px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 ml-auto font-bold uppercase tracking-wider">School</span>
                 </button>
                 <button type="button" data-section="routes" onclick="window.KambusAdmin.showSection('routes')" class="admin-nav-btn">
                     <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-route"/></svg> <span>Routes</span>
@@ -258,6 +285,16 @@
                     <svg class="w-4 h-4 shrink-0 text-danger" aria-hidden="true"><use href="icons.svg#icon-alert"/></svg> <span>Alert Center</span>
                 </button>
 
+                <div id="superAdminNavGroup" class="hidden">
+                    <p class="text-[10px] font-semibold tracking-wider uppercase text-ink-muted px-3 mt-4 mb-2">Super Admin</p>
+                    <button type="button" data-section="campuses" onclick="window.KambusAdmin.showSection('campuses')" class="admin-nav-btn">
+                        <svg class="w-4 h-4 shrink-0 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M9 9h1M9 13h1M9 17h1M14 9h1M14 13h1M14 17h1"/></svg> <span>Campuses</span>
+                    </button>
+                    <button type="button" data-section="admins" onclick="window.KambusAdmin.showSection('admins')" class="admin-nav-btn">
+                        <svg class="w-4 h-4 shrink-0 text-brand" aria-hidden="true"><use href="icons.svg#icon-user-shield"/></svg> <span>Admin Accounts</span>
+                    </button>
+                </div>
+
                 <p class="text-[10px] font-semibold tracking-wider uppercase text-ink-muted px-3 mt-4 mb-2">System</p>
                 <button type="button" data-section="search" onclick="window.KambusAdmin.showSection('search')" class="admin-nav-btn">
                     <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-search"/></svg> <span>Global Search</span>
@@ -280,9 +317,12 @@
 
             <!-- SECTION 1:  DASHBOARD -->
             <section id="section-dashboard" class="admin-section active space-y-6">
-                <div>
-                    <h2 class="text-xl font-semibold text-navy tracking-tight">System Overview</h2>
-                    <p class="text-xs text-ink-muted">Real-time status of campus fleet, routes, and active trips.</p>
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div>
+                        <h2 class="text-xl font-semibold text-navy tracking-tight">System Overview</h2>
+                        <p class="text-xs text-ink-muted">Real-time status of campus fleet, routes, and active trips.</p>
+                    </div>
+                    <div id="dashboardCampusContextBanner" class="hidden"></div>
                 </div>
 
                 <!-- KPI Cards Grid -->
@@ -908,12 +948,33 @@
                 </div>
             </section>
 
-            <!-- SECTION 9: ADMIN ACCOUNTS (super-admin only) -->
+            <!-- SECTION 9a: CAMPUS MANAGEMENT (super-admin only) -->
+            <section id="section-campuses" class="admin-section space-y-5">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                        <h2 class="text-xl font-semibold text-navy tracking-tight">Campus Management</h2>
+                        <p class="text-xs text-ink-muted">Super Admin control center: multi-campus provisioning, plan tiers, and operational status.</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="window.KambusAdmin.loadCampuses()" class="px-3.5 py-2 bg-bg hover:bg-slate-200 text-navy text-xs font-semibold rounded border border-line flex items-center gap-1.5 transition">
+                            <svg class="w-3.5 h-3.5 shrink-0" aria-hidden="true"><use href="icons.svg#icon-refresh"/></svg> <span>Refresh</span>
+                        </button>
+                        <button type="button" onclick="window.KambusAdmin.openCreateCampusModal()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded border border-line flex items-center gap-2 shadow-xs transition">
+                            <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-plus"/></svg> <span>Create Campus</span>
+                        </button>
+                    </div>
+                </div>
+                <div id="campusesList">
+                    <div class="p-8 text-center text-xs text-ink-muted">Loading campuses...</div>
+                </div>
+            </section>
+
+            <!-- SECTION 9b: ADMIN ACCOUNTS (super-admin only) -->
             <section id="section-admins" class="admin-section space-y-5">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
                         <h2 class="text-xl font-semibold text-navy tracking-tight">Admin Accounts</h2>
-                        <p class="text-xs text-ink-muted">Create admins, reset their passwords, or disable access. Admins sign in on the Admin tab with their Admin ID.</p>
+                        <p class="text-xs text-ink-muted">Create admins, reset passwords, allot to campuses, or toggle access. Admins sign in on the Admin tab with their Admin ID.</p>
                     </div>
                     <button type="button" onclick="window.KambusAdmin.openAddAdminModal()" class="px-4 py-2 bg-brand hover:bg-brandDark text-white text-xs font-semibold rounded border border-line flex items-center gap-2 self-start sm:self-auto">
                         <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-user-shield"/></svg> <span>Add Admin</span>
@@ -1333,6 +1394,99 @@
         </div>
     </div>
 
+    <!-- CREATE CAMPUS MODAL (super-admin) -->
+    <div id="createCampusModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-surface rounded-xl max-w-md w-full p-6 border border-line border border-slate-100 shadow-xl">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M9 9h1M9 13h1M9 17h1M14 9h1M14 13h1M14 17h1"/></svg>
+                    </div>
+                    <h3 class="text-base font-semibold text-navy">Provision New Campus</h3>
+                </div>
+                <button type="button" onclick="document.getElementById('createCampusModal').classList.add('hidden')" class="text-ink-muted hover:text-ink">
+                    <svg class="w-4 h-4 shrink-0 text-lg" aria-hidden="true"><use href="icons.svg#icon-xmark"/></svg>
+                </button>
+            </div>
+            <form onsubmit="window.KambusAdmin.submitCreateCampus(event)" class="space-y-3.5 text-xs">
+                <div id="createCampusError" class="hidden p-2.5 bg-danger/10 border border-danger/20 rounded text-danger text-xs font-semibold"></div>
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Campus Name *</label>
+                    <input type="text" name="name" id="newCampusName" placeholder="e.g. KITS Singapur Branch" class="w-full p-2.5 border border-line rounded font-semibold" required>
+                </div>
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Campus Slug / Code *</label>
+                    <input type="text" name="slug" id="newCampusSlug" placeholder="e.g. kits-singapur" class="w-full p-2.5 border border-line rounded font-mono lowercase" required>
+                    <p class="text-[11px] text-ink-muted mt-1">Unique alphanumeric identifier (no spaces).</p>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold text-navy mb-1">Institution Type *</label>
+                        <select name="campus_type" id="newCampusType" onchange="window.KambusAdmin.handleNewCampusTypeChange(this.value)" class="w-full p-2.5 border border-line rounded bg-white font-semibold">
+                            <option value="college">College / University</option>
+                            <option value="school">School / K-12</option>
+                        </select>
+                        <p id="newCampusTypeHelp" class="text-[10px] text-ink-muted mt-1">Student-driven: students manage passes, self-register, no parent portal.</p>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-navy mb-1">Plan Tier</label>
+                        <select name="plan_tier" id="newCampusPlan" class="w-full p-2.5 border border-line rounded bg-white font-semibold">
+                            <option value="premium">Premium</option>
+                            <option value="basic">Basic</option>
+                            <option value="top">Top</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="pt-3 flex gap-2">
+                    <button type="button" onclick="document.getElementById('createCampusModal').classList.add('hidden')" class="flex-1 py-2.5 bg-bg hover:bg-slate-200 text-navy font-semibold rounded">Cancel</button>
+                    <button type="submit" id="btnSubmitCreateCampus" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded shadow">Create Campus</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ALLOT ADMIN CAMPUS MODAL (super-admin) -->
+    <div id="allotAdminCampusModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-surface rounded-xl max-w-md w-full p-6 border border-line border border-slate-100 shadow-xl">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-bold">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    </div>
+                    <h3 class="text-base font-semibold text-navy">Allot Admin to Campus</h3>
+                </div>
+                <button type="button" onclick="document.getElementById('allotAdminCampusModal').classList.add('hidden')" class="text-ink-muted hover:text-ink">
+                    <svg class="w-4 h-4 shrink-0 text-lg" aria-hidden="true"><use href="icons.svg#icon-xmark"/></svg>
+                </button>
+            </div>
+            <form onsubmit="window.KambusAdmin.submitAllotAdminCampus(event)" class="space-y-3.5 text-xs">
+                <input type="hidden" id="allotTargetAdminId">
+                <div id="allotAdminError" class="hidden p-2.5 bg-danger/10 border border-danger/20 rounded text-danger text-xs font-semibold"></div>
+
+                <div class="p-3 bg-slate-50 border border-slate-200/80 rounded-lg">
+                    <span class="text-[10px] text-slate-400 font-bold uppercase">Admin Details</span>
+                    <p id="allotAdminNameDisplay" class="font-bold text-slate-800 text-sm mt-0.5">--</p>
+                    <p id="allotAdminPhoneDisplay" class="font-mono text-slate-500 text-[11px]">--</p>
+                    <p id="allotAdminCurrentCampusDisplay" class="text-brand font-semibold text-[11px] mt-1">Current: --</p>
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Select Target Campus *</label>
+                    <select id="allotCampusSelect" class="w-full p-2.5 border border-line rounded bg-white font-semibold" required>
+                        <option value="">Loading campuses...</option>
+                    </select>
+                    <p class="text-[11px] text-ink-muted mt-1">The administrator will be immediately scoped to the selected campus.</p>
+                </div>
+
+                <div class="pt-3 flex gap-2">
+                    <button type="button" onclick="document.getElementById('allotAdminCampusModal').classList.add('hidden')" class="flex-1 py-2.5 bg-bg hover:bg-slate-200 text-navy font-semibold rounded">Cancel</button>
+                    <button type="submit" id="btnSubmitAllotAdmin" class="flex-1 py-2.5 bg-brand hover:bg-brandDark text-white font-semibold rounded shadow">Save Allotment</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
     <!-- ASSIGN STUDENT BUS/STOP MODAL -->
     <div id="assignStudentModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
         <div class="bg-surface rounded max-w-sm w-full p-5 border border-line border border-slate-100">
@@ -1585,6 +1739,13 @@
             </div>
             <form onsubmit="window.KambusAdmin.submitAddParent(event)" class="space-y-3 text-xs">
                 <div id="addParentError" class="hidden p-2.5 bg-danger/10 border border-danger/20 rounded text-danger text-xs font-semibold"></div>
+                <div id="addParentCampusRow" class="hidden">
+                    <label class="block font-semibold text-navy mb-1">Campus *</label>
+                    <select id="addParentCampusSelect" class="w-full p-2.5 border border-line rounded font-semibold bg-white cursor-pointer">
+                        <option value="">-- Select Campus --</option>
+                    </select>
+                    <p class="text-[11px] text-ink-muted mt-1">Super-admin: select which campus this parent account belongs to.</p>
+                </div>
                 <div>
                     <label class="block font-semibold text-navy mb-1">Full Name *</label>
                     <input type="text" name="name" id="addParentName" placeholder="e.g. Meera Sharma" class="w-full p-2.5 border border-line rounded font-semibold" required>

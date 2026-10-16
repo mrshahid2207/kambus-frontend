@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>KAMBUS Rider</title>
+    <meta name="theme-color" content="#173541">
+    <meta name="description" content="KAMBUS Rider, live bus tracking for KITSW.">
+    <link rel="icon" href="favicon.svg?v=2" type="image/svg+xml">
+    <link rel="icon" href="favicon.ico?v=2" sizes="48x48">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2">
+    <link rel="manifest" href="site.webmanifest">
+    <link rel="stylesheet" href="kambus.css">
+    <style>
+        .splash-fade {
+            transition: opacity 200ms ease;
+        }
+        .splash-fade.fade-out {
+            opacity: 0;
+        }
+    </style>
+</head>
+<body class="bg-navy w-full h-full min-h-screen flex flex-col items-center justify-center p-6 select-none overflow-hidden">
+<main id="splashContent" class="splash-fade flex flex-col items-center justify-center">
+    <img src="brand/wordmark-white.svg" alt="KAMBUS" class="h-10">
+</main>
+<script>
+    (function () {
+        "use strict";
+        function route() {
+            var token = localStorage.getItem("kambus_token") || localStorage.getItem("token");
+            var role = localStorage.getItem("kambus_role") || localStorage.getItem("role");
+            if (token && role === "student") {
+                window.location.replace("student.html");
+                return;
+            }
+            if (token && role === "parent") {
+                window.location.replace("parent.html");
+                return;
+            }
+            setTimeout(function () {
+                var el = document.getElementById("splashContent");
+                if (el) el.classList.add("fade-out");
+                setTimeout(function () {
+                    window.location.replace("index.html");
+                }, 200);
+            }, 800);
+        }
+        if (document.readyState === "complete" || document.readyState === "interactive") {
+            route();
+        } else {
+            document.addEventListener("DOMContentLoaded", route);
+        }
+    })();
+</script>
+</body>
+</html>

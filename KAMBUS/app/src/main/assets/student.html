@@ -452,6 +452,11 @@
             color: #0f172a;
         }
         .kx-sheet--wide { max-width: 440px; }
+        .kx-sheet--danger {
+            --grad-a: #ef4444; --grad-b: #b91c1c; --on-accent: #ffffff;
+            --accent: #dc2626; --accent-deep: #991b1b;
+            --accent-soft: #fef2f2; --accent-line: #fecaca; --accent-ink: #dc2626;
+        }
         .kx-sheet--rose {
             --grad-a: #f43f5e; --grad-b: #e11d48; --on-accent: #ffffff;
             --accent: #f43f5e; --accent-deep: #be123c;
@@ -943,6 +948,128 @@
         #driverRow { box-shadow: 0 7px 18px rgba(23,53,65,.05); }
         #actionGrid .action-btn { box-shadow: 0 5px 13px rgba(23,53,65,.045); transition: transform .16s ease, box-shadow .16s ease; }
         #actionGrid .action-btn:active { transform: scale(.98); }
+
+        /* ========================================================= */
+        /* REPORT ISSUE MODAL - DANGER THEME (RED)                   */
+        /* ========================================================= */
+        #driverComplaintModal .kx-head {
+            background: linear-gradient(180deg, #FEF2F2 0%, #ffffff 100%) !important;
+            border-bottom: 1px solid #fee2e2;
+        }
+
+        #driverComplaintModal .kx-head-icon {
+            background: #FEF2F2 !important;
+            border: 1.5px solid #FECACA !important;
+            color: #DC2626 !important;
+            box-shadow: 0 2px 8px rgba(220, 38, 38, 0.08);
+        }
+
+        #driverComplaintModal .kx-head-icon svg {
+            color: #DC2626 !important;
+            stroke: #DC2626 !important;
+        }
+
+        /* Segmented control toggle */
+        #driverComplaintModal .kx-segmented-control {
+            background: #F3F4F6;
+            border-radius: 14px;
+            padding: 4px;
+            display: flex;
+            gap: 4px;
+            width: 100%;
+        }
+
+        #driverComplaintModal .kx-segmented-btn {
+            flex: 1 1 0;
+            min-width: 0;
+            padding: 8px 10px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            font-family: inherit;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            border: none;
+            cursor: pointer;
+            text-align: center;
+            background: transparent;
+            color: #6B7280;
+            transition: all 150ms ease-in-out;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        #driverComplaintModal .kx-segmented-btn svg {
+            width: 16px;
+            height: 16px;
+            flex-shrink: 0;
+            transition: stroke 150ms ease-in-out;
+        }
+
+        #driverComplaintModal .kx-segmented-btn.active,
+        #driverComplaintModal .kx-segmented-btn[aria-selected="true"] {
+            background: #DC2626 !important;
+            color: #ffffff !important;
+            font-weight: 700 !important;
+            border-radius: 10px !important;
+            box-shadow: 0 2px 6px rgba(220, 38, 38, 0.25) !important;
+        }
+
+        #driverComplaintModal .kx-segmented-btn.active svg,
+        #driverComplaintModal .kx-segmented-btn[aria-selected="true"] svg {
+            stroke: #ffffff !important;
+        }
+
+        #driverComplaintModal .kx-segmented-btn:not(.active):hover {
+            color: #111827;
+        }
+
+        /* Form fields focus in danger red */
+        #driverComplaintModal select,
+        #driverComplaintModal textarea,
+        #driverComplaintModal input {
+            border: 1.5px solid #E2E8F0;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        #driverComplaintModal select:focus,
+        #driverComplaintModal textarea:focus,
+        #driverComplaintModal input:focus {
+            outline: none !important;
+            border-color: #DC2626 !important;
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15) !important;
+        }
+
+        /* Submit buttons in danger red gradient */
+        #driverComplaintModal #studentComplaintSubmitBtn,
+        #driverComplaintModal #driverComplaintOtherSubmitBtn {
+            background: linear-gradient(180deg, #EF4444 0%, #B91C1C 100%) !important;
+            color: #ffffff !important;
+            font-weight: 800 !important;
+            border: none !important;
+            border-radius: 14px;
+            box-shadow: 0 8px 20px rgba(220, 38, 38, 0.30) !important;
+            transition: transform 0.1s ease, filter 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        #driverComplaintModal #studentComplaintSubmitBtn:active:not(:disabled),
+        #driverComplaintModal #driverComplaintOtherSubmitBtn:active:not(:disabled) {
+            transform: scale(0.98);
+            background: linear-gradient(180deg, #DC2626 0%, #991B1B 100%) !important;
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25) !important;
+        }
+
+        /* Neutral Cancel buttons */
+        #driverComplaintModal .kx-btn--ghost {
+            background: #f8fafc !important;
+            color: #334155 !important;
+            border: 1.5px solid #e2e8f0 !important;
+        }
+        #driverComplaintModal .kx-btn--ghost:hover:not(:disabled) {
+            background: #f1f5f9 !important;
+        }
     </style>
 </head>
 <body class="bg-bg text-navy min-h-screen flex flex-col font-sans">
@@ -1414,59 +1541,69 @@
 
 <!-- DRIVER COMPLAINT MODAL -->
 <div id="driverComplaintModal" class="hidden kambus-modal-backdrop" style="z-index: 2100;">
-    <div class="kx-sheet">
-        <div class="kx-head">
-            <div class="kx-head-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+    <div class="kx-sheet kx-sheet--danger">
+        <div class="kx-head" style="background: linear-gradient(180deg, #FEF2F2 0%, #ffffff 100%) !important; border-bottom: 1px solid #fee2e2;">
+            <div class="kx-head-icon" style="background: #FEF2F2 !important; border: 1.5px solid #FECACA !important; color: #DC2626 !important; box-shadow: 0 2px 8px rgba(220, 38, 38, 0.08);">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 22px; height: 22px; color: #DC2626;" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </div>
             <div class="kx-head-text">
                 <h3 id="complaintModalTitle" class="kx-title">Report issue</h3>
-                <p id="complaintModalSub" class="kx-sub">Tell us what went wrong</p>
+                <p id="complaintModalSub" class="kx-sub">Reporting your driver</p>
             </div>
             <button type="button" onclick="closeDriverComplaintModal()" class="kx-close" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
         </div>
 
         <div class="kx-body">
-            <!-- Target Selector: Driver vs Student -->
-            <div class="flex items-center p-1 bg-slate-100 rounded-xl mb-3 text-xs font-bold">
-                <button type="button" id="complaintTargetDriverBtn" onclick="setComplaintTargetType('driver')" class="flex-1 py-1.5 rounded-lg bg-white shadow-xs text-slate-900 text-center transition">
+            <!-- Target Selector: Driver vs Student (Segmented Control) -->
+            <div class="kx-segmented-control mb-3" role="tablist" aria-label="Report target" style="background: #F3F4F6; border-radius: 14px; padding: 4px; display: flex; gap: 4px; width: 100%; box-sizing: border-box;">
+                <button type="button" id="complaintTargetDriverBtn" onclick="setComplaintTargetType('driver')" role="tab" aria-selected="true" aria-controls="driverComplaintOptionsView" class="kx-segmented-btn active" style="flex: 1 1 0; min-width: 0; padding: 9px 8px; border-radius: 10px; font-size: 13px; font-weight: 700; border: none; cursor: pointer; text-align: center; background: #DC2626; color: #ffffff; box-shadow: 0 2px 6px rgba(220, 38, 38, 0.25); transition: all 150ms ease-in-out;">
                     Driver
                 </button>
-                <button type="button" id="complaintTargetStudentBtn" onclick="setComplaintTargetType('student')" class="flex-1 py-1.5 rounded-lg text-slate-500 hover:text-slate-900 text-center transition">
+                <button type="button" id="complaintTargetStudentBtn" onclick="setComplaintTargetType('student')" role="tab" aria-selected="false" aria-controls="studentComplaintFormView" class="kx-segmented-btn" style="flex: 1 1 0; min-width: 0; padding: 9px 8px; border-radius: 10px; font-size: 13px; font-weight: 600; border: none; cursor: pointer; text-align: center; background: transparent; color: #6B7280; box-shadow: none; transition: all 150ms ease-in-out;">
                     Student (Peer)
                 </button>
             </div>
 
             <!-- STUDENT COMPLAINT FORM VIEW -->
-            <div id="studentComplaintFormView" class="hidden kx-stack">
-                <label for="complaintTargetStudentSelect" class="kx-label">Target Student (Peer on Bus)</label>
-                <select id="complaintTargetStudentSelect" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-800 bg-white">
-                    <option value="">-- Select student on your bus --</option>
-                </select>
+            <div id="studentComplaintFormView" class="hidden kx-stack" role="tabpanel" aria-labelledby="complaintTargetStudentBtn">
+                <div>
+                    <label for="complaintTargetStudentSelect" class="kx-label">Target Student (Peer on Bus)</label>
+                    <select id="complaintTargetStudentSelect" class="w-full px-3 py-2.5 border border-slate-300 rounded-lg text-xs font-semibold text-slate-800 bg-white">
+                        <option value="">-- Select student on your bus --</option>
+                    </select>
+                </div>
 
-                <label for="studentComplaintReasonSelect" class="kx-label">Reason</label>
-                <select id="studentComplaintReasonSelect" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-800 bg-white">
-                    <option value="harassment">Harassment</option>
-                    <option value="nuisance">Nuisance</option>
-                    <option value="other">Other Issue</option>
-                </select>
+                <div>
+                    <label for="studentComplaintReasonSelect" class="kx-label">Reason</label>
+                    <select id="studentComplaintReasonSelect" class="w-full px-3 py-2.5 border border-slate-300 rounded-lg text-xs font-semibold text-slate-800 bg-white">
+                        <option value="harassment">Harassment</option>
+                        <option value="nuisance">Nuisance</option>
+                        <option value="other">Other Issue</option>
+                    </select>
+                </div>
 
-                <label for="studentComplaintAudienceSelect" class="kx-label">Poll Audience (Who verifies this?)</label>
-                <select id="studentComplaintAudienceSelect" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-800 bg-white">
-                    <option value="both">Both (All bus students)</option>
-                    <option value="girls">Girls Only</option>
-                    <option value="boys">Boys Only</option>
-                </select>
+                <div>
+                    <label for="studentComplaintAudienceSelect" class="kx-label">Poll Audience (Who verifies this?)</label>
+                    <select id="studentComplaintAudienceSelect" class="w-full px-3 py-2.5 border border-slate-300 rounded-lg text-xs font-semibold text-slate-800 bg-white">
+                        <option value="both">Both (All bus students)</option>
+                        <option value="girls">Girls Only</option>
+                        <option value="boys">Boys Only</option>
+                    </select>
+                </div>
 
-                <label for="studentComplaintDescText" class="kx-label">Description *</label>
-                <textarea id="studentComplaintDescText" rows="3" maxlength="500" placeholder="Provide details clearly..." class="kx-textarea"></textarea>
-                <p id="studentComplaintError" class="hidden kx-error">Please fill in all required fields.</p>
+                <div>
+                    <label for="studentComplaintDescText" class="kx-label">Description <span style="color: #DC2626; font-weight: 800;">*</span></label>
+                    <textarea id="studentComplaintDescText" rows="3" maxlength="500" placeholder="Provide details clearly..." class="kx-textarea"></textarea>
+                    <p id="studentComplaintError" class="hidden kx-error">Please fill in all required fields.</p>
+                </div>
 
-                <div class="kx-row">
-                    <button type="button" onclick="closeDriverComplaintModal()" class="kx-btn kx-btn--ghost">Cancel</button>
-                    <button type="button" id="studentComplaintSubmitBtn" onclick="submitStudentComplaint()" class="kx-btn kx-btn--primary">Submit Report</button>
+                <div class="kx-row flex gap-2 pt-1">
+                    <button type="button" onclick="closeDriverComplaintModal()" class="kx-btn kx-btn--ghost flex-1">Cancel</button>
+                    <button type="button" id="studentComplaintSubmitBtn" onclick="submitStudentComplaint()" class="kx-btn flex-1" style="background: linear-gradient(180deg, #EF4444 0%, #B91C1C 100%); color: #ffffff; font-weight: 800; border: none; border-radius: 14px; box-shadow: 0 8px 20px rgba(220, 38, 38, 0.30);">Submit Report</button>
                 </div>
             </div>
 
-            <div id="driverComplaintOptionsView" class="kx-list">
+            <div id="driverComplaintOptionsView" class="kx-list" role="tabpanel" aria-labelledby="complaintTargetDriverBtn">
                 <button type="button" class="driverComplaintOptionBtn kx-option" onclick="submitDriverComplaint('driver_not_on_time')">
                     <span class="kx-option-icon kx-option-icon--amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg></span>
                     <span class="kx-option-text">
@@ -1516,7 +1653,7 @@
 
                 <div class="kx-row">
                     <button type="button" onclick="cancelOtherComplaint()" class="kx-btn kx-btn--ghost">Cancel</button>
-                    <button type="button" id="driverComplaintOtherSubmitBtn" onclick="submitOtherDriverComplaint()" class="kx-btn kx-btn--primary">Submit Complaint</button>
+                    <button type="button" id="driverComplaintOtherSubmitBtn" onclick="submitOtherDriverComplaint()" class="kx-btn" style="background: linear-gradient(180deg, #EF4444 0%, #B91C1C 100%); color: #ffffff; font-weight: 800; border: none; border-radius: 14px; box-shadow: 0 8px 20px rgba(220, 38, 38, 0.30);">Submit Complaint</button>
                 </div>
             </div>
         </div>

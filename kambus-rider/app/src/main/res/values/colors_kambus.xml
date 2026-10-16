@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="kambus_navy">#173541</color>
+    <color name="kambus_brand">#4A6F79</color>
+    <color name="kambus_tint">#85ADBB</color>
+    <color name="kambus_bg">#FAFAF8</color>
+    <color name="kambus_surface">#FFFFFF</color>
+    <color name="kambus_line">#E3E8E8</color>
+    <color name="kambus_ink_muted">#52707A</color>
+    <color name="kambus_danger">#B02A34</color>
+    <color name="kambus_warn">#8A5F0A</color>
+    <color name="kambus_ok">#256B4C</color>
+</resources>

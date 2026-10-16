@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>KAMBUS</title>
+    <meta name="theme-color" content="#173541">
+    <meta name="description" content="KAMBUS, live bus tracking for KITSW.">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="favicon.ico" sizes="48x48">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="manifest" href="site.webmanifest">
+    <link rel="stylesheet" href="kambus.css">
+    <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+    <style>
+        #routeMap {
+            width: 100%;
+            height: 100%;
+            background: #FAFAF8;
+        }
+        .scanner-laser {
+            position: absolute;
+            left: 10%;
+            right: 10%;
+            height: 2px;
+            background: #B02A34;
+            animation: scan-laser 2.2s ease-in-out infinite;
+        }
+        #quaggaViewport video,
+        #quaggaViewport canvas {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        #quaggaViewport canvas.drawingBuffer {
+            z-index: 1;
+        }
+        @keyframes scan-laser {
+            0% { top: 10%; opacity: 0.8; }
+            50% { top: 90%; opacity: 1; }
+            100% { top: 10%; opacity: 0.8; }
+        }
+    </style>
+</head>
+<body class="bg-bg text-navy font-sans flex flex-col min-h-screen">
+
+    <header class="bg-surface border-b border-line px-4 py-3 sticky top-0 z-30 flex items-center justify-between">
+        <div class="flex items-center gap-2.5 min-w-0">
+            <div class="w-8 h-8 rounded bg-navy flex items-center justify-center shrink-0">
+                <img src="brand/mark-white.svg" alt="KAMBUS" class="w-5 h-5">
+            </div>
+            <div class="min-w-0">
+                <div class="flex items-center gap-2">
+                    <span class="text-sm font-semibold tracking-tight leading-none text-navy">KAMBUS</span>
+                    <span id="headerBusBadge" class="text-xs font-mono font-medium text-ink-muted bg-bg border border-line px-1.5 py-0.5 rounded leading-none">
+                        Bus --
+                    </span>
+                </div>
+                <p id="headerDriverName" class="text-xs text-ink-muted truncate font-normal mt-0.5">
+                    Driver
+                </p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-3 shrink-0">
+            <div class="text-right">
+                <div class="flex items-center justify-end gap-1.5">
+                    <span id="statusDot" class="w-2 h-2 rounded-full bg-line shrink-0"></span>
+                    <span id="liveStatusText" class="text-xs font-semibold text-navy">
+                        Offline
+                    </span>
+                </div>
+                <p id="lastUpdateElapsed" class="text-[11px] text-ink-muted tabular-nums mt-0.5">
+                    GPS not active
+                </p>
+            </div>
+
+            <a href="index.html" id="driverLogoutBtn" class="w-8 h-8 rounded border border-line bg-surface hover:bg-bg text-ink-muted hover:text-danger transition-colors flex items-center justify-center" aria-label="Logout" title="Logout">
+                <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-logout"/></svg>
+            </a>
+        </div>
+    </header>
+
+    <div id="activeSosBanner" class="hidden bg-danger text-white px-4 py-3 flex items-center justify-between gap-3 text-xs font-semibold border-b border-danger/20">
+        <div class="flex items-center gap-2 min-w-0">
+            <span class="w-2 h-2 rounded-full bg-white animate-ping shrink-0"></span>
+            <span id="activeSosText" class="truncate">EMERGENCY SOS ACTIVE</span>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+            <a href="tel:112" class="px-2.5 py-1 bg-white text-danger rounded text-xs font-semibold flex items-center gap-1">
+                <svg class="w-3.5 h-3.5" aria-hidden="true"><use href="icons.svg#icon-phone"/></svg> Call 112
+            </a>
+            <button type="button" onclick="cancelEmergencySos()" class="px-2.5 py-1 bg-danger/80 hover:bg-danger text-white rounded text-xs font-semibold border border-white/20">
+                Clear
+            </button>
+        </div>
+    </div>
+
+    <div id="activeDetourBanner" class="hidden bg-warn text-white px-4 py-3 flex items-center justify-between gap-2 text-xs font-semibold border-b border-warn/20">
+        <div class="flex items-center gap-2 min-w-0">
+            <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-route"/></svg>
+            <span id="activeDetourText" class="truncate">Active Detour</span>
+        </div>
+        <button type="button" onclick="clearDetourReport()" class="px-2.5 py-1 bg-white text-warn rounded text-xs font-semibold shrink-0">
+            Clear Detour
+        </button>
+    </div>
+
+    <main class="flex-1 flex flex-col p-4 max-w-lg mx-auto w-full space-y-4 pb-8">
+
+        <section id="waitRequestCard" class="hidden bg-surface border border-warn text-navy rounded p-4 space-y-2">
+            <div class="flex items-center justify-between gap-3">
+                <div class="min-w-0 flex-1">
+                    <div class="flex items-center gap-1.5">
+                        <svg class="w-4 h-4 text-warn animate-spin" aria-hidden="true"><use href="icons.svg#icon-clock"/></svg>
+                        <h2 id="waitStopTitle" class="text-xs font-semibold uppercase tracking-wider text-navy truncate">
+                            Wait Request
+                        </h2>
+                    </div>
+                    <div class="flex items-center gap-2 mt-1">
+                        <span id="waitCountdownBadge" class="text-xs font-mono font-medium text-warn bg-warn/10 border border-warn/20 px-2 py-0.5 rounded">
+                            Auto-accepting in 00:10
+                        </span>
+                        <span id="waitStudentCount" class="text-xs text-ink-muted truncate">
+                            1 student waiting
+                        </span>
+                    </div>
+                </div>
+
+                <button type="button" id="skipWaitBtn" class="shrink-0 bg-surface border border-line text-navy font-semibold text-xs px-3 py-1.5 rounded hover:bg-bg transition-colors flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5" aria-hidden="true"><use href="icons.svg#icon-forward-step"/></svg>
+                    <span>Skip</span>
+                </button>
+            </div>
+        </section>
+
+        <div class="relative rounded overflow-hidden border border-line bg-surface h-64 sm:h-80 w-full shrink-0">
+            <div id="routeMap"></div>
+
+            <div id="routeStatusBadge" class="absolute top-3 left-3 z-[400] bg-surface/95 text-navy text-xs font-semibold px-2.5 py-1 rounded border border-line flex items-center gap-1.5 pointer-events-none">
+                <span id="routeStatusDot" class="w-2 h-2 rounded-full bg-brand"></span>
+                <span id="routeStatusText">Route Preview</span>
+            </div>
+
+            <button type="button" id="recenterBtn" class="absolute bottom-3 right-3 z-[400] px-2.5 py-1.5 bg-surface border border-line text-navy font-semibold text-xs rounded flex items-center gap-1.5 hover:bg-bg transition-colors" aria-label="Recenter map">
+                <svg class="w-3.5 h-3.5" aria-hidden="true"><use href="icons.svg#icon-location-crosshairs"/></svg>
+                <span>Recenter</span>
+            </button>
+        </div>
+
+        <div id="preTripView" class="space-y-4 flex-1 flex flex-col">
+            <div class="bg-surface border border-line rounded p-4 space-y-3">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold uppercase tracking-wider text-ink-muted">
+                        Assigned Route
+                    </span>
+                    <span id="preTripStopCount" class="text-xs font-mono font-medium text-ink-muted bg-bg border border-line px-2 py-0.5 rounded">
+                        -- stops
+                    </span>
+                </div>
+                <h2 id="preTripRouteName" class="text-lg font-semibold text-navy truncate">
+                    Loading assigned route...
+                </h2>
+                <div class="flex items-center justify-between text-xs text-ink-muted pt-2.5 border-t border-line font-medium">
+                    <span class="flex items-center gap-1.5">
+                        <svg class="w-3.5 h-3.5 text-navy" aria-hidden="true"><use href="icons.svg#icon-map-pin"/></svg>
+                        First Stop: <strong id="preTripFirstStopName" class="text-navy font-semibold">--</strong>
+                    </span>
+                    <span class="text-ok font-medium bg-ok/10 px-2 py-0.5 rounded border border-ok/20 text-xs">
+                        Ready
+                    </span>
+                </div>
+            </div>
+
+            <div class="space-y-2" role="group" aria-label="Trip type">
+                <p class="text-xs font-semibold uppercase tracking-wider text-ink-muted">Select trip type</p>
+                <div class="grid grid-cols-2 gap-2">
+                    <button type="button" id="morningTripTypeBtn" class="trip-type-btn py-2.5 rounded border border-line bg-bg text-navy text-sm font-semibold transition-colors" aria-pressed="false">Morning</button>
+                    <button type="button" id="eveningTripTypeBtn" class="trip-type-btn py-2.5 rounded border border-line bg-bg text-navy text-sm font-semibold transition-colors" aria-pressed="false">Evening</button>
+                </div>
+            </div>
+
+            <button type="button" id="startTripBtn" disabled class="w-full py-3.5 bg-navy hover:bg-brand active:bg-brand disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold text-base rounded transition-colors flex items-center justify-center gap-2">
+                <svg id="startTripIcon" class="w-4 h-4" aria-hidden="true"><use href="icons.svg#icon-play"/></svg>
+                <span id="startTripText" class="tracking-wide uppercase font-semibold">
+                    Select Trip Type
+                </span>
+            </button>
+
+            <div class="grid grid-cols-2 gap-3">
+                <button type="button" onclick="verifyStudentPass()" class="p-3 bg-surface hover:bg-bg border border-line rounded flex items-center gap-3 text-navy transition-colors text-left">
+                    <div class="w-9 h-9 rounded bg-bg border border-line flex items-center justify-center shrink-0 text-navy">
+                        <svg class="w-4 h-4" aria-hidden="true"><use href="icons.svg#icon-qrcode"/></svg>
+                    </div>
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold text-navy truncate">Scan Pass</p>
+                        <p class="text-[11px] text-ink-muted truncate">Verify student</p>
+                    </div>
+                </button>
+
+                <button type="button" onclick="reportDetour()" class="p-3 bg-surface hover:bg-bg border border-line rounded flex items-center gap-3 text-navy transition-colors text-left">
+                    <div class="w-9 h-9 rounded bg-bg border border-line flex items-center justify-center shrink-0 text-warn">
+                        <svg class="w-4 h-4" aria-hidden="true"><use href="icons.svg#icon-route"/></svg>
+                    </div>
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold text-navy truncate">Report Detour</p>
+                        <p class="text-[11px] text-ink-muted truncate">Road diversion</p>
+                    </div>
+                </button>
+            </div>
+        </div>
+
+        <div id="activeTripView" class="hidden space-y-4 flex-1 flex flex-col">
+            <section class="bg-surface border border-line rounded p-4 space-y-2">
+                <div class="flex items-center justify-between text-xs uppercase tracking-wider text-ink-muted">
+                    <span class="flex items-center gap-1.5 text-navy font-semibold text-xs">
+                        <svg class="w-3.5 h-3.5" aria-hidden="true"><use href="icons.svg#icon-map-pin"/></svg> Next Stop
+                    </span>
+                    <span id="nextStopDistance" class="text-navy font-semibold font-mono text-sm tabular-nums">
+                        -- m
+                    </span>
+                </div>
+
+                <div class="flex items-baseline justify-between gap-2 pt-1">
+                    <h2 id="nextStopName" class="text-lg font-semibold text-navy truncate">
+                        Finding next stop...
+                    </h2>
+                    <span id="nextStopOrderBadge" class="text-xs font-mono font-medium text-ink-muted bg-bg border border-line px-2 py-0.5 rounded shrink-0">
+                        Stop --
+                    </span>
+                </div>
+
+                <div class="flex items-center justify-between text-xs pt-2.5 mt-2 border-t border-line font-medium">
+                    <div class="flex items-center gap-1.5 text-ok">
+                        <span id="nextStopEta" class="tabular-nums">ETA: ~-- min</span>
+                    </div>
+                    <div id="nextStopStudentsContainer" class="flex items-center gap-1.5 text-ink-muted">
+                        <svg class="w-3.5 h-3.5" aria-hidden="true"><use href="icons.svg#icon-users"/></svg>
+                        <span id="nextStopStudents" class="tabular-nums">-- expected</span>
+                    </div>
+                </div>
+            </section>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div class="bg-surface border border-line rounded p-3.5 flex flex-col justify-between">
+                    <div class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-ink-muted">
+                        <span id="collegeEtaLabel">ETA to College</span>
+                    </div>
+                    <div class="mt-2">
+                        <div id="collegeClockEta" class="text-lg font-semibold text-navy tabular-nums leading-tight">
+                            --:-- AM
+                        </div>
+                        <div id="collegeDurationEta" class="text-xs font-medium text-ok tabular-nums mt-0.5">
+                            ~-- min
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-surface border border-line rounded p-3.5 flex flex-col justify-between">
+                    <div class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-ink-muted">
+                        <span>Today</span>
+                    </div>
+                    <div class="mt-2">
+                        <div id="todayStudentsCount" class="text-lg font-semibold text-navy tabular-nums leading-tight">
+                            --
+                        </div>
+                        <div class="text-xs text-ink-muted mt-0.5">
+                            expected
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <section class="bg-surface border border-line rounded p-3">
+                <div class="flex items-center justify-between text-xs font-medium">
+                    <span id="progressPassedText" class="text-ok flex items-center gap-1">
+                        <svg class="w-3 h-3" aria-hidden="true"><use href="icons.svg#icon-check"/></svg> 0 passed
+                    </span>
+                    <span id="progressNextText" class="text-navy font-semibold flex items-center gap-1">
+                        Next Stop
+                    </span>
+                    <span id="progressRemainingText" class="text-ink-muted flex items-center gap-1">
+                        0 remaining
+                    </span>
+                </div>
+            </section>
+
+            <div class="grid grid-cols-3 gap-2 pt-1">
+                <button type="button" onclick="verifyStudentPass()" class="py-2.5 px-2 bg-surface hover:bg-bg border border-line rounded flex flex-col items-center justify-center gap-1 text-navy text-xs font-semibold transition-colors">
+                    <svg class="w-4 h-4" aria-hidden="true"><use href="icons.svg#icon-qrcode"/></svg>
+                    <span>Scan Pass</span>
+                </button>
+
+                <button type="button" onclick="reportDetour()" class="py-2.5 px-2 bg-surface hover:bg-bg border border-line rounded flex flex-col items-center justify-center gap-1 text-navy text-xs font-semibold transition-colors">
+                    <svg class="w-4 h-4 text-warn" aria-hidden="true"><use href="icons.svg#icon-route"/></svg>
+                    <span>Detour</span>
+                </button>
+
+                <button type="button" onclick="triggerEmergencySOS()" class="py-2.5 px-2 bg-danger hover:opacity-90 rounded flex flex-col items-center justify-center gap-1 text-white text-xs font-semibold transition-opacity">
+                    <svg class="w-4 h-4 shrink-0 text-white" aria-hidden="true"><use href="icons.svg#icon-alert"/></svg>
+                    <span>SOS</span>
+                </button>
+            </div>
+
+            <div class="bg-surface border border-line rounded p-3.5 flex items-center justify-between gap-3 mt-auto">
+                <div class="flex items-center gap-2">
+                    <span class="w-2 h-2 bg-ok rounded-full animate-pulse"></span>
+                    <span class="text-xs font-semibold tracking-wider uppercase text-ok">
+                        Trip Active
+                    </span>
+                </div>
+
+                <button type="button" id="endTripBtn" class="bg-danger hover:opacity-90 text-white text-xs font-semibold px-4 py-2 rounded transition-opacity flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5" aria-hidden="true"><use href="icons.svg#icon-stop"/></svg>
+                    <span>End Trip</span>
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <footer id="preTripFooter" class="p-4 max-w-lg mx-auto w-full pt-0">
+        <button type="button" onclick="triggerEmergencySOS()" class="w-full py-3 bg-danger hover:opacity-90 text-white rounded font-semibold text-xs transition-opacity flex items-center justify-center gap-2">
+            <svg class="w-4 h-4 shrink-0 text-white" aria-hidden="true"><use href="icons.svg#icon-alert"/></svg>
+            <span>Emergency SOS / Breakdown</span>
+        </button>
+    </footer>
+
+    <div id="passScannerModal" class="hidden fixed inset-0 z-[2000] bg-navy/60 flex items-center justify-center p-4">
+        <div class="w-full max-w-sm rounded bg-surface border border-line p-5 space-y-4 max-h-[92vh] overflow-y-auto">
+            <div class="flex items-center justify-between border-b border-line pb-3">
+                <div class="flex items-center gap-2">
+                    <svg class="w-4 h-4 text-navy" aria-hidden="true"><use href="icons.svg#icon-qrcode"/></svg>
+                    <h3 class="text-sm font-semibold text-navy">Scan Student Pass</h3>
+                </div>
+                <button type="button" onclick="closePassScannerModal()" class="w-7 h-7 rounded border border-line bg-bg text-ink-muted flex items-center justify-center hover:text-navy">
+                    <svg class="w-3.5 h-3.5" aria-hidden="true"><use href="icons.svg#icon-xmark"/></svg>
+                </button>
+            </div>
+
+            <div class="relative w-full h-48 bg-navy rounded overflow-hidden flex flex-col items-center justify-center text-white text-center p-3 border border-line">
+                <video id="scannerVideo" class="hidden absolute inset-0 w-full h-full object-cover" autoplay playsinline muted></video>
+                <div id="quaggaViewport" class="hidden absolute inset-0 w-full h-full overflow-hidden"></div>
+                <div class="scanner-laser hidden" id="scannerLaser"></div>
+
+                <div id="scannerPlaceholder" class="space-y-2 z-10 p-2">
+                    <svg class="w-8 h-8 text-tint mx-auto" aria-hidden="true"><use href="icons.svg#icon-camera"/></svg>
+                    <p class="text-xs text-white/80">Position student barcode in front of camera</p>
+                    <div class="flex gap-2 justify-center pt-1">
+                        <button type="button" onclick="startCameraScanner()" class="px-3 py-1 bg-brand text-white text-xs font-semibold rounded transition-colors hover:bg-navy">
+                            Start Camera
+                        </button>
+                        <label class="px-3 py-1 bg-surface/20 hover:bg-surface/30 text-white text-xs font-semibold rounded cursor-pointer transition-colors">
+                            Upload
+                            <input type="file" id="qrFileInput" accept="image/*" class="hidden" onchange="handleQrFileUpload(event)">
+                        </label>
+                    </div>
+                </div>
+
+                <div class="absolute inset-x-8 inset-y-5 border border-tint/50 border-dashed rounded pointer-events-none"></div>
+            </div>
+
+            <form onsubmit="handleManualPassLookup(event)" class="space-y-2">
+                <label class="text-[11px] font-semibold text-ink-muted uppercase tracking-wider">Or Enter Roll Number</label>
+                <div class="flex gap-2">
+                    <input type="text" id="manualRollInput" placeholder="e.g. 21KIT123"
+                           class="flex-1 px-3 py-2 text-xs font-mono uppercase border border-line rounded bg-bg text-navy focus:border-brand focus:outline-none">
+                    <button type="submit" id="verifyPassSubmitBtn" class="px-4 py-2 bg-navy hover:bg-brand text-white text-xs font-semibold rounded transition-colors">
+                        Verify
+                    </button>
+                </div>
+            </form>
+
+            <div id="passResultCard" class="hidden rounded border border-ok/30 bg-ok/10 p-3.5 space-y-2">
+                <div class="flex items-center justify-between">
+                    <span id="passBadgeStatus" class="text-[11px] font-semibold uppercase text-ok bg-ok/10 border border-ok/30 px-2 py-0.5 rounded">
+                        Pass Valid & Active
+                    </span>
+                    <span id="passVerifiedTime" class="text-[11px] text-ok tabular-nums">Just now</span>
+                </div>
+                <div>
+                    <h4 id="passStudentName" class="text-sm font-semibold text-navy">Student Name</h4>
+                    <p id="passStudentRoll" class="text-xs text-ink-muted font-mono mt-0.5">Roll: 21KIT123</p>
+                </div>
+                <div class="flex justify-between text-xs text-ink-muted pt-2 border-t border-ok/20 font-medium">
+                    <span>Stop: <strong id="passStopName" class="text-navy font-semibold">Stop 1</strong></span>
+                    <span>Bus: <strong id="passBusNum" class="text-navy font-semibold">Bus 4</strong></span>
+                </div>
+            </div>
+
+            <div id="passErrorCard" class="hidden rounded border border-danger/30 bg-danger/10 p-3.5 space-y-1 text-xs text-danger">
+                <div class="flex items-center gap-1.5 font-semibold text-sm">
+                    <svg class="w-4 h-4 text-danger" aria-hidden="true"><use href="icons.svg#icon-alert"/></svg>
+                    <span id="passErrorTitle">Invalid Pass</span>
+                </div>
+                <p id="passErrorMessage" class="mt-1">Student not assigned to this bus.</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="detourModal" class="hidden fixed inset-0 z-[2000] bg-navy/60 flex items-center justify-center p-4">
+        <div class="w-full max-w-sm rounded bg-surface border border-line p-5 space-y-4">
+            <div class="flex items-center justify-between border-b border-line pb-3">
+                <div class="flex items-center gap-2">
+                    <svg class="w-4 h-4 text-warn" aria-hidden="true"><use href="icons.svg#icon-route"/></svg>
+                    <h3 class="text-sm font-semibold text-navy">Report Route Detour</h3>
+                </div>
+                <button type="button" onclick="closeDetourModal()" class="w-7 h-7 rounded border border-line bg-bg text-ink-muted flex items-center justify-center hover:text-navy">
+                    <svg class="w-3.5 h-3.5" aria-hidden="true"><use href="icons.svg#icon-xmark"/></svg>
+                </button>
+            </div>
+
+            <div class="space-y-2">
+                <label class="text-xs font-semibold text-ink-muted uppercase tracking-wider">Reason for Detour</label>
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <button type="button" class="detourReasonBtn py-2 px-2.5 rounded border border-warn bg-warn/10 text-warn font-semibold text-left" onclick="selectDetourReason(this, 'Road Construction')">
+                        Road Work
+                    </button>
+                    <button type="button" class="detourReasonBtn py-2 px-2.5 rounded border border-line bg-bg text-ink-muted font-medium text-left" onclick="selectDetourReason(this, 'Heavy Traffic')">
+                        Traffic Jam
+                    </button>
+                    <button type="button" class="detourReasonBtn py-2 px-2.5 rounded border border-line bg-bg text-ink-muted font-medium text-left" onclick="selectDetourReason(this, 'Waterlogging')">
+                        Weather
+                    </button>
+                    <button type="button" class="detourReasonBtn py-2 px-2.5 rounded border border-line bg-bg text-ink-muted font-medium text-left" onclick="selectDetourReason(this, 'Road Blocked')">
+                        Road Closed
+                    </button>
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                <label class="text-xs font-semibold text-ink-muted uppercase tracking-wider">Estimated Delay</label>
+                <div class="grid grid-cols-4 gap-2 text-xs text-center font-semibold">
+                    <button type="button" class="detourDelayBtn py-1.5 rounded border border-line bg-bg text-ink-muted" onclick="selectDetourDelay(this, 5)">+5m</button>
+                    <button type="button" class="detourDelayBtn py-1.5 rounded border border-warn bg-warn/10 text-warn font-semibold" onclick="selectDetourDelay(this, 10)">+10m</button>
+                    <button type="button" class="detourDelayBtn py-1.5 rounded border border-line bg-bg text-ink-muted" onclick="selectDetourDelay(this, 15)">+15m</button>
+                    <button type="button" class="detourDelayBtn py-1.5 rounded border border-line bg-bg text-ink-muted" onclick="selectDetourDelay(this, 20)">+20m</button>
+                </div>
+            </div>
+
+            <button type="button" id="submitDetourBtn" onclick="submitDetourReport()" class="w-full py-2.5 bg-navy hover:bg-brand text-white text-xs font-semibold rounded transition-colors">
+                Broadcast Detour to Students & Admin
+            </button>
+        </div>
+    </div>
+
+    <div id="sosModal" class="hidden fixed inset-0 z-[2100] bg-navy/70 flex items-center justify-center p-4">
+        <div class="w-full max-w-sm rounded bg-surface border border-line p-5 space-y-4">
+            <div class="flex items-center justify-between border-b border-line pb-3">
+                <div class="flex items-center gap-2 text-danger">
+                    <svg class="w-4 h-4" aria-hidden="true"><use href="icons.svg#icon-alert"/></svg>
+                    <h3 class="text-sm font-semibold">Emergency SOS / Breakdown</h3>
+                </div>
+                <button type="button" onclick="closeSosModal()" class="w-7 h-7 rounded border border-line bg-bg text-ink-muted flex items-center justify-center hover:text-navy">
+                    <svg class="w-3.5 h-3.5" aria-hidden="true"><use href="icons.svg#icon-xmark"/></svg>
+                </button>
+            </div>
+
+            <div class="space-y-2">
+                <label class="text-xs font-semibold text-ink-muted uppercase tracking-wider">Select Incident Type</label>
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <button type="button" class="sosTypeBtn py-2 px-2.5 rounded border border-danger bg-danger/10 text-danger font-semibold text-left" onclick="selectSosType(this, 'Vehicle Breakdown')">
+                        Breakdown
+                    </button>
+                    <button type="button" class="sosTypeBtn py-2 px-2.5 rounded border border-line bg-bg text-ink-muted font-medium text-left" onclick="selectSosType(this, 'Medical Emergency')">
+                        Medical
+                    </button>
+                    <button type="button" class="sosTypeBtn py-2 px-2.5 rounded border border-line bg-bg text-ink-muted font-medium text-left" onclick="selectSosType(this, 'Accident')">
+                        Accident
+                    </button>
+                    <button type="button" class="sosTypeBtn py-2 px-2.5 rounded border border-line bg-bg text-ink-muted font-medium text-left" onclick="selectSosType(this, 'Security Alert')">
+                        Security
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-bg border border-line rounded p-3 space-y-2 text-xs">
+                <div class="flex items-center justify-between">
+                    <span class="text-ink-muted">College Transport Cell</span>
+                    <a href="tel:08702564888" class="font-mono font-semibold text-navy flex items-center gap-1">
+                        <svg class="w-3 h-3" aria-hidden="true"><use href="icons.svg#icon-phone"/></svg> 0870-2564888
+                    </a>
+                </div>
+                <div class="flex items-center justify-between border-t border-line pt-2">
+                    <span class="text-ink-muted">Police / Emergency</span>
+                    <a href="tel:112" class="font-mono font-semibold text-danger flex items-center gap-1">
+                        <svg class="w-3 h-3" aria-hidden="true"><use href="icons.svg#icon-phone"/></svg> 112
+                    </a>
+                </div>
+            </div>
+
+            <button type="button" id="submitSosBtn" onclick="submitEmergencySos()" class="w-full py-3 bg-danger hover:opacity-90 text-white text-xs font-semibold rounded transition-opacity flex items-center justify-center gap-2">
+                <svg class="w-4 h-4" aria-hidden="true"><use href="icons.svg#icon-alert"/></svg>
+                <span>Transmit Emergency SOS</span>
+            </button>
+        </div>
+    </div>
+
+    <script src="vendor/leaflet/leaflet.js"></script>
+    <script src="kambus-ui.js"></script>
+    <script src="notification-center.js"></script>
+    <script src="voiceAnnouncements.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/quagga@0.12.1/dist/quagga.min.js"></script>
+    <script src="driver.js"></script>
+
+</body>
+</html>

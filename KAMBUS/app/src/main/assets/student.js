@@ -1892,6 +1892,9 @@ function resetDriverComplaintModal() {
         setComplaintTargetType("driver");
     }
 
+    const subEl = document.getElementById("complaintModalSub");
+    if (subEl) subEl.textContent = "Reporting your driver";
+
     const optionsView = document.getElementById("driverComplaintOptionsView");
     const otherView = document.getElementById("driverComplaintOtherView");
     const studentView = document.getElementById("studentComplaintFormView");
@@ -1919,6 +1922,12 @@ function resetDriverComplaintModal() {
         submitBtn.textContent = "Submit Complaint";
     }
 
+    const studentSubmitBtn = document.getElementById("studentComplaintSubmitBtn");
+    if (studentSubmitBtn) {
+        studentSubmitBtn.disabled = false;
+        studentSubmitBtn.textContent = "Submit Report";
+    }
+
     const optionButtons = document.querySelectorAll(".driverComplaintOptionBtn");
     optionButtons.forEach(btn => {
         btn.disabled = false;
@@ -1934,24 +1943,47 @@ window.setComplaintTargetType = async function(type) {
     const driverView = document.getElementById("driverComplaintOptionsView");
     const studentView = document.getElementById("studentComplaintFormView");
     const otherView = document.getElementById("driverComplaintOtherView");
+    const subEl = document.getElementById("complaintModalSub");
 
     if (otherView) otherView.classList.add("hidden");
 
     if (type === "driver") {
+        if (subEl) subEl.textContent = "Reporting your driver";
         if (driverBtn) {
-            driverBtn.className = "flex-1 py-1.5 rounded-lg bg-white shadow-xs text-slate-900 text-center transition";
+            driverBtn.classList.add("active");
+            driverBtn.setAttribute("aria-selected", "true");
+            driverBtn.style.background = "#DC2626";
+            driverBtn.style.color = "#ffffff";
+            driverBtn.style.fontWeight = "700";
+            driverBtn.style.boxShadow = "0 2px 6px rgba(220, 38, 38, 0.25)";
         }
         if (studentBtn) {
-            studentBtn.className = "flex-1 py-1.5 rounded-lg text-slate-500 hover:text-slate-900 text-center transition";
+            studentBtn.classList.remove("active");
+            studentBtn.setAttribute("aria-selected", "false");
+            studentBtn.style.background = "transparent";
+            studentBtn.style.color = "#6B7280";
+            studentBtn.style.fontWeight = "600";
+            studentBtn.style.boxShadow = "none";
         }
         if (driverView) driverView.classList.remove("hidden");
         if (studentView) studentView.classList.add("hidden");
     } else {
+        if (subEl) subEl.textContent = "Reporting a fellow student";
         if (studentBtn) {
-            studentBtn.className = "flex-1 py-1.5 rounded-lg bg-white shadow-xs text-slate-900 text-center transition";
+            studentBtn.classList.add("active");
+            studentBtn.setAttribute("aria-selected", "true");
+            studentBtn.style.background = "#DC2626";
+            studentBtn.style.color = "#ffffff";
+            studentBtn.style.fontWeight = "700";
+            studentBtn.style.boxShadow = "0 2px 6px rgba(220, 38, 38, 0.25)";
         }
         if (driverBtn) {
-            driverBtn.className = "flex-1 py-1.5 rounded-lg text-slate-500 hover:text-slate-900 text-center transition";
+            driverBtn.classList.remove("active");
+            driverBtn.setAttribute("aria-selected", "false");
+            driverBtn.style.background = "transparent";
+            driverBtn.style.color = "#6B7280";
+            driverBtn.style.fontWeight = "600";
+            driverBtn.style.boxShadow = "none";
         }
         if (driverView) driverView.classList.add("hidden");
         if (studentView) studentView.classList.remove("hidden");

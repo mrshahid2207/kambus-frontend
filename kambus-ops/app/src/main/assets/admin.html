@@ -1,0 +1,1869 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+        <title>KAMBUS</title>
+    <meta name="theme-color" content="#173541">
+    <meta name="description" content="KAMBUS, live bus tracking for KITSW.">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="favicon.ico" sizes="48x48">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="manifest" href="site.webmanifest">
+    <link rel="stylesheet" href="kambus.css">
+    <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+    <script src="vendor/leaflet/leaflet.js"></script>
+
+        <style>
+        html, body {
+            width: 100%;
+            max-width: 100%;
+            overflow-x: hidden;
+            background-color: #FAFAF8;
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        .admin-nav-btn {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            padding: 9px 12px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #52707A;
+            background: transparent;
+            transition: all 0.15s ease;
+            text-align: left;
+            border: 1px solid transparent;
+        }
+
+        .admin-nav-btn:hover {
+            background: #E3E8E8;
+            color: #173541;
+        }
+
+        .admin-nav-btn.active {
+            background: #173541;
+            color: #FFFFFF;
+        }
+
+        .admin-section {
+            display: none;
+        }
+
+        .admin-section.active {
+            display: block;
+        }
+
+        .announcement-card {
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(23, 53, 65, 0.10);
+            border-radius: 16px;
+            padding: 14px 14px 14px 18px;
+            animation: announcement-card-in 240ms ease-out both;
+        }
+
+        .announcement-card::before {
+            content: "";
+            position: absolute;
+            inset: 0 auto 0 0;
+            width: 4px;
+            border-radius: 16px 0 0 16px;
+            background: #D9922E;
+        }
+
+        .announcement-card--general {
+            background: linear-gradient(135deg, #FFF8E9 0%, #FFFDF8 70%);
+        }
+
+        .announcement-card--bus {
+            background: linear-gradient(135deg, #EEF5F8 0%, #F9FCFD 70%);
+        }
+
+        .announcement-card--urgent {
+            background: linear-gradient(135deg, #FFF1EF 0%, #FFFAF9 70%);
+        }
+
+        .announcement-card--stop {
+            background: linear-gradient(135deg, #EEF4FF 0%, #FBFCFF 70%);
+        }
+
+        .announcement-card--general::before { background: #D9922E; }
+        .announcement-card--bus::before { background: #173541; }
+        .announcement-card--urgent::before { background: #C43A3A; }
+        .announcement-card--stop::before { background: #426B9A; }
+
+        .announcement-empty {
+            border: 1px dashed rgba(23, 53, 65, 0.18);
+            border-radius: 16px;
+            padding: 28px 18px;
+            background: linear-gradient(135deg, #FFFBF3, #F6FAFB);
+            text-align: center;
+            color: #52707A;
+        }
+
+        #notificationBadge:not(.hidden) {
+            animation: notification-badge-pulse 1.8s ease-in-out infinite;
+        }
+
+        @keyframes announcement-card-in {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes notification-badge-pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(196, 58, 58, 0.34); }
+            55% { box-shadow: 0 0 0 6px rgba(196, 58, 58, 0); }
+        }
+
+        #adminSidebar {
+            transition: transform 0.2s ease-in-out;
+        }
+
+        @media (max-width: 1023px) {
+            #adminSidebar {
+                position: fixed;
+                top: 0;
+                bottom: 0;
+                left: 0;
+                z-index: 100;
+                width: 260px;
+                transform: translateX(-100%);
+            }
+            #adminSidebar.open {
+                transform: translateX(0);
+            }
+        }
+    </style>
+</head>
+
+<body class="text-navy min-h-screen flex flex-col font-sans pb-16 lg:pb-0">
+
+    <!-- ========================================================= -->
+    <!-- TOP HEADER -->
+    <!-- ========================================================= -->
+    <header class="bg-surface border-b border-line sticky top-0 z-40 px-4 sm:px-6 py-3 flex items-center justify-between border border-line">
+        <div class="flex items-center gap-3">
+            <button type="button" onclick="window.KambusAdmin.toggleMobileSidebar()" class="lg:hidden w-9 h-9 rounded bg-bg text-navy flex items-center justify-center text-base" aria-label="Toggle Navigation">
+                <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-bars"/></svg>
+            </button>
+            <div class="w-9 h-9 bg-navy rounded flex items-center justify-center shrink-0">
+                <img src="brand/mark-white.svg" alt="KAMBUS" class="w-5 h-5">
+            </div>
+            <div>
+                <h1 class="text-sm sm:text-base font-semibold tracking-tight text-navy leading-tight">KAMBUS Admin Desk</h1>
+                <p class="text-[10px] sm:text-[11px] text-ink-muted font-semibold leading-tight">Fleet Control & Transport Management</p>
+            </div>
+        </div>
+
+        <!-- Super-Admin Campus Context Switcher (Desktop: >= lg) -->
+        <div id="superAdminCampusSelectorContainer" class="hidden lg:flex items-center gap-2 px-2.5 py-1 bg-surface border border-line rounded-lg shadow-2xs max-w-xs xl:max-w-md shrink min-w-0">
+            <div class="flex items-center gap-1.5 text-xs text-brand font-semibold shrink-0">
+                <svg class="w-4 h-4 text-brand shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M9 9h1M9 13h1M9 17h1M14 9h1M14 13h1M14 17h1"/></svg>
+                <span class="hidden md:inline font-bold text-navy">Campus:</span>
+            </div>
+            <select id="superAdminCampusSelect" onchange="window.KambusAdmin.handleCampusContextChange(this.value)" class="flex-1 min-w-0 max-w-[170px] xl:max-w-[220px] text-xs font-semibold text-navy bg-white border border-line rounded px-2.5 py-1 focus:outline-none focus:ring-1 focus:ring-brand cursor-pointer truncate">
+                <option value="">-- Select Campus --</option>
+            </select>
+            <span id="superAdminActiveCampusBadge" class="hidden xl:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs shrink-0">
+                <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>No Campus Selected
+            </span>
+        </div>
+
+        <div class="flex items-center gap-2 shrink-0 ml-2">
+            <!-- Global Search Quick Trigger -->
+            <button type="button" onclick="window.KambusAdmin.showSection('search')" class="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-bg hover:bg-slate-200/80 rounded text-xs font-semibold text-ink-muted transition shrink-0">
+                <svg class="w-4 h-4 shrink-0 text-ink-muted" aria-hidden="true"><use href="icons.svg#icon-search"/></svg>
+                <span>Search...</span>
+            </button>
+
+            <!-- Notifications Bell -->
+            <button id="notificationBell" type="button" class="relative w-9 h-9 rounded bg-bg hover:bg-bg text-ink-muted border border-line flex items-center justify-center transition shrink-0" aria-label="Notifications">
+                <svg class="w-4 h-4 shrink-0 text-sm" aria-hidden="true"><use href="icons.svg#icon-bell"/></svg>
+                <span id="notificationBadge" class="hidden absolute -top-1 -right-1 min-w-[17px] h-[17px] px-1 rounded-full bg-danger text-white text-[9px] font-semibold flex items-center justify-center">0</span>
+            </button>
+
+            <!-- Refresh Button -->
+            <button type="button" onclick="window.location.reload()" class="w-9 h-9 sm:w-auto sm:px-3 sm:py-1.5 bg-ok hover:opacity-90 text-white font-semibold text-xs rounded border border-line flex items-center justify-center gap-1.5 transition shrink-0" title="Refresh Dashboard">
+                <svg class="w-4 h-4 shrink-0 text-xs" aria-hidden="true"><use href="icons.svg#icon-refresh"/></svg>
+                <span class="hidden sm:inline">Refresh</span>
+            </button>
+
+            <!-- Logout -->
+            <a href="index.html" onclick="window.KambusAdmin.handleAdminLogout(event)" class="w-9 h-9 rounded bg-bg hover:bg-danger/10 text-ink-muted hover:text-danger flex items-center justify-center transition border border-line shrink-0" aria-label="Logout" title="Logout">
+                <svg class="w-4 h-4 shrink-0 text-sm" aria-hidden="true"><use href="icons.svg#icon-logout"/></svg>
+            </a>
+        </div>
+    </header>
+
+    <!-- Super-Admin Mobile Campus Sub-Bar (< lg) -->
+    <div id="superAdminMobileCampusBar" class="hidden lg:hidden bg-surface border-b border-line px-4 py-2 items-center justify-between gap-2 shadow-2xs">
+        <div class="flex items-center gap-1.5 text-xs text-brand font-semibold shrink-0">
+            <svg class="w-4 h-4 text-brand shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M9 9h1M9 13h1M9 17h1M14 9h1M14 13h1M14 17h1"/></svg>
+            <span class="font-bold text-navy">Campus:</span>
+        </div>
+        <select id="superAdminMobileCampusSelect" onchange="window.KambusAdmin.handleCampusContextChange(this.value)" class="flex-1 min-w-0 text-xs font-semibold text-navy bg-white border border-line rounded px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand cursor-pointer truncate">
+            <option value="">-- Select Campus --</option>
+        </select>
+    </div>
+
+    <!-- SIDEBAR OVERLAY FOR MOBILE -->
+    <div id="sidebarOverlay" onclick="window.KambusAdmin.closeMobileSidebar()" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-90 hidden lg:hidden"></div>
+
+    <!-- MAIN APP LAYOUT -->
+    <div class="flex-1 flex max-w-7xl w-full mx-auto">
+
+        <!-- ========================================================= -->
+        <!-- SIDEBAR NAVIGATION -->
+        <!-- ========================================================= -->
+        <aside id="adminSidebar" class="w-64 bg-surface border-r border-line/90 p-4 flex flex-col justify-between shrink-0 border border-line lg:shadow-none">
+            <div class="space-y-1 overflow-y-auto">
+                <p class="text-[10px] font-semibold tracking-wider uppercase text-ink-muted px-3 mb-2">Overview</p>
+                <button type="button" data-section="dashboard" onclick="window.KambusAdmin.showSection('dashboard')" class="admin-nav-btn active">
+                    <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-chart-pie"/></svg> <span>Dashboard</span>
+                </button>
+                <button type="button" data-section="today-operations" onclick="window.KambusAdmin.showSection('today-operations')" class="admin-nav-btn">
+                    <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-calendar"/></svg> <span>Today's Operations</span>
+                </button>
+                <button type="button" data-section="live-map" onclick="window.KambusAdmin.showSection('live-map')" class="admin-nav-btn">
+                    <svg class="w-4 h-4 shrink-0 text-ok" aria-hidden="true"><use href="icons.svg#icon-route"/></svg> <span>Live Fleet Map</span>
+                </button>
+
+                <p class="text-[10px] font-semibold tracking-wider uppercase text-ink-muted px-3 mt-4 mb-2">Fleet & Students</p>
+                <button type="button" data-section="buses" onclick="window.KambusAdmin.showSection('buses')" class="admin-nav-btn">
+                    <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-bus"/></svg> <span>Buses</span>
+                </button>
+                <button type="button" data-section="drivers" onclick="window.KambusAdmin.showSection('drivers')" class="admin-nav-btn">
+                    <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-user-tie"/></svg> <span>Drivers</span>
+                </button>
+                <button type="button" data-section="students" onclick="window.KambusAdmin.showSection('students')" class="admin-nav-btn">
+                    <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-user-graduate"/></svg> <span>Students</span>
+                </button>
+                <button type="button" id="navBtnParents" data-section="parents" onclick="window.KambusAdmin.showSection('parents')" class="admin-nav-btn">
+                    <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-users"/></svg>
+                    <span>Parents</span>
+                    <span class="text-[9px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 ml-auto font-bold uppercase tracking-wider">School</span>
+                </button>
+                <button type="button" data-section="routes" onclick="window.KambusAdmin.showSection('routes')" class="admin-nav-btn">
+                    <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-route"/></svg> <span>Routes</span>
+                </button>
+                <button type="button" data-section="stops" onclick="window.KambusAdmin.showSection('stops')" class="admin-nav-btn">
+                    <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-map-pin"/></svg> <span>Stops</span>
+                </button>
+                <button type="button" data-section="complaints" onclick="window.KambusAdmin.showSection('complaints')" class="admin-nav-btn">
+                    <svg class="w-4 h-4 shrink-0 text-warn" aria-hidden="true"><use href="icons.svg#icon-clipboard-question"/></svg> <span>Complaints</span>
+                </button>
+
+                <p class="text-[10px] font-semibold tracking-wider uppercase text-ink-muted px-3 mt-4 mb-2">Logs</p>
+                <button type="button" data-section="geofence-logs" onclick="window.KambusAdmin.showSection('geofence-logs')" class="admin-nav-btn">
+                    <svg class="w-4 h-4 shrink-0 text-ok" aria-hidden="true"><use href="icons.svg#icon-logout"/></svg> <span>Geofence Entry Log</span>
+                </button>
+                <button type="button" data-section="temp-stop-logs" onclick="window.KambusAdmin.showSection('temp-stop-logs')" class="admin-nav-btn">
+                    <svg class="w-4 h-4 shrink-0 text-brand" aria-hidden="true"><use href="icons.svg#icon-map-pin"/></svg> <span>Temporary Stop Log</span>
+                </button>
+
+                <p class="text-[10px] font-semibold tracking-wider uppercase text-ink-muted px-3 mt-4 mb-2">Communications</p>
+                <button type="button" data-section="messages" onclick="window.KambusAdmin.showSection('messages')" class="admin-nav-btn">
+                    <svg class="w-4 h-4 shrink-0 text-brand" aria-hidden="true"><use href="icons.svg#icon-clipboard-question"/></svg> <span>Student Messages</span>
+                </button>
+                <button type="button" data-section="notifications" onclick="window.KambusAdmin.showSection('notifications')" class="admin-nav-btn">
+                    <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-bullhorn"/></svg> <span>Announcements</span>
+                </button>
+                <button type="button" data-section="alerts" onclick="window.KambusAdmin.showSection('alerts')" class="admin-nav-btn">
+                    <svg class="w-4 h-4 shrink-0 text-danger" aria-hidden="true"><use href="icons.svg#icon-alert"/></svg> <span>Alert Center</span>
+                </button>
+
+                <div id="superAdminNavGroup" class="hidden">
+                    <p class="text-[10px] font-semibold tracking-wider uppercase text-ink-muted px-3 mt-4 mb-2">Super Admin</p>
+                    <button type="button" data-section="campuses" onclick="window.KambusAdmin.showSection('campuses')" class="admin-nav-btn">
+                        <svg class="w-4 h-4 shrink-0 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M9 9h1M9 13h1M9 17h1M14 9h1M14 13h1M14 17h1"/></svg> <span>Campuses</span>
+                    </button>
+                    <button type="button" data-section="admins" onclick="window.KambusAdmin.showSection('admins')" class="admin-nav-btn">
+                        <svg class="w-4 h-4 shrink-0 text-brand" aria-hidden="true"><use href="icons.svg#icon-user-shield"/></svg> <span>Admin Accounts</span>
+                    </button>
+                </div>
+
+                <p class="text-[10px] font-semibold tracking-wider uppercase text-ink-muted px-3 mt-4 mb-2">System</p>
+                <button type="button" data-section="search" onclick="window.KambusAdmin.showSection('search')" class="admin-nav-btn">
+                    <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-search"/></svg> <span>Global Search</span>
+                </button>
+                <button type="button" data-section="activity-logs" onclick="window.KambusAdmin.showSection('activity-logs')" class="admin-nav-btn">
+                    <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-list-check"/></svg> <span>Activity Log</span>
+                </button>
+            </div>
+
+            <div class="pt-4 border-t border-slate-100 text-[11px] text-ink-muted">
+                <p class="font-semibold text-ink-muted">KITSW Campus Transport</p>
+                <p>v2.4.0 &bull; Control Desk</p>
+            </div>
+        </aside>
+
+        <!-- ========================================================= -->
+        <!-- CONTENT AREA -->
+        <!-- ========================================================= -->
+        <main class="flex-1 p-4 sm:p-6 lg:p-8 min-w-0 overflow-y-auto max-w-full">
+
+            <!-- SECTION 1:  DASHBOARD -->
+            <section id="section-dashboard" class="admin-section active space-y-6">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div>
+                        <h2 class="text-xl font-semibold text-navy tracking-tight">System Overview</h2>
+                        <p class="text-xs text-ink-muted">Real-time status of campus fleet, routes, and active trips.</p>
+                    </div>
+                    <div id="dashboardCampusContextBanner" class="hidden"></div>
+                </div>
+
+                <!-- KPI Cards Grid -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+                    <div class="bg-surface border border-line/90 rounded p-4 border border-line">
+                        <span class="text-[11px] font-semibold text-ink-muted uppercase">Total Buses</span>
+                        <div class="flex items-baseline justify-between mt-1">
+                            <span id="statTotalBuses" class="text-2xl font-semibold text-navy">0</span>
+                            <span class="text-xs font-semibold text-brand"></span>
+                        </div>
+                    </div>
+
+                    <div class="bg-surface border border-line/90 rounded p-4 border border-line">
+                        <span class="text-[11px] font-semibold text-ink-muted uppercase">Active Buses</span>
+                        <div class="flex items-baseline justify-between mt-1">
+                            <span id="statActiveBuses" class="text-2xl font-semibold text-ok">0</span>
+                            <span class="text-xs font-semibold text-ok"></span>
+                        </div>
+                    </div>
+
+                    <div class="bg-surface border border-line/90 rounded p-4 border border-line">
+                        <span class="text-[11px] font-semibold text-ink-muted uppercase">Offline Buses</span>
+                        <div class="flex items-baseline justify-between mt-1">
+                            <span id="statOfflineBuses" class="text-2xl font-semibold text-ink-muted">0</span>
+                            <span class="text-xs font-semibold text-ink-muted"></span>
+                        </div>
+                    </div>
+
+                    <div class="bg-surface border border-line/90 rounded p-4 border border-line">
+                        <span class="text-[11px] font-semibold text-ink-muted uppercase">Total Drivers</span>
+                        <div class="flex items-baseline justify-between mt-1">
+                            <span id="statTotalDrivers" class="text-2xl font-semibold text-navy">0</span>
+                            <span class="text-xs font-semibold text-brand"></span>
+                        </div>
+                    </div>
+
+                    <div class="bg-surface border border-line/90 rounded p-4 border border-line">
+                        <span class="text-[11px] font-semibold text-ink-muted uppercase">Total Students</span>
+                        <div class="flex items-baseline justify-between mt-1">
+                            <span id="statTotalStudents" class="text-2xl font-semibold text-navy">0</span>
+                            <span class="text-xs font-semibold text-brand"></span>
+                        </div>
+                    </div>
+
+                    <div class="bg-surface border border-line/90 rounded p-4 border border-line">
+                        <span class="text-[11px] font-semibold text-ink-muted uppercase">Travelling Today</span>
+                        <div class="flex items-baseline justify-between mt-1">
+                            <span id="statTravellingToday" class="text-2xl font-semibold text-ok">0</span>
+                            <span class="text-xs font-semibold text-ok"></span>
+                        </div>
+                    </div>
+
+                    <div class="bg-surface border border-line/90 rounded p-4 border border-line">
+                        <span class="text-[11px] font-semibold text-ink-muted uppercase">Total Routes</span>
+                        <div class="flex items-baseline justify-between mt-1">
+                            <span id="statTotalRoutes" class="text-2xl font-semibold text-navy">0</span>
+                            <span class="text-xs font-semibold text-ink-muted"></span>
+                        </div>
+                    </div>
+
+                    <div class="bg-surface border border-line/90 rounded p-4 border border-line">
+                        <span class="text-[11px] font-semibold text-ink-muted uppercase">Total Stops</span>
+                        <div class="flex items-baseline justify-between mt-1">
+                            <span id="statTotalStops" class="text-2xl font-semibold text-navy">0</span>
+                            <span class="text-xs font-semibold text-ink-muted"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Active Trips & Alerts Dual Columns -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Active Trips Card -->
+                    <div class="bg-surface border border-line/90 rounded p-5 border border-line">
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="text-sm font-semibold text-navy flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-ok"></span> Currently Active Trips
+                            </h3>
+                            <button type="button" onclick="window.KambusAdmin.showSection('live-map')" class="text-xs font-semibold text-brand hover:underline">
+                                Full Map &rarr;
+                            </button>
+                        </div>
+                        <div id="dashboardActiveTrips" class="space-y-2.5">
+                            <div class="p-6 text-center text-xs text-ink-muted">Loading active trips...</div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Alerts -->
+                    <div class="bg-surface border border-line/90 rounded p-5 border border-line">
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="text-sm font-semibold text-navy flex items-center gap-2">
+                                <svg class="w-4 h-4 shrink-0 text-warn" aria-hidden="true"><use href="icons.svg#icon-alert"/></svg> Operational Alerts
+                            </h3>
+                            <button type="button" onclick="window.KambusAdmin.showSection('alerts')" class="text-xs font-semibold text-brand hover:underline">
+                                View All &rarr;
+                            </button>
+                        </div>
+                        <div id="dashboardRecentAlerts" class="divide-y divide-slate-100">
+                            <div class="p-6 text-center text-xs text-ink-muted">Loading alerts...</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 2:  BUS MANAGEMENT -->
+            <section id="section-buses" class="admin-section space-y-5">
+                <div class="flex items-center justify-between gap-3">
+                    <div>
+                        <h2 class="text-xl font-semibold text-navy tracking-tight">Bus Fleet Management</h2>
+                        <p class="text-xs text-ink-muted">Manage vehicles, assigned routes, and drivers.</p>
+                    </div>
+                    <button type="button" onclick="window.KambusAdmin.openAddBusModal()" class="px-4 py-2 bg-brand hover:bg-brandDark text-white text-xs font-semibold rounded border border-line flex items-center gap-2">
+                        <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-plus"/></svg> <span>Add Bus</span>
+                    </button>
+                </div>
+
+                <div id="busesList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div class="p-8 text-center text-xs text-ink-muted">Loading buses...</div>
+                </div>
+            </section>
+
+            <!-- SECTION 3:  DRIVER MANAGEMENT -->
+            <section id="section-drivers" class="admin-section space-y-5">
+                <div class="flex items-center justify-between gap-3">
+                    <div>
+                        <h2 class="text-xl font-semibold text-navy tracking-tight">Driver Management</h2>
+                        <p class="text-xs text-ink-muted">Manage driver credentials, vehicles, and trip logs.</p>
+                    </div>
+                    <button type="button" onclick="document.getElementById('addDriverModal').classList.remove('hidden')" class="px-4 py-2 bg-brand hover:bg-brandDark text-white text-xs font-semibold rounded border border-line flex items-center gap-2">
+                        <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-plus"/></svg> <span>Add Driver</span>
+                    </button>
+                </div>
+
+                <div id="driversList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div class="p-8 text-center text-xs text-ink-muted">Loading drivers...</div>
+                </div>
+            </section>
+
+            <!-- SECTION 4:  STUDENT MANAGEMENT -->
+            <section id="section-students" class="admin-section space-y-5">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                        <h2 class="text-xl font-semibold text-navy tracking-tight">Student Directory</h2>
+                        <p class="text-xs text-ink-muted">Manage student profiles, bus assignments, and stops.</p>
+                    </div>
+                    <button type="button" onclick="window.KambusAdmin.openAddStudentModal()" class="px-4 py-2 bg-brand hover:bg-brandDark text-white text-xs font-semibold rounded border border-line flex items-center gap-2 self-start sm:self-auto">
+                        <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-user-plus"/></svg> <span>Add Student</span>
+                    </button>
+                </div>
+
+                <!-- Filters Bar -->
+                <div class="bg-surface border border-line/90 rounded p-3.5 border border-line grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                        <input type="text" id="studentSearchInput" placeholder="Search by name, roll, or department..." oninput="window.KambusAdmin.loadStudents()" class="w-full px-3 py-2 border border-line rounded text-xs focus:border-brand focus:ring-1 focus:ring-brand">
+                    </div>
+                    <div>
+                        <select id="studentFilterBus" onchange="window.KambusAdmin.loadStudents()" class="w-full px-3 py-2 border border-line rounded text-xs focus:border-brand">
+                            <option value="">-- All Buses --</option>
+                        </select>
+                    </div>
+                    <div>
+                        <select id="studentFilterTravelling" onchange="window.KambusAdmin.loadStudents()" class="w-full px-3 py-2 border border-line rounded text-xs focus:border-brand">
+                            <option value="">-- All Travel Statuses --</option>
+                            <option value="true">Travelling Today</option>
+                            <option value="false">Not Travelling Today</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Student List Container -->
+                <div id="studentsList">
+                    <div class="p-8 text-center text-xs text-ink-muted">Loading students...</div>
+                </div>
+            </section>
+
+            <!-- SECTION: PARENT MANAGEMENT -->
+            <section id="section-parents" class="admin-section space-y-5">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                        <h2 class="text-xl font-semibold text-navy tracking-tight">Parent Directory</h2>
+                        <p class="text-xs text-ink-muted">Create parent accounts and manage links to students.</p>
+                    </div>
+                    <button type="button" onclick="window.KambusAdmin.openAddParentModal()" class="px-4 py-2 bg-brand hover:bg-brandDark text-white text-xs font-semibold rounded border border-line flex items-center gap-2 self-start sm:self-auto">
+                        <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-user-plus"/></svg> <span>Add Parent</span>
+                    </button>
+                </div>
+
+                <!-- Filters Bar -->
+                <div class="bg-surface border border-line/90 rounded p-3.5 border border-line flex flex-col sm:flex-row gap-3">
+                    <div class="flex-1">
+                        <input type="text" id="parentSearchInput" placeholder="Search by name, phone, login ID, or email..." oninput="window.KambusAdmin.loadParents()" class="w-full px-3 py-2 border border-line rounded text-xs focus:border-brand focus:ring-1 focus:ring-brand">
+                    </div>
+                </div>
+
+                <!-- Parent List Container -->
+                <div id="parentsList">
+                    <div class="p-8 text-center text-xs text-ink-muted">Loading parents...</div>
+                </div>
+            </section>
+
+            <!-- SECTION 5:  ROUTE MANAGEMENT -->
+            <section id="section-routes" class="admin-section space-y-5">
+                <div class="flex items-center justify-between gap-3">
+                    <div>
+                        <h2 class="text-xl font-semibold text-navy tracking-tight">Route Management</h2>
+                        <p class="text-xs text-ink-muted">Configure road-based transit routes to KITSW Campus.</p>
+                    </div>
+                    <button type="button" onclick="document.getElementById('addRouteModal').classList.remove('hidden')" class="px-4 py-2 bg-brand hover:bg-brandDark text-white text-xs font-semibold rounded border border-line flex items-center gap-2">
+                        <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-plus"/></svg> <span>Create Route</span>
+                    </button>
+                </div>
+
+                <div id="routesList" class="space-y-4">
+                    <div class="p-8 text-center text-xs text-ink-muted">Loading routes...</div>
+                </div>
+            </section>
+
+            <!-- SECTION 6:  STOP MANAGEMENT -->
+            <section id="section-stops" class="admin-section space-y-5">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                        <h2 class="text-xl font-semibold text-navy tracking-tight">Stop Management</h2>
+                        <p class="text-xs text-ink-muted">Manage bus stops, routes, coordinates, and sequence order.</p>
+                    </div>
+                    <button type="button" onclick="window.KambusAdmin.openAddStopModal()" class="px-4 py-2 bg-brand hover:bg-brandDark text-white text-xs font-semibold rounded border border-line flex items-center gap-2 self-start sm:self-auto">
+                        <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-map-pin"/></svg> <span>Add Stop (Map Picker)</span>
+                    </button>
+                </div>
+
+                <!-- Route Filter Bar -->
+                <div class="bg-surface border border-line/90 rounded p-3.5 border border-line flex items-center gap-3">
+                    <label for="stopFilterRoute" class="text-xs font-semibold text-navy shrink-0">Filter by Route:</label>
+                    <select id="stopFilterRoute" onchange="window.KambusAdmin.loadStops()" class="w-full sm:w-72 px-3 py-2 border border-line rounded text-xs focus:border-brand route-select-dropdown">
+                        <option value="">-- All Routes --</option>
+                    </select>
+                </div>
+
+                <div id="stopsList" class="space-y-3">
+                    <div class="p-8 text-center text-xs text-ink-muted">Loading stops...</div>
+                </div>
+            </section>
+
+            <!-- SECTION 6b:  DRIVER COMPLAINTS -->
+            <section id="section-complaints" class="admin-section space-y-5">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                        <h2 class="text-xl font-semibold text-navy tracking-tight">Driver Complaints & Feedback</h2>
+                        <p class="text-xs text-ink-muted">Student reports and peer-corroborated verification results.</p>
+                    </div>
+                    <button type="button" onclick="window.KambusAdmin.loadComplaints()" class="px-3.5 py-2 bg-bg hover:bg-slate-200 text-navy text-xs font-semibold rounded border border-line flex items-center gap-2 self-start sm:self-auto transition">
+                        <svg class="w-4 h-4 shrink-0 text-xs" aria-hidden="true"><use href="icons.svg#icon-refresh"/></svg> <span>Refresh Complaints</span>
+                    </button>
+                </div>
+
+                <!-- KPI Summary Cards -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div class="bg-surface border border-line/90 rounded p-4 border border-line">
+                        <span class="text-[10px] font-semibold text-ink-muted uppercase tracking-wider">Total Reports</span>
+                        <div class="flex items-baseline justify-between mt-1">
+                            <span id="complaintsStatTotal" class="text-2xl font-semibold text-navy">0</span>
+                            <span class="text-xs font-semibold text-warn"></span>
+                        </div>
+                    </div>
+                    <div class="bg-surface border border-line/90 rounded p-4 border border-line">
+                        <span class="text-[10px] font-semibold text-ink-muted uppercase tracking-wider">Corroborated by Peers</span>
+                        <div class="flex items-baseline justify-between mt-1">
+                            <span id="complaintsStatCorroborated" class="text-2xl font-semibold text-danger">0</span>
+                            <span class="text-xs font-semibold text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="bg-surface border border-line/90 rounded p-4 border border-line">
+                        <span class="text-[10px] font-semibold text-ink-muted uppercase tracking-wider">Drivers Reported</span>
+                        <div class="flex items-baseline justify-between mt-1">
+                            <span id="complaintsStatDriversCount" class="text-2xl font-semibold text-navy">0</span>
+                            <span class="text-xs font-semibold text-brand"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filter Bar -->
+                <div class="bg-surface border border-line/90 rounded p-3.5 border border-line flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                    <div class="flex items-center gap-2 flex-1">
+                        <label for="complaintFilterDriver" class="text-xs font-semibold text-navy shrink-0">Filter by Driver:</label>
+                        <select id="complaintFilterDriver" onchange="window.KambusAdmin.loadComplaints()" class="w-full px-3 py-2 border border-line rounded text-xs focus:border-brand driver-select-dropdown">
+                            <option value="">-- All Drivers --</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <label for="complaintFilterCorroborated" class="text-xs font-semibold text-navy shrink-0">Status:</label>
+                        <select id="complaintFilterCorroborated" onchange="window.KambusAdmin.filterComplaintsList()" class="px-3 py-2 border border-line rounded text-xs focus:border-brand">
+                            <option value="all">All Reports</option>
+                            <option value="corroborated">Corroborated Only (High Priority)</option>
+                            <option value="pending">Pending Verification</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Complaints List Container -->
+                <div id="complaintsList" class="space-y-3">
+                    <div class="p-8 text-center text-xs text-ink-muted">Loading complaints...</div>
+                </div>
+            </section>
+
+            <!-- SECTION 6c: GEOFENCE ENTRY LOG -->
+            <section id="section-geofence-logs" class="admin-section space-y-5">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                        <h2 class="text-xl font-semibold text-navy tracking-tight">Geofence Entry Log</h2>
+                        <p class="text-xs text-ink-muted">Recorded bus-entry events with their captured location.</p>
+                    </div>
+                    <button type="button" onclick="window.KambusAdmin.loadGeofenceLogs()" class="px-3.5 py-2 bg-bg hover:bg-slate-200 text-navy text-xs font-semibold rounded border border-line flex items-center gap-2 self-start sm:self-auto transition">
+                        <svg class="w-4 h-4 shrink-0 text-xs" aria-hidden="true"><use href="icons.svg#icon-refresh"/></svg> <span>Refresh Log</span>
+                    </button>
+                </div>
+
+                <div class="bg-surface border border-line/90 rounded border border-line overflow-x-auto">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-bg border-b border-line text-[10px] font-semibold uppercase tracking-wider text-ink-muted">
+                            <tr>
+                                <th class="px-4 py-3">Bus</th>
+                                <th class="px-4 py-3">Driver</th>
+                                <th class="px-4 py-3">Entry Time</th>
+                                <th class="px-4 py-3">Location</th>
+                            </tr>
+                        </thead>
+                        <tbody id="geofenceLogsList">
+                            <tr><td colspan="4" class="p-8 text-center text-xs text-ink-muted">Loading geofence entry logs...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- SECTION 6d: TEMPORARY STOP CHANGES AUDIT LOG -->
+            <section id="section-temp-stop-logs" class="admin-section space-y-5">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                        <h2 class="text-xl font-semibold text-navy tracking-tight">Temporary Stop Changes</h2>
+                        <p class="text-xs text-ink-muted">Log of student temporary stop selections & alternative bus allotments. Use the bin icon to delete a change.</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <select id="tempStopFilterStatus" onchange="window.KambusAdmin.filterTempStopLogs()" class="p-2 border border-line rounded text-xs font-semibold bg-surface text-navy">
+                            <option value="all">All Statuses</option>
+                            <option value="pending_admin_approval">Pending Approval</option>
+                            <option value="active">Active</option>
+                            <option value="scheduled">Scheduled</option>
+                            <option value="approved">Approved</option>
+                            <option value="rejected">Rejected</option>
+                            <option value="cancelled">Cancelled</option>
+                            <option value="expired">Expired</option>
+                        </select>
+                        <button type="button" onclick="window.KambusAdmin.loadTemporaryStopLogs()" class="px-3.5 py-2 bg-bg hover:bg-slate-200 text-navy text-xs font-semibold rounded border border-line flex items-center gap-2 transition">
+                            <svg class="w-4 h-4 shrink-0 text-xs" aria-hidden="true"><use href="icons.svg#icon-refresh"/></svg> <span>Refresh Log</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-surface border border-line/90 rounded border border-line overflow-x-auto">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-bg border-b border-line text-[10px] font-semibold uppercase tracking-wider text-ink-muted">
+                            <tr>
+                                <th class="px-4 py-3">Student</th>
+                                <th class="px-4 py-3">Type</th>
+                                <th class="px-4 py-3">Original Stop</th>
+                                <th class="px-4 py-3">New Stop</th>
+                                <th class="px-4 py-3">Target Bus</th>
+                                <th class="px-4 py-3">Effective Dates</th>
+                                <th class="px-4 py-3">Match Detail</th>
+                                <th class="px-4 py-3">Status</th>
+                                <th class="px-4 py-3 text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tempStopLogsList">
+                            <tr><td colspan="9" class="p-8 text-center text-xs text-ink-muted">Loading stop change logs...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- SECTION 7:  LIVE FLEET MAP -->
+            <section id="section-live-map" class="admin-section space-y-4">
+                <div class="flex items-center justify-between gap-3">
+                    <div>
+                        <h2 class="text-xl font-semibold text-navy tracking-tight">Live Fleet Monitoring</h2>
+                        <p class="text-xs text-ink-muted">Live GPS tracking of campus buses in transit to KITSW.</p>
+                    </div>
+                    <span class="px-3 py-1 bg-ok/10 text-ok rounded-full border border-ok/20 text-xs font-semibold flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-ok animate-ping"></span> Live Tracking Active
+                    </span>
+                </div>
+
+                <!-- Live Map Container -->
+                <div class="bg-surface border border-line/90 rounded overflow-hidden border border-line">
+                    <div id="adminLiveMap" style="height: 600px; width: 100%;"></div>
+                </div>
+            </section>
+
+            <!-- SECTION 7b: STUDENT MESSAGES -->
+            <section id="section-messages" class="admin-section space-y-5">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                        <h2 class="text-xl font-semibold text-navy tracking-tight">Student Messages & Inquiries</h2>
+                        <p class="text-xs text-ink-muted">Direct inbox for student feedback and transport messages.</p>
+                    </div>
+                    <button type="button" onclick="window.KambusAdmin.loadMessages()" class="px-3.5 py-2 bg-bg hover:bg-slate-200 text-navy text-xs font-semibold rounded border border-line flex items-center gap-2 self-start sm:self-auto transition">
+                        <svg class="w-4 h-4 shrink-0 text-xs" aria-hidden="true"><use href="icons.svg#icon-refresh"/></svg> <span>Refresh</span>
+                    </button>
+                </div>
+
+                <!-- KPI Summary Cards -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div class="bg-surface border border-line/90 rounded p-4">
+                        <span class="text-[10px] font-semibold text-ink-muted uppercase tracking-wider">Total Messages</span>
+                        <div class="flex items-baseline justify-between mt-1">
+                            <span id="messagesStatTotal" class="text-2xl font-semibold text-navy">0</span>
+                        </div>
+                    </div>
+                    <div class="bg-surface border border-line/90 rounded p-4">
+                        <span class="text-[10px] font-semibold text-ink-muted uppercase tracking-wider">Unread</span>
+                        <div class="flex items-baseline justify-between mt-1">
+                            <span id="messagesStatUnread" class="text-2xl font-semibold text-warn">0</span>
+                        </div>
+                    </div>
+                    <div class="bg-surface border border-line/90 rounded p-4">
+                        <span class="text-[10px] font-semibold text-ink-muted uppercase tracking-wider">Bus-Related</span>
+                        <div class="flex items-baseline justify-between mt-1">
+                            <span id="messagesStatBusRelated" class="text-2xl font-semibold text-brand">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filter Bar -->
+                <div class="bg-surface border border-line/90 rounded p-3.5 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                    <div class="flex items-center gap-2 flex-1">
+                        <label for="messageFilterCategory" class="text-xs font-semibold text-navy shrink-0">Category:</label>
+                        <select id="messageFilterCategory" onchange="window.KambusAdmin.loadMessages()" class="w-full px-3 py-2 border border-line rounded text-xs focus:border-brand">
+                            <option value="">All Categories</option>
+                            <option value="general">General</option>
+                            <option value="bus-related">Bus-related</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <label for="messageFilterStatus" class="text-xs font-semibold text-navy shrink-0">Status:</label>
+                        <select id="messageFilterStatus" onchange="window.KambusAdmin.loadMessages()" class="px-3 py-2 border border-line rounded text-xs focus:border-brand">
+                            <option value="">All Statuses</option>
+                            <option value="unread">Unread Only</option>
+                            <option value="read">Read Only</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Messages List Container -->
+                <div id="messagesList" class="space-y-3">
+                    <div class="p-8 text-center text-xs text-ink-muted">Loading messages...</div>
+                </div>
+            </section>
+
+            <!-- SECTION 8:  ANNOUNCEMENTS & NOTIFICATIONS -->
+            <section id="section-notifications" class="admin-section space-y-6">
+                <div>
+                    <h2 class="text-xl font-semibold text-navy tracking-tight">Updates Hub</h2>
+                    <p class="text-xs text-ink-muted">Keep riders in the loop with one clean send.</p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    <!-- Composer Form -->
+                    <form onsubmit="window.KambusAdmin.submitBroadcastAnnouncement(event)" class="lg:col-span-7 bg-surface border border-line/90 rounded-2xl p-5 border border-line space-y-4">
+                        <h3 class="text-sm font-semibold text-navy">Drop an update</h3>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-navy mb-1">Start with a template</label>
+                            <select id="announcementTemplateSelect" onchange="window.KambusAdmin.updateAnnouncementTemplateFields()" class="w-full p-2.5 border border-line rounded text-xs font-semibold focus:border-brand">
+                                <option value="TEMPLATE_A">Template A — Bus Start / Schedule</option>
+                                <option value="TEMPLATE_B">Template B — Student Bus Change</option>
+                                <option value="TEMPLATE_C">Template C — Bus Unavailable</option>
+                                <option value="TEMPLATE_D">Template D — Bus Replacement</option>
+                                <option value="TEMPLATE_E">Template E — Schedule Time Change</option>
+                                <option value="TEMPLATE_F">Template F — Route Modification</option>
+                                <option value="TEMPLATE_G">Template G — Stop Change</option>
+                                <option value="TEMPLATE_H">Template H — College Holiday / No Bus</option>
+                            </select>
+                        </div>
+
+                        <!-- Dynamic Fields Area -->
+                        <div id="templateFieldsContainer" class="space-y-3 p-3.5 bg-bg border border-line rounded"></div>
+
+                        <!-- Target Audience Area -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                            <label class="block text-xs font-semibold text-navy mb-1">Who should see this?</label>
+                                <select id="announcementTargetType" onchange="window.KambusAdmin.onAnnouncementTargetTypeChanged()" class="w-full p-2.5 border border-line rounded text-xs">
+                                <option value="all">All students</option>
+                                    <option value="bus">Specific Bus</option>
+                                    <option value="route">Specific Route</option>
+                                </select>
+                            </div>
+                            <div id="targetBusCol" class="hidden">
+                                <label class="block text-xs font-semibold text-navy mb-1">Select Bus</label>
+                                <select id="announcementTargetBus" onchange="window.KambusAdmin.calculateAffectedStudents()" class="w-full p-2.5 border border-line rounded text-xs bus-select-dropdown">
+                                    <option value="">-- Select Bus --</option>
+                                </select>
+                            </div>
+                            <div id="targetRouteCol" class="hidden">
+                                <label class="block text-xs font-semibold text-navy mb-1">Select Route</label>
+                                <select id="announcementTargetRoute" onchange="window.KambusAdmin.calculateAffectedStudents()" class="w-full p-2.5 border border-line rounded text-xs route-select-dropdown">
+                                    <option value="">-- Select Route --</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-navy mb-1">Headline</label>
+                            <input type="text" id="announcementTitle" class="w-full p-2.5 border border-line rounded text-xs font-semibold" required>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-navy mb-1">Message</label>
+                            <textarea id="announcementMessage" rows="3" class="w-full p-2.5 border border-line rounded text-xs" required></textarea>
+                        </div>
+
+                        <!-- Recipient Counter & Send Button -->
+                        <div class="pt-3 border-t border-slate-100 flex items-center justify-between gap-3">
+                            <span id="announcementRecipientCount" class="text-xs font-semibold text-brand bg-brand/10 px-3 py-1.5 rounded">
+                                 Checking reach…
+                            </span>
+                            <button type="submit" id="btnBroadcastAnnouncement" class="px-5 py-2.5 bg-brand hover:bg-brandDark text-white text-xs font-semibold rounded shadow flex items-center gap-2">
+                                <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-paper-plane"/></svg> <span>Send update</span>
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- History List -->
+                    <div class="lg:col-span-5 bg-surface border border-line/90 rounded-2xl p-5 border border-line flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-sm font-semibold text-navy mb-3">Recent sends</h3>
+                            <div id="announcementHistoryList" class="space-y-2.5 max-h-[500px] overflow-y-auto">
+                                <div class="p-6 text-center text-xs text-ink-muted">Loading the feed…</div>
+                            </div>
+                        </div>
+                        <div class="mt-5 pt-5 border-t border-slate-100">
+                            <h3 class="text-sm font-semibold text-navy mb-3">Bus-switch timeline</h3>
+                            <div id="adminBusChangesList" class="space-y-2.5 max-h-[300px] overflow-y-auto">
+                                <div class="p-4 text-center text-xs text-ink-muted">Loading bus changes...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 9:  ALERT CENTER -->
+            <section id="section-alerts" class="admin-section space-y-5">
+                <div>
+                    <h2 class="text-xl font-semibold text-navy tracking-tight">Operational Alerts & SOS</h2>
+                    <p class="text-xs text-ink-muted">Live operational alerts, breakdown reports, and driver emergency signals.</p>
+                </div>
+
+                <div id="alertsList" class="space-y-3">
+                    <div class="p-8 text-center text-xs text-ink-muted">Loading alerts...</div>
+                </div>
+            </section>
+
+            <!-- SECTION 10:  TODAY'S OPERATIONS -->
+            <section id="section-today-operations" class="admin-section space-y-6">
+                <div>
+                    <h2 class="text-xl font-semibold text-navy tracking-tight">Today's Operations Breakdown</h2>
+                    <p class="text-xs text-ink-muted">Summary of today's active trips, student attendance, and fleet status.</p>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4" id="todayOpsContainer">
+                    <div class="bg-surface border border-line/90 rounded p-5 border border-line">
+                        <h4 class="text-xs font-semibold text-ink-muted uppercase">Buses Breakdown</h4>
+                        <div class="mt-3 space-y-2 text-xs">
+                            <div class="flex justify-between font-semibold text-ok"><span> Active Now:</span> <span id="opsBusesActive">0</span></div>
+                            <div class="flex justify-between text-navy"><span> Not Started:</span> <span id="opsBusesNotStarted">0</span></div>
+                            <div class="flex justify-between text-ink-muted"><span> Offline:</span> <span id="opsBusesOffline">0</span></div>
+                        </div>
+                    </div>
+
+                    <div class="bg-surface border border-line/90 rounded p-5 border border-line">
+                        <h4 class="text-xs font-semibold text-ink-muted uppercase">Student Travel Status</h4>
+                        <div class="mt-3 space-y-2 text-xs">
+                            <div class="flex justify-between font-semibold text-brand"><span> Registered:</span> <span id="opsStudentsExpected">0</span></div>
+                            <div class="flex justify-between font-semibold text-ok"><span> Travelling Today:</span> <span id="opsStudentsTravelling">0</span></div>
+                            <div class="flex justify-between text-danger"><span> Not Travelling:</span> <span id="opsStudentsNotTravelling">0</span></div>
+                        </div>
+                    </div>
+
+                    <div class="bg-surface border border-line/90 rounded p-5 border border-line">
+                        <h4 class="text-xs font-semibold text-ink-muted uppercase">Trips Summary</h4>
+                        <div class="mt-3 space-y-2 text-xs">
+                            <div class="flex justify-between font-semibold text-ok"><span> Active in Transit:</span> <span id="opsTripsActive">0</span></div>
+                            <div class="flex justify-between text-navy"><span> Completed Today:</span> <span id="opsTripsCompleted">0</span></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 11:  GLOBAL SEARCH -->
+            <section id="section-search" class="admin-section space-y-5">
+                <div>
+                    <h2 class="text-xl font-semibold text-navy tracking-tight">Global Entity Search</h2>
+                    <p class="text-xs text-ink-muted">Instantly lookup students, drivers, buses, routes, and stops.</p>
+                </div>
+
+                <div class="bg-surface border border-line/90 rounded p-4 border border-line">
+                    <div class="flex items-center gap-2">
+                        <input type="text" id="globalSearchInput" placeholder="Type a bus number, student roll number, driver name, or stop..." oninput="window.KambusAdmin.executeGlobalSearch()" class="w-full px-3.5 py-2.5 border border-line rounded text-xs font-semibold focus:border-brand">
+                    </div>
+                </div>
+
+                <div id="globalSearchResults" class="bg-surface border border-line/90 rounded p-4 border border-line min-h-[150px]">
+                    <div class="p-6 text-center text-xs text-ink-muted">Start typing to search records...</div>
+                </div>
+            </section>
+
+            <!-- SECTION 12:  ACTIVITY LOG -->
+            <section id="section-activity-logs" class="admin-section space-y-5">
+                <div>
+                    <h2 class="text-xl font-semibold text-navy tracking-tight">Admin Activity Log</h2>
+                    <p class="text-xs text-ink-muted">Audit trail of all administrative actions performed.</p>
+                </div>
+
+                <div id="activityLogsList" class="space-y-2.5">
+                    <div class="p-8 text-center text-xs text-ink-muted">Loading activity logs...</div>
+                </div>
+            </section>
+
+            <!-- SECTION 9a: CAMPUS MANAGEMENT (super-admin only) -->
+            <section id="section-campuses" class="admin-section space-y-5">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                        <h2 class="text-xl font-semibold text-navy tracking-tight">Campus Management</h2>
+                        <p class="text-xs text-ink-muted">Super Admin control center: multi-campus provisioning, plan tiers, and operational status.</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="window.KambusAdmin.loadCampuses()" class="px-3.5 py-2 bg-bg hover:bg-slate-200 text-navy text-xs font-semibold rounded border border-line flex items-center gap-1.5 transition">
+                            <svg class="w-3.5 h-3.5 shrink-0" aria-hidden="true"><use href="icons.svg#icon-refresh"/></svg> <span>Refresh</span>
+                        </button>
+                        <button type="button" onclick="window.KambusAdmin.openCreateCampusModal()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded border border-line flex items-center gap-2 shadow-xs transition">
+                            <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-plus"/></svg> <span>Create Campus</span>
+                        </button>
+                    </div>
+                </div>
+                <div id="campusesList">
+                    <div class="p-8 text-center text-xs text-ink-muted">Loading campuses...</div>
+                </div>
+            </section>
+
+            <!-- SECTION 9b: ADMIN ACCOUNTS (super-admin only) -->
+            <section id="section-admins" class="admin-section space-y-5">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                        <h2 class="text-xl font-semibold text-navy tracking-tight">Admin Accounts</h2>
+                        <p class="text-xs text-ink-muted">Create admins, reset passwords, allot to campuses, or toggle access. Admins sign in on the Admin tab with their Admin ID.</p>
+                    </div>
+                    <button type="button" onclick="window.KambusAdmin.openAddAdminModal()" class="px-4 py-2 bg-brand hover:bg-brandDark text-white text-xs font-semibold rounded border border-line flex items-center gap-2 self-start sm:self-auto">
+                        <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-user-shield"/></svg> <span>Add Admin</span>
+                    </button>
+                </div>
+                <div id="adminsList">
+                    <div class="p-8 text-center text-xs text-ink-muted">Loading admins...</div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- MODALS & DETAIL DRAWERS -->
+    <!-- ========================================================= -->
+
+    <!-- BUS DETAILS MODAL (WITH EDITABLE FIELDS + QUICK DRIVER/ROUTE CHANGE) -->
+    <div id="busDetailsModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-surface rounded max-w-lg w-full max-h-[90vh] flex flex-col border border-line overflow-hidden border border-slate-100">
+            <!-- Modal Header -->
+            <div class="p-5 bg-bg border-b border-slate-100 flex items-center justify-between">
+                <div>
+                    <h3 id="modalBusTitle" class="text-lg font-semibold text-navy">Bus Details</h3>
+                    <p id="modalBusReg" class="text-xs text-ink-muted">Registration</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div id="modalBusStatusBadge"></div>
+                    <button type="button" onclick="document.getElementById('busDetailsModal').classList.add('hidden')" class="w-8 h-8 rounded-full bg-slate-200 text-ink-muted flex items-center justify-center hover:bg-slate-300 transition">
+                        <svg class="w-4 h-4 shrink-0 text-sm" aria-hidden="true"><use href="icons.svg#icon-xmark"/></svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="p-5 overflow-y-auto space-y-4 text-xs">
+                <!-- Stats Summary -->
+                <div class="grid grid-cols-2 gap-3 p-3.5 bg-bg/60 rounded border border-line">
+                    <div>
+                        <span class="text-[10px] font-semibold uppercase text-ink-muted">Assigned Students</span>
+                        <p id="modalBusStudentCount" class="text-lg font-semibold text-navy mt-0.5">0</p>
+                    </div>
+                    <div>
+                        <span class="text-[10px] font-semibold uppercase text-ink-muted">Travelling Today</span>
+                        <p id="modalBusTravellingCount" class="text-lg font-semibold text-ok mt-0.5">0</p>
+                    </div>
+                </div>
+
+                <!-- Editable Bus Properties (Bus Number, Reg, Status) -->
+                <div class="p-4 bg-surface border border-line rounded space-y-3">
+                    <span class="text-[10px] font-semibold uppercase text-ink-muted">Edit Bus Properties</span>
+                    <input type="hidden" id="modalBusId">
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-[11px] font-semibold text-ink-muted mb-0.5">Bus Number</label>
+                            <input type="text" id="modalEditBusNumber" class="w-full p-2 border border-line rounded font-semibold text-xs">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-ink-muted mb-0.5">Reg. Number</label>
+                            <input type="text" id="modalEditBusReg" class="w-full p-2 border border-line rounded text-xs">
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="flex-1">
+                            <label class="block text-[11px] font-semibold text-ink-muted mb-0.5">Fleet Status</label>
+                            <select id="modalEditBusStatus" class="w-full p-2 border border-line rounded text-xs font-semibold">
+                                <option value="active">Active (Operational)</option>
+                                <option value="inactive">Inactive (Maintenance / Offline)</option>
+                            </select>
+                        </div>
+                        <button type="button" id="btnSaveBusGeneralProps" class="mt-4 px-3 py-2 bg-slate-800 text-white font-semibold rounded hover:bg-slate-900 transition shrink-0">
+                            Update Info
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Current Driver & Instant Change Driver -->
+                <div class="p-4 bg-surface border border-line rounded space-y-2">
+                    <div>
+                        <span class="text-[10px] font-semibold uppercase text-ink-muted">Assigned Driver</span>
+                        <h4 id="modalBusDriverName" class="text-sm font-semibold text-navy">Driver Name</h4>
+                        <p id="modalBusDriverPhone" class="text-xs text-ink-muted font-semibold"></p>
+                    </div>
+                    <div class="pt-2 border-t border-slate-100 flex items-center gap-2">
+                        <select id="modalBusDriverSelect" class="flex-1 p-2 border border-line rounded text-xs driver-select-dropdown"></select>
+                        <button type="button" id="btnSaveBusDriver" class="px-3 py-2 bg-brand text-white font-semibold rounded hover:bg-brandDark transition shrink-0">
+                            Save Driver
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Current Route & Instant Change Route -->
+                <div class="p-4 bg-surface border border-line rounded space-y-2">
+                    <div>
+                        <span class="text-[10px] font-semibold uppercase text-ink-muted">Assigned Route</span>
+                        <h4 id="modalBusRouteName" class="text-sm font-semibold text-navy">Route Name</h4>
+                    </div>
+                    <div class="pt-2 border-t border-slate-100 flex items-center gap-2">
+                        <select id="modalBusRouteSelect" class="flex-1 p-2 border border-line rounded text-xs route-select-dropdown"></select>
+                        <button type="button" id="btnSaveBusRoute" class="px-3 py-2 bg-brand text-white font-semibold rounded hover:bg-brandDark transition shrink-0">
+                            Save Route
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Assigned Students List -->
+                <div>
+                    <h4 class="text-xs font-semibold text-navy mb-2">Students Assigned to this Bus</h4>
+                    <div id="modalBusStudentsList" class="max-h-40 overflow-y-auto border border-line rounded divide-y divide-slate-100 p-2"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DRIVER DETAILS MODAL -->
+    <div id="driverDetailsModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-surface rounded max-w-md w-full max-h-[85vh] flex flex-col border border-line overflow-hidden border border-slate-100">
+            <div class="p-5 bg-bg border-b border-slate-100 flex items-center justify-between">
+                <div>
+                    <h3 id="modalDriverName" class="text-lg font-semibold text-navy">Driver Profile</h3>
+                    <p id="modalDriverCode" class="text-xs font-mono text-ink-muted">Code</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button type="button" id="modalEditDriverBtn" class="px-3 py-1.5 bg-surface border border-line text-navy hover:text-brand hover:border-brand/40 font-semibold rounded border border-line flex items-center gap-1.5 text-xs transition">
+                        <svg class="w-4 h-4 shrink-0 text-xs" aria-hidden="true"><use href="icons.svg#icon-pen"/></svg> <span>Edit</span>
+                    </button>
+                    <button type="button" onclick="document.getElementById('driverDetailsModal').classList.add('hidden')" class="w-8 h-8 rounded-full bg-slate-200 text-ink-muted flex items-center justify-center hover:bg-slate-300 transition">
+                        <svg class="w-4 h-4 shrink-0 text-sm" aria-hidden="true"><use href="icons.svg#icon-xmark"/></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="p-5 overflow-y-auto space-y-3 text-xs">
+                <div class="p-3 bg-bg rounded space-y-1">
+                    <p id="modalDriverPhone" class="font-semibold text-navy">Phone</p>
+                    <p id="modalDriverBus" class="font-semibold text-brand">Bus Assignment</p>
+                </div>
+                <h4 class="font-semibold text-navy mt-3">Recent Trip History</h4>
+                <div id="modalDriverTrips" class="border border-line rounded divide-y divide-slate-100 max-h-48 overflow-y-auto"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADD BUS MODAL -->
+    <div id="addBusModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-surface rounded max-w-md w-full p-6 border border-line border border-slate-100">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-base font-semibold text-navy">Add New Bus</h3>
+                <button type="button" onclick="document.getElementById('addBusModal').classList.add('hidden')" class="text-ink-muted hover:text-ink-muted">
+                    <svg class="w-4 h-4 shrink-0 text-lg" aria-hidden="true"><use href="icons.svg#icon-xmark"/></svg>
+                </button>
+            </div>
+            <form onsubmit="window.KambusAdmin.submitAddBus(event)" class="space-y-3.5 text-xs">
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Bus Number (e.g. 4, 12, 101)</label>
+                    <input type="text" name="bus_number" placeholder="e.g. 4" class="w-full p-2.5 border border-line rounded font-semibold text-navy" required>
+                </div>
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Registration Number (Optional)</label>
+                    <input type="text" name="registration_number" placeholder="e.g. TS03-EA-1234" class="w-full p-2.5 border border-line rounded">
+                </div>
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Assign Driver (Optional)</label>
+                    <select name="driver_id" class="w-full p-2.5 border border-line rounded driver-select-dropdown"></select>
+                </div>
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Assign Route (Optional)</label>
+                    <select name="route_id" class="w-full p-2.5 border border-line rounded route-select-dropdown"></select>
+                </div>
+                <div class="pt-3 flex gap-2">
+                    <button type="button" onclick="document.getElementById('addBusModal').classList.add('hidden')" class="flex-1 py-2.5 bg-bg hover:bg-slate-200 text-navy font-semibold rounded">Cancel</button>
+                    <button type="submit" class="flex-1 py-2.5 bg-brand hover:bg-brandDark text-white font-semibold rounded shadow">Save Bus</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ADD DRIVER MODAL -->
+    <div id="addDriverModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-surface rounded max-w-md w-full p-6 border border-line border border-slate-100">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-base font-semibold text-navy">Add New Driver</h3>
+                <button type="button" onclick="document.getElementById('addDriverModal').classList.add('hidden')" class="text-ink-muted hover:text-ink-muted">
+                    <svg class="w-4 h-4 shrink-0 text-lg" aria-hidden="true"><use href="icons.svg#icon-xmark"/></svg>
+                </button>
+            </div>
+            <form onsubmit="window.KambusAdmin.submitAddDriver(event)" class="space-y-3 text-xs">
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Full Name</label>
+                    <input type="text" name="name" placeholder="e.g. Ramesh Kumar" class="w-full p-2.5 border border-line rounded font-semibold" required>
+                </div>
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Driver Code (Unique login code)</label>
+                    <input type="text" name="driver_code" placeholder="e.g. DRV-01" class="w-full p-2.5 border border-line rounded font-mono uppercase" required>
+                </div>
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Phone Number</label>
+                    <input type="tel" name="phone" placeholder="e.g. 9876543210" class="w-full p-2.5 border border-line rounded" required>
+                </div>
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Password</label>
+                    <input type="password" name="password" placeholder="••••••••" class="w-full p-2.5 border border-line rounded" required>
+                </div>
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Driving License Number</label>
+                    <input type="text" name="license_number" placeholder="e.g. TS-123456789" class="w-full p-2.5 border border-line rounded">
+                </div>
+                <div class="pt-3 flex gap-2">
+                    <button type="button" onclick="document.getElementById('addDriverModal').classList.add('hidden')" class="flex-1 py-2.5 bg-bg hover:bg-slate-200 text-navy font-semibold rounded">Cancel</button>
+                    <button type="submit" class="flex-1 py-2.5 bg-brand hover:bg-brandDark text-white font-semibold rounded shadow">Register Driver</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- EDIT DRIVER MODAL -->
+    <div id="editDriverModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-surface rounded max-w-md w-full p-6 border border-line border border-slate-100">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-base font-semibold text-navy">Edit Driver</h3>
+                <button type="button" onclick="document.getElementById('editDriverModal').classList.add('hidden')" class="text-ink-muted hover:text-ink-muted">
+                    <svg class="w-4 h-4 shrink-0 text-lg" aria-hidden="true"><use href="icons.svg#icon-xmark"/></svg>
+                </button>
+            </div>
+            <form onsubmit="window.KambusAdmin.submitEditDriver(event)" class="space-y-3 text-xs">
+                <input type="hidden" name="driver_id" id="editDriverId">
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Full Name</label>
+                    <input type="text" name="name" id="editDriverName" placeholder="e.g. Ramesh Kumar" class="w-full p-2.5 border border-line rounded font-semibold" required>
+                </div>
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Driver Code (Unique login code)</label>
+                    <input type="text" name="driver_code" id="editDriverCode" placeholder="e.g. DRV-01" class="w-full p-2.5 border border-line rounded font-mono uppercase" required>
+                </div>
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Phone Number</label>
+                    <input type="tel" name="phone" id="editDriverPhone" placeholder="e.g. 9876543210" class="w-full p-2.5 border border-line rounded" required>
+                </div>
+                <div>
+                    <label class="block font-semibold text-navy mb-1">New Password <span class="text-ink-muted font-normal">(Leave blank to keep unchanged)</span></label>
+                    <input type="password" name="password" id="editDriverPassword" placeholder="••••••••" class="w-full p-2.5 border border-line rounded">
+                </div>
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Driving License Number</label>
+                    <input type="text" name="license_number" id="editDriverLicense" placeholder="e.g. TS-123456789" class="w-full p-2.5 border border-line rounded">
+                </div>
+                <div class="pt-3 flex gap-2">
+                    <button type="button" onclick="document.getElementById('editDriverModal').classList.add('hidden')" class="flex-1 py-2.5 bg-bg hover:bg-slate-200 text-navy font-semibold rounded">Cancel</button>
+                    <button type="submit" class="flex-1 py-2.5 bg-brand hover:bg-brandDark text-white font-semibold rounded shadow">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ADD STUDENT MODAL -->
+    <div id="addStudentModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-surface rounded max-w-md w-full p-6 border border-line border border-slate-100">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-base font-semibold text-navy">Add New Student</h3>
+                <button type="button" onclick="document.getElementById('addStudentModal').classList.add('hidden')" class="text-ink-muted hover:text-ink-muted">
+                    <svg class="w-4 h-4 shrink-0 text-lg" aria-hidden="true"><use href="icons.svg#icon-xmark"/></svg>
+                </button>
+            </div>
+            <form onsubmit="window.KambusAdmin.submitAddStudent(event)" class="space-y-3 text-xs">
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Full Name</label>
+                    <input type="text" name="name" placeholder="Student Name" class="w-full p-2.5 border border-line rounded" required>
+                </div>
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Roll Number</label>
+                    <input type="text" name="roll_number" placeholder="e.g. 21KIT123" class="w-full p-2.5 border border-line rounded uppercase font-mono" required>
+                </div>
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Gender</label>
+                    <select name="gender" class="w-full p-2.5 border border-line rounded" required>
+                        <option value="">Select Gender</option>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Department</label>
+                    <input type="text" name="department" placeholder="e.g. CSE / ECE" class="w-full p-2.5 border border-line rounded">
+                </div>
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Phone Number</label>
+                    <input type="tel" name="phone" placeholder="Phone" class="w-full p-2.5 border border-line rounded" required>
+                </div>
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Password</label>
+                    <input type="password" name="password" placeholder="••••••••" class="w-full p-2.5 border border-line rounded" required>
+                </div>
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Assign Bus (Optional)</label>
+                    <select name="bus_id" class="w-full p-2.5 border border-line rounded bus-select-dropdown"></select>
+                </div>
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Assign Stop (Optional)</label>
+                    <select name="stop_id" class="w-full p-2.5 border border-line rounded stop-select-dropdown"></select>
+                </div>
+                <div class="pt-3 flex gap-2">
+                    <button type="button" onclick="document.getElementById('addStudentModal').classList.add('hidden')" class="flex-1 py-2.5 bg-bg hover:bg-slate-200 text-navy font-semibold rounded">Cancel</button>
+                    <button type="submit" class="flex-1 py-2.5 bg-brand hover:bg-brandDark text-white font-semibold rounded shadow">Create Student</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- EDIT STUDENT MODAL -->
+    <div id="editStudentModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-surface rounded max-w-md w-full p-6 border border-line border border-slate-100">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-base font-semibold text-navy">Edit Student</h3>
+                <button type="button" onclick="document.getElementById('editStudentModal').classList.add('hidden')" class="text-ink-muted hover:text-ink-muted">
+                    <svg class="w-4 h-4 shrink-0 text-lg" aria-hidden="true"><use href="icons.svg#icon-xmark"/></svg>
+                </button>
+            </div>
+            <form onsubmit="window.KambusAdmin.submitEditStudent(event)" class="space-y-3 text-xs">
+                <input type="hidden" name="student_id" id="editStudentId">
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Full Name</label>
+                    <input type="text" name="name" id="editStudentName" class="w-full p-2.5 border border-line rounded font-semibold" required>
+                </div>
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Roll Number</label>
+                    <input type="text" name="roll_number" id="editStudentRoll" class="w-full p-2.5 border border-line rounded uppercase font-mono" required>
+                </div>
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Gender</label>
+                    <select name="gender" id="editStudentGender" class="w-full p-2.5 border border-line rounded">
+                        <option value="">Unspecified</option>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Department</label>
+                    <input type="text" name="department" id="editStudentDepartment" placeholder="e.g. CSE / ECE" class="w-full p-2.5 border border-line rounded">
+                </div>
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Phone Number</label>
+                    <input type="tel" name="phone" id="editStudentPhone" class="w-full p-2.5 border border-line rounded" required>
+                </div>
+                <div>
+                    <label class="block font-semibold text-navy mb-1">New Password <span class="text-ink-muted font-normal">(Leave blank to keep unchanged)</span></label>
+                    <input type="password" name="password" id="editStudentPassword" placeholder="••••••••" class="w-full p-2.5 border border-line rounded">
+                </div>
+                <p class="text-[11px] text-ink-muted">Bus and stop are changed with the Assign button.</p>
+                <div class="pt-3 flex gap-2">
+                    <button type="button" onclick="document.getElementById('editStudentModal').classList.add('hidden')" class="flex-1 py-2.5 bg-bg hover:bg-slate-200 text-navy font-semibold rounded">Cancel</button>
+                    <button type="submit" class="flex-1 py-2.5 bg-brand hover:bg-brandDark text-white font-semibold rounded shadow">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ADD ADMIN MODAL (super-admin only) -->
+    <div id="addAdminModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-surface rounded max-w-md w-full p-6 border border-line border border-slate-100">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-base font-semibold text-navy">Add Admin</h3>
+                <button type="button" onclick="document.getElementById('addAdminModal').classList.add('hidden')" class="text-ink-muted hover:text-ink-muted">
+                    <svg class="w-4 h-4 shrink-0 text-lg" aria-hidden="true"><use href="icons.svg#icon-xmark"/></svg>
+                </button>
+            </div>
+            <form onsubmit="window.KambusAdmin.submitAddAdmin(event)" class="space-y-3 text-xs">
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Full Name</label>
+                    <input type="text" name="name" class="w-full p-2.5 border border-line rounded font-semibold" required>
+                </div>
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Phone Number</label>
+                    <input type="tel" name="phone" class="w-full p-2.5 border border-line rounded" required>
+                </div>
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Campus</label>
+                    <select name="campus_id" id="addAdminCampusSelect" class="w-full p-2.5 border border-line rounded bg-white font-semibold" required>
+                        <option value="1">Campus 1 - KITS Warangal</option>
+                        <option value="2">Campus 2</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Password <span class="text-ink-muted font-normal">(at least 10 characters)</span></label>
+                    <input type="password" name="password" minlength="10" class="w-full p-2.5 border border-line rounded" required>
+                </div>
+
+                <div class="pt-3 flex gap-2">
+                    <button type="button" onclick="document.getElementById('addAdminModal').classList.add('hidden')" class="flex-1 py-2.5 bg-bg hover:bg-slate-200 text-navy font-semibold rounded">Cancel</button>
+                    <button type="submit" class="flex-1 py-2.5 bg-brand hover:bg-brandDark text-white font-semibold rounded shadow">Create Admin</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- RESET ADMIN PASSWORD MODAL (super-admin only) -->
+    <div id="resetAdminPasswordModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-surface rounded max-w-md w-full p-6 border border-line border border-slate-100">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-base font-semibold text-navy">Reset Admin Password</h3>
+                <button type="button" onclick="document.getElementById('resetAdminPasswordModal').classList.add('hidden')" class="text-ink-muted hover:text-ink-muted">
+                    <svg class="w-4 h-4 shrink-0 text-lg" aria-hidden="true"><use href="icons.svg#icon-xmark"/></svg>
+                </button>
+            </div>
+            <form onsubmit="window.KambusAdmin.submitResetAdminPassword(event)" class="space-y-3 text-xs">
+                <input type="hidden" name="admin_id" id="resetAdminId">
+                <p id="resetAdminName" class="font-semibold text-navy"></p>
+                <div>
+                    <label class="block font-semibold text-navy mb-1">New Password <span class="text-ink-muted font-normal">(at least 10 characters)</span></label>
+                    <input type="password" name="password" minlength="10" class="w-full p-2.5 border border-line rounded" required>
+                </div>
+                <div class="pt-3 flex gap-2">
+                    <button type="button" onclick="document.getElementById('resetAdminPasswordModal').classList.add('hidden')" class="flex-1 py-2.5 bg-bg hover:bg-slate-200 text-navy font-semibold rounded">Cancel</button>
+                    <button type="submit" class="flex-1 py-2.5 bg-brand hover:bg-brandDark text-white font-semibold rounded shadow">Reset Password</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- CREATE CAMPUS MODAL (super-admin) -->
+    <div id="createCampusModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-surface rounded-xl max-w-md w-full p-6 border border-line border border-slate-100 shadow-xl">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M9 9h1M9 13h1M9 17h1M14 9h1M14 13h1M14 17h1"/></svg>
+                    </div>
+                    <h3 class="text-base font-semibold text-navy">Provision New Campus</h3>
+                </div>
+                <button type="button" onclick="document.getElementById('createCampusModal').classList.add('hidden')" class="text-ink-muted hover:text-ink">
+                    <svg class="w-4 h-4 shrink-0 text-lg" aria-hidden="true"><use href="icons.svg#icon-xmark"/></svg>
+                </button>
+            </div>
+            <form onsubmit="window.KambusAdmin.submitCreateCampus(event)" class="space-y-3.5 text-xs">
+                <div id="createCampusError" class="hidden p-2.5 bg-danger/10 border border-danger/20 rounded text-danger text-xs font-semibold"></div>
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Campus Name *</label>
+                    <input type="text" name="name" id="newCampusName" placeholder="e.g. KITS Singapur Branch" class="w-full p-2.5 border border-line rounded font-semibold" required>
+                </div>
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Campus Slug / Code *</label>
+                    <input type="text" name="slug" id="newCampusSlug" placeholder="e.g. kits-singapur" class="w-full p-2.5 border border-line rounded font-mono lowercase" required>
+                    <p class="text-[11px] text-ink-muted mt-1">Unique alphanumeric identifier (no spaces).</p>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold text-navy mb-1">Institution Type *</label>
+                        <select name="campus_type" id="newCampusType" onchange="window.KambusAdmin.handleNewCampusTypeChange(this.value)" class="w-full p-2.5 border border-line rounded bg-white font-semibold">
+                            <option value="college">College / University</option>
+                            <option value="school">School / K-12</option>
+                        </select>
+                        <p id="newCampusTypeHelp" class="text-[10px] text-ink-muted mt-1">Student-driven: students manage passes, self-register, no parent portal.</p>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-navy mb-1">Plan Tier</label>
+                        <select name="plan_tier" id="newCampusPlan" class="w-full p-2.5 border border-line rounded bg-white font-semibold">
+                            <option value="premium">Premium</option>
+                            <option value="basic">Basic</option>
+                            <option value="top">Top</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="pt-3 flex gap-2">
+                    <button type="button" onclick="document.getElementById('createCampusModal').classList.add('hidden')" class="flex-1 py-2.5 bg-bg hover:bg-slate-200 text-navy font-semibold rounded">Cancel</button>
+                    <button type="submit" id="btnSubmitCreateCampus" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded shadow">Create Campus</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ALLOT ADMIN CAMPUS MODAL (super-admin) -->
+    <div id="allotAdminCampusModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-surface rounded-xl max-w-md w-full p-6 border border-line border border-slate-100 shadow-xl">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-bold">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    </div>
+                    <h3 class="text-base font-semibold text-navy">Allot Admin to Campus</h3>
+                </div>
+                <button type="button" onclick="document.getElementById('allotAdminCampusModal').classList.add('hidden')" class="text-ink-muted hover:text-ink">
+                    <svg class="w-4 h-4 shrink-0 text-lg" aria-hidden="true"><use href="icons.svg#icon-xmark"/></svg>
+                </button>
+            </div>
+            <form onsubmit="window.KambusAdmin.submitAllotAdminCampus(event)" class="space-y-3.5 text-xs">
+                <input type="hidden" id="allotTargetAdminId">
+                <div id="allotAdminError" class="hidden p-2.5 bg-danger/10 border border-danger/20 rounded text-danger text-xs font-semibold"></div>
+
+                <div class="p-3 bg-slate-50 border border-slate-200/80 rounded-lg">
+                    <span class="text-[10px] text-slate-400 font-bold uppercase">Admin Details</span>
+                    <p id="allotAdminNameDisplay" class="font-bold text-slate-800 text-sm mt-0.5">--</p>
+                    <p id="allotAdminPhoneDisplay" class="font-mono text-slate-500 text-[11px]">--</p>
+                    <p id="allotAdminCurrentCampusDisplay" class="text-brand font-semibold text-[11px] mt-1">Current: --</p>
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Select Target Campus *</label>
+                    <select id="allotCampusSelect" class="w-full p-2.5 border border-line rounded bg-white font-semibold" required>
+                        <option value="">Loading campuses...</option>
+                    </select>
+                    <p class="text-[11px] text-ink-muted mt-1">The administrator will be immediately scoped to the selected campus.</p>
+                </div>
+
+                <div class="pt-3 flex gap-2">
+                    <button type="button" onclick="document.getElementById('allotAdminCampusModal').classList.add('hidden')" class="flex-1 py-2.5 bg-bg hover:bg-slate-200 text-navy font-semibold rounded">Cancel</button>
+                    <button type="submit" id="btnSubmitAllotAdmin" class="flex-1 py-2.5 bg-brand hover:bg-brandDark text-white font-semibold rounded shadow">Save Allotment</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- ASSIGN STUDENT BUS/STOP MODAL -->
+    <div id="assignStudentModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-surface rounded max-w-sm w-full p-5 border border-line border border-slate-100">
+            <h3 class="text-sm font-semibold text-navy mb-1">Assign Bus & Stop</h3>
+            <p id="assignStudentName" class="text-xs text-brand font-semibold mb-3"></p>
+            <input type="hidden" id="assignStudentId">
+
+            <form onsubmit="window.KambusAdmin.submitAssignStudent(event)" class="space-y-3 text-xs">
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Select Bus</label>
+                    <select id="assignStudentBusSelect" class="w-full p-2.5 border border-line rounded bus-select-dropdown"></select>
+                </div>
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Select Assigned Stop</label>
+                    <select id="assignStudentStopSelect" class="w-full p-2.5 border border-line rounded stop-select-dropdown"></select>
+                </div>
+                <div class="pt-3 flex gap-2">
+                    <button type="button" onclick="document.getElementById('assignStudentModal').classList.add('hidden')" class="flex-1 py-2 bg-bg text-navy font-semibold rounded">Cancel</button>
+                    <button type="submit" class="flex-1 py-2 bg-brand text-white font-semibold rounded shadow">Save Assignment</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ADD STOP MODAL (WITH INTERACTIVE MAP PICKER) -->
+    <div id="addStopModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-surface rounded max-w-lg w-full p-6 border border-line border border-slate-100 flex flex-col max-h-[90vh]">
+            <div class="flex items-center justify-between mb-3">
+                <div>
+                    <h3 class="text-base font-semibold text-navy">Add Stop (Interactive Map Picker)</h3>
+                    <p class="text-xs text-ink-muted">Click or drag the marker on the map to automatically capture coordinates.</p>
+                </div>
+                <button type="button" onclick="document.getElementById('addStopModal').classList.add('hidden')" class="text-ink-muted hover:text-ink-muted">
+                    <svg class="w-4 h-4 shrink-0 text-lg" aria-hidden="true"><use href="icons.svg#icon-xmark"/></svg>
+                </button>
+            </div>
+
+            <form onsubmit="window.KambusAdmin.submitAddStop(event)" class="space-y-3 text-xs overflow-y-auto flex-1">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold text-navy mb-1">Stop Name</label>
+                        <input type="text" name="name" placeholder="e.g. Hanamkonda Chowrasta" class="w-full p-2.5 border border-line rounded font-semibold" required>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-navy mb-1">Select Route</label>
+                        <select name="route_id" class="w-full p-2.5 border border-line rounded route-select-dropdown" required></select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Stop Order (1, 2, 3...)</label>
+                    <input type="number" name="stop_order" value="1" min="1" class="w-full p-2.5 border border-line rounded font-semibold" required>
+                </div>
+
+                <!-- Interactive Map Container -->
+                <div>
+                    <div class="flex gap-2 mb-2">
+                        <button type="button" id="addStopPickupModeBtn" class="flex-1 py-1.5 text-xs font-semibold rounded border">Set Pickup (Morning)</button>
+                        <button type="button" id="addStopDropModeBtn" class="flex-1 py-1.5 text-xs font-semibold rounded border">Set Drop (Evening)</button>
+                    </div>
+                    <div class="flex items-center justify-between mb-1">
+                        <label class="block font-semibold text-navy"> Pick Stop Location on Map</label>
+                        <span class="text-[10px] font-mono font-semibold text-brand text-right">
+                            <span id="addStopPickupCoordsDisplay">Pickup: click map</span><br>
+                            <span id="addStopDropCoordsDisplay">Drop: not set</span>
+                        </span>
+                    </div>
+                    <div id="stopPickerMapContainer" style="height: 220px; width: 100%; border-radius: 12px; overflow: hidden; border: 1px solid #E3E8E8;"></div>
+                    <input type="hidden" id="addStopLat" name="latitude">
+                    <input type="hidden" id="addStopLng" name="longitude">
+                    <input type="hidden" id="addStopEveningLat" name="evening_latitude">
+                    <input type="hidden" id="addStopEveningLng" name="evening_longitude">
+                </div>
+
+                <div class="pt-3 flex gap-2">
+                    <button type="button" onclick="document.getElementById('addStopModal').classList.add('hidden')" class="flex-1 py-2.5 bg-bg hover:bg-slate-200 text-navy font-semibold rounded">Cancel</button>
+                    <button type="submit" class="flex-1 py-2.5 bg-brand hover:bg-brandDark text-white font-semibold rounded shadow">Save Stop</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- EDIT STOP MODAL -->
+    <div id="editStopModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-surface rounded max-w-lg w-full p-6 border border-line border border-slate-100 flex flex-col max-h-[90vh]">
+            <div class="flex items-center justify-between mb-3">
+                <div>
+                    <h3 class="text-base font-semibold text-navy">Edit Stop</h3>
+                    <p class="text-xs text-ink-muted">Update stop details or click/drag marker on map to update coordinates.</p>
+                </div>
+                <button type="button" onclick="document.getElementById('editStopModal').classList.add('hidden')" class="text-ink-muted hover:text-ink-muted">
+                    <svg class="w-4 h-4 shrink-0 text-lg" aria-hidden="true"><use href="icons.svg#icon-xmark"/></svg>
+                </button>
+            </div>
+            <form onsubmit="window.KambusAdmin.submitEditStop(event)" class="space-y-3 text-xs overflow-y-auto flex-1">
+                <input type="hidden" name="stop_id" id="editStopId">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold text-navy mb-1">Stop Name</label>
+                        <input type="text" name="name" id="editStopName" placeholder="e.g. Hanamkonda Chowrasta" class="w-full p-2.5 border border-line rounded font-semibold" required>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-navy mb-1">Route</label>
+                        <select name="route_id" id="editStopRouteId" class="w-full p-2.5 border border-line rounded route-select-dropdown" required></select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Stop Order (1, 2, 3...)</label>
+                    <input type="number" name="stop_order" id="editStopOrder" min="1" class="w-full p-2.5 border border-line rounded font-semibold" required>
+                </div>
+
+                <!-- Interactive Map Container for Edit Stop -->
+                <div>
+                    <div class="flex gap-2 mb-2">
+                        <button type="button" id="editStopPickupModeBtn" class="flex-1 py-1.5 text-xs font-semibold rounded border">Set Pickup (Morning)</button>
+                        <button type="button" id="editStopDropModeBtn" class="flex-1 py-1.5 text-xs font-semibold rounded border">Set Drop (Evening)</button>
+                    </div>
+                    <div class="flex items-center justify-between mb-1">
+                        <label class="block font-semibold text-navy"> Edit Stop Location on Map</label>
+                        <span class="text-[10px] font-mono font-semibold text-brand text-right">
+                            <span id="editStopPickupCoordsDisplay">Pickup: click map</span><br>
+                            <span id="editStopDropCoordsDisplay">Drop: not set</span>
+                        </span>
+                    </div>
+                    <div id="editStopPickerMapContainer" style="height: 220px; width: 100%; border-radius: 12px; overflow: hidden; border: 1px solid #E3E8E8;"></div>
+                    <input type="hidden" id="editStopLat" name="latitude">
+                    <input type="hidden" id="editStopLng" name="longitude">
+                    <input type="hidden" id="editStopEveningLat" name="evening_latitude">
+                    <input type="hidden" id="editStopEveningLng" name="evening_longitude">
+                </div>
+
+                <div class="pt-3 flex gap-2">
+                    <button type="button" onclick="document.getElementById('editStopModal').classList.add('hidden')" class="flex-1 py-2.5 bg-bg hover:bg-slate-200 text-navy font-semibold rounded">Cancel</button>
+                    <button type="submit" class="flex-1 py-2.5 bg-brand hover:bg-brandDark text-white font-semibold rounded shadow">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ADD ROUTE MODAL -->
+    <div id="addRouteModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-surface rounded max-w-md w-full p-6 border border-line border border-slate-100">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-base font-semibold text-navy">Create New Route</h3>
+                <button type="button" onclick="document.getElementById('addRouteModal').classList.add('hidden')" class="text-ink-muted hover:text-ink-muted">
+                    <svg class="w-4 h-4 shrink-0 text-lg" aria-hidden="true"><use href="icons.svg#icon-xmark"/></svg>
+                </button>
+            </div>
+            <form onsubmit="window.KambusAdmin.submitAddRoute(event)" class="space-y-3 text-xs">
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Route Name</label>
+                    <input type="text" name="name" placeholder="e.g. Route 1 — Kazipet to KITSW" class="w-full p-2.5 border border-line rounded font-semibold" required>
+                </div>
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Description</label>
+                    <textarea name="description" rows="2" placeholder="Via Kazipet, Hanamkonda..." class="w-full p-2.5 border border-line rounded"></textarea>
+                </div>
+                <div class="pt-3 flex gap-2">
+                    <button type="button" onclick="document.getElementById('addRouteModal').classList.add('hidden')" class="flex-1 py-2.5 bg-bg text-navy font-semibold rounded">Cancel</button>
+                    <button type="submit" class="flex-1 py-2.5 bg-brand text-white font-semibold rounded shadow">Save Route</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ROUTE PREVIEW ROAD MAP MODAL -->
+    <div id="routePreviewModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-surface rounded max-w-2xl w-full p-6 border border-line border border-slate-100 flex flex-col max-h-[90vh]">
+            <div class="flex items-center justify-between mb-3">
+                <div>
+                    <h3 id="routePreviewTitle" class="text-base font-semibold text-navy">Route Map</h3>
+                    <p class="text-xs text-ink-muted">Road-based transit visualization to KITSW Campus.</p>
+                </div>
+                <button type="button" onclick="document.getElementById('routePreviewModal').classList.add('hidden')" class="text-ink-muted hover:text-ink-muted">
+                    <svg class="w-4 h-4 shrink-0 text-lg" aria-hidden="true"><use href="icons.svg#icon-xmark"/></svg>
+                </button>
+            </div>
+            <div class="bg-bg rounded overflow-hidden border border-line flex-1 min-h-[350px]">
+                <div id="routePreviewMap" style="height: 400px; width: 100%;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SUPER-ADMIN COMPLAINT DETAIL & VOTER BREAKDOWN MODAL -->
+    <div id="complaintDetailModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-surface rounded max-w-2xl w-full p-6 border border-line border border-slate-100 flex flex-col max-h-[90vh] overflow-y-auto space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div class="flex items-center gap-2">
+                    <span class="px-2 py-0.5 rounded-full bg-brand/10 text-brand text-[10px] font-semibold uppercase tracking-wider">Super Admin View</span>
+                    <h3 id="complaintDetailTitle" class="text-base font-semibold text-navy">Complaint Investigation</h3>
+                </div>
+                <button type="button" onclick="document.getElementById('complaintDetailModal').classList.add('hidden')" class="text-ink-muted hover:text-ink-muted">
+                    <svg class="w-4 h-4 shrink-0 text-lg" aria-hidden="true"><use href="icons.svg#icon-xmark"/></svg>
+                </button>
+            </div>
+
+            <!-- Complainant Card -->
+            <div class="bg-bg border border-line/90 rounded p-4 space-y-2">
+                <p class="text-[10px] font-semibold tracking-wider uppercase text-ink-muted">Complainant (Original Reporter)</p>
+                <div class="flex items-start justify-between">
+                    <div>
+                        <h4 id="complaintDetailComplainantName" class="font-semibold text-sm text-navy">—</h4>
+                        <p id="complaintDetailComplainantMeta" class="text-xs text-ink-muted">—</p>
+                    </div>
+                    <span id="complaintDetailReasonBadge" class="px-2.5 py-1 rounded bg-warn/10 text-warn border border-warn/20 text-xs font-semibold">Reason</span>
+                </div>
+                <div id="complaintDetailDescriptionBox" class="p-3 bg-surface rounded border border-slate-100 text-xs text-navy mt-2">
+                    —
+                </div>
+            </div>
+
+            <!-- Corroboration Summary -->
+            <div class="grid grid-cols-3 gap-2 text-center text-xs">
+                <div class="p-2.5 rounded bg-ok/10 border border-ok/30">
+                    <p class="text-[10px] text-ok font-semibold uppercase">Agreed (Yes)</p>
+                    <p id="complaintDetailYesCount" class="text-lg font-semibold text-ok">0</p>
+                </div>
+                <div class="p-2.5 rounded bg-bg border border-line">
+                    <p class="text-[10px] text-ink-muted font-semibold uppercase">Disagreed (No)</p>
+                    <p id="complaintDetailNoCount" class="text-lg font-semibold text-navy">0</p>
+                </div>
+                <div class="p-2.5 rounded bg-bg border border-line">
+                    <p class="text-[10px] text-navy font-semibold uppercase">Total Votes</p>
+                    <p id="complaintDetailTotalCount" class="text-lg font-semibold text-ink">0</p>
+                </div>
+            </div>
+
+            <!-- Detailed Voter List -->
+            <div class="space-y-2">
+                <p class="text-[10px] font-semibold tracking-wider uppercase text-ink-muted">Voter Verification Breakdown</p>
+                <div id="complaintDetailVotersList" class="space-y-2 max-h-56 overflow-y-auto">
+                    <!-- Dynamic voter cards -->
+                </div>
+            </div>
+
+            <div class="pt-2 flex justify-end">
+                <button type="button" onclick="document.getElementById('complaintDetailModal').classList.add('hidden')" class="px-4 py-2 bg-bg hover:bg-slate-200 text-navy font-semibold text-xs rounded">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADD PARENT MODAL -->
+    <div id="addParentModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-surface rounded max-w-md w-full p-6 border border-line border border-slate-100">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-base font-semibold text-navy">Add New Parent</h3>
+                <button type="button" onclick="document.getElementById('addParentModal').classList.add('hidden')" class="text-ink-muted hover:text-ink">
+                    <svg class="w-4 h-4 shrink-0 text-lg" aria-hidden="true"><use href="icons.svg#icon-xmark"/></svg>
+                </button>
+            </div>
+            <form onsubmit="window.KambusAdmin.submitAddParent(event)" class="space-y-3 text-xs">
+                <div id="addParentError" class="hidden p-2.5 bg-danger/10 border border-danger/20 rounded text-danger text-xs font-semibold"></div>
+                <div id="addParentCampusRow" class="hidden">
+                    <label class="block font-semibold text-navy mb-1">Campus *</label>
+                    <select id="addParentCampusSelect" class="w-full p-2.5 border border-line rounded font-semibold bg-white cursor-pointer">
+                        <option value="">-- Select Campus --</option>
+                    </select>
+                    <p class="text-[11px] text-ink-muted mt-1">Super-admin: select which campus this parent account belongs to.</p>
+                </div>
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Full Name *</label>
+                    <input type="text" name="name" id="addParentName" placeholder="e.g. Meera Sharma" class="w-full p-2.5 border border-line rounded font-semibold" required>
+                </div>
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Phone Number *</label>
+                    <input type="tel" name="phone" id="addParentPhone" placeholder="e.g. 9876543210" class="w-full p-2.5 border border-line rounded" required>
+                </div>
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Password *</label>
+                    <input type="password" name="password" id="addParentPassword" placeholder="••••••••" class="w-full p-2.5 border border-line rounded" required>
+                </div>
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Email <span class="text-ink-muted font-normal">(Optional)</span></label>
+                    <input type="email" name="email" id="addParentEmail" placeholder="e.g. parent@example.com" class="w-full p-2.5 border border-line rounded">
+                </div>
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Login ID <span class="text-ink-muted font-normal">(Optional)</span></label>
+                    <input type="text" name="login_id" id="addParentLoginId" placeholder="e.g. dps-parent-9876543210" class="w-full p-2.5 border border-line rounded font-mono">
+                    <p class="text-[11px] text-ink-muted mt-1">If left blank, an ID will be auto-generated based on campus and phone.</p>
+                </div>
+                <div class="pt-3 flex gap-2">
+                    <button type="button" onclick="document.getElementById('addParentModal').classList.add('hidden')" class="flex-1 py-2.5 bg-bg hover:bg-slate-200 text-navy font-semibold rounded">Cancel</button>
+                    <button type="submit" id="btnSubmitAddParent" class="flex-1 py-2.5 bg-brand hover:bg-brandDark text-white font-semibold rounded shadow">Create Parent</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- LINK CHILD MODAL -->
+    <div id="linkChildModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-surface rounded max-w-lg w-full p-6 border border-line border border-slate-100">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h3 class="text-base font-semibold text-navy">Link Student to Parent</h3>
+                    <p id="linkChildParentInfo" class="text-xs text-brand font-semibold mt-0.5"></p>
+                </div>
+                <button type="button" onclick="document.getElementById('linkChildModal').classList.add('hidden')" class="text-ink-muted hover:text-ink">
+                    <svg class="w-4 h-4 shrink-0 text-lg" aria-hidden="true"><use href="icons.svg#icon-xmark"/></svg>
+                </button>
+            </div>
+            <form onsubmit="window.KambusAdmin.submitLinkChild(event)" class="space-y-3.5 text-xs">
+                <input type="hidden" id="linkParentId">
+                <input type="hidden" id="linkSelectedStudentId">
+
+                <div id="linkChildError" class="hidden p-2.5 bg-danger/10 border border-danger/20 rounded text-danger text-xs font-semibold"></div>
+
+                <!-- Student Type-Ahead Search -->
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Search Student (Type name or roll number) *</label>
+                    <div class="relative">
+                        <input type="text" id="linkStudentSearchInput" placeholder="Type to search students..." oninput="window.KambusAdmin.onSearchLinkStudents(event)" autocomplete="off" class="w-full px-3 py-2.5 border border-line rounded text-xs focus:border-brand focus:ring-1 focus:ring-brand">
+                    </div>
+                </div>
+
+                <!-- Selected Student Display -->
+                <div id="selectedStudentPreview" class="hidden p-3 bg-brand/5 border border-brand/20 rounded">
+                    <p class="text-[11px] font-bold text-slate-500 uppercase">Selected Student:</p>
+                    <div class="flex items-center justify-between mt-1">
+                        <div>
+                            <span id="selectedStudentName" class="font-bold text-navy text-xs"></span>
+                            <span id="selectedStudentRoll" class="ml-2 font-mono font-bold text-brand uppercase text-xs"></span>
+                        </div>
+                        <button type="button" onclick="window.KambusAdmin.clearSelectedLinkStudent()" class="text-xs text-danger hover:underline">Change</button>
+                    </div>
+                </div>
+
+                <!-- Search Results List -->
+                <div id="linkStudentResultsContainer" class="border border-line rounded max-h-48 overflow-y-auto divide-y divide-line/70 bg-white">
+                    <div class="p-4 text-center text-xs text-slate-400">Type above to search students on this campus.</div>
+                </div>
+
+                <!-- Relationship Type -->
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Relationship Type</label>
+                    <select id="linkRelationshipType" class="w-full p-2.5 border border-line rounded bg-white">
+                        <option value="Father">Father</option>
+                        <option value="Mother">Mother</option>
+                        <option value="Guardian">Guardian</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+                <div class="pt-3 flex gap-2">
+                    <button type="button" onclick="document.getElementById('linkChildModal').classList.add('hidden')" class="flex-1 py-2.5 bg-bg hover:bg-slate-200 text-navy font-semibold rounded">Cancel</button>
+                    <button type="submit" id="btnSubmitLinkChild" class="flex-1 py-2.5 bg-brand hover:bg-brandDark text-white font-semibold rounded shadow">Link Student</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MOBILE BOTTOM TAB BAR -->
+    <nav class="lg:hidden fixed bottom-0 left-0 right-0 bg-surface border-t border-line z-30 flex items-center justify-around py-2 px-1 border border-line">
+        <button type="button" onclick="window.KambusAdmin.showSection('dashboard')" class="flex flex-col items-center gap-0.5 text-ink-muted hover:text-brand">
+            <svg class="w-4 h-4 shrink-0 text-sm" aria-hidden="true"><use href="icons.svg#icon-chart-pie"/></svg>
+            <span class="text-[9px] font-semibold">Home</span>
+        </button>
+        <button type="button" onclick="window.KambusAdmin.showSection('live-map')" class="flex flex-col items-center gap-0.5 text-ok">
+            <svg class="w-4 h-4 shrink-0 text-sm" aria-hidden="true"><use href="icons.svg#icon-route"/></svg>
+            <span class="text-[9px] font-semibold">Live Map</span>
+        </button>
+        <button type="button" onclick="window.KambusAdmin.showSection('buses')" class="flex flex-col items-center gap-0.5 text-ink-muted hover:text-brand">
+            <svg class="w-4 h-4 shrink-0 text-sm" aria-hidden="true"><use href="icons.svg#icon-bus"/></svg>
+            <span class="text-[9px] font-semibold">Buses</span>
+        </button>
+        <button type="button" onclick="window.KambusAdmin.showSection('notifications')" class="flex flex-col items-center gap-0.5 text-ink-muted hover:text-brand">
+            <svg class="w-4 h-4 shrink-0 text-sm" aria-hidden="true"><use href="icons.svg#icon-bullhorn"/></svg>
+            <span class="text-[9px] font-semibold">Announce</span>
+        </button>
+        <button type="button" onclick="window.KambusAdmin.showSection('alerts')" class="flex flex-col items-center gap-0.5 text-danger">
+            <svg class="w-4 h-4 shrink-0 text-sm" aria-hidden="true"><use href="icons.svg#icon-alert"/></svg>
+            <span class="text-[9px] font-semibold">Alerts</span>
+        </button>
+    </nav>
+
+    <!-- Scripts -->
+    <script src="kambus-ui.js"></script>
+    <script src="notification-center.js"></script>
+    <script src="admin.js"></script>
+</body>
+</html>

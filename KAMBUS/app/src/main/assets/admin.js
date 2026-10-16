@@ -32,6 +32,7 @@
     let cachedDrivers = [];
     let cachedStudents = [];
     let cachedAdmins = [];
+    let cachedCampuses = [];
     let cachedRoutes = [];
     let cachedStops = [];
     let cachedComplaints = [];
@@ -56,6 +57,62 @@
         } catch {
             return false;
         }
+    }
+
+    function getJwtPayload() {
+        const token = getToken();
+        if (!token) return null;
+        try {
+            const parts = token.split(".");
+            if (parts.length < 2) return null;
+            return JSON.parse(atob(parts[1]));
+        } catch {
+            return null;
+        }
+    }
+
+    function isPlatformSuperAdmin() {
+        if (!isSuperAdmin()) return false;
+        const payload = getJwtPayload();
+        // Platform super-admin has role === 'super_admin' AND campus_id == null
+        if (payload && payload.campus_id != null) {
+            return false;
+        }
+        return true;
+    }
+
+    function getSelectedCampusId() {
+        const val = localStorage.getItem("kambus_active_campus_id");
+        if (!val || val === "null" || val === "undefined") return null;
+        const parsed = parseInt(val, 10);
+        return isNaN(parsed) ? null : parsed;
+    }
+
+    function setSelectedCampusId(campusId) {
+        if (!campusId) {
+            localStorage.removeItem("kambus_active_campus_id");
+        } else {
+            localStorage.setItem("kambus_active_campus_id", String(campusId));
+        }
+    }
+
+    function applyCampusScope(endpoint, options = {}) {
+        if (!isPlatformSuperAdmin()) return endpoint;
+        const method = (options.method || "GET").toUpperCase();
+        if (method !== "GET") return endpoint;
+
+        const campusId = getSelectedCampusId();
+        if (!campusId) return endpoint;
+
+        // Scoped operational list/dashboard endpoints:
+        // /admin/dashboard, /admin/buses, /admin/routes, /admin/stops, /admin/students, /admin/parents, /parent/list
+        const regex = /^(\/admin\/(dashboard|buses|routes|stops|students|parents)|\/parent\/list)(\?|$)/;
+        if (!regex.test(endpoint)) return endpoint;
+
+        if (/[?&]campus_id=/.test(endpoint)) return endpoint;
+
+        const separator = endpoint.includes("?") ? "&" : "?";
+        return `${endpoint}${separator}campus_id=${encodeURIComponent(campusId)}`;
     }
 
     function checkAuth() {
@@ -137,6 +194,7 @@
     }
 
     async function apiRequest(endpoint, options = {}) {
+        endpoint = applyCampusScope(endpoint, options);
         const token = getToken();
         const headers = {
             "Content-Type": "application/json",
@@ -258,6 +316,9 @@
             case "activity-logs":
                 loadActivityLogs();
                 break;
+            case "campuses":
+                loadCampuses();
+                break;
             case "admins":
                 loadAdmins();
                 break;
@@ -294,6 +355,14 @@
     // =========================================================================
 
     async function loadBusesDropdown() {
+        if (isPlatformSuperAdmin() && !getSelectedCampusId()) {
+            cachedBuses = [];
+            document.querySelectorAll(".bus-select-dropdown").forEach(select => {
+                select.innerHTML = `<option value="">-- Select Campus First --</option>`;
+            });
+            return;
+        }
+
         try {
             const data = await apiRequest("/admin/buses");
             cachedBuses = data.buses || [];
@@ -346,6 +415,14 @@
     }
 
     async function loadRoutesDropdown() {
+        if (isPlatformSuperAdmin() && !getSelectedCampusId()) {
+            cachedRoutes = [];
+            document.querySelectorAll(".route-select-dropdown").forEach(select => {
+                select.innerHTML = `<option value="">-- Select Campus First --</option>`;
+            });
+            return;
+        }
+
         try {
             const data = await apiRequest("/admin/routes");
             cachedRoutes = data.routes || [];
@@ -371,6 +448,14 @@
     }
 
     async function loadStopsDropdown() {
+        if (isPlatformSuperAdmin() && !getSelectedCampusId()) {
+            cachedStops = [];
+            document.querySelectorAll(".stop-select-dropdown").forEach(select => {
+                select.innerHTML = `<option value="">-- Select Campus First --</option>`;
+            });
+            return;
+        }
+
         try {
             const data = await apiRequest("/admin/stops");
             cachedStops = data.stops || [];
@@ -430,7 +515,43 @@
     // 1. DASHBOARD OVERVIEW
     // =========================================================================
 
+    function renderDashboardNoCampusSelected() {
+        document.getElementById("statTotalBuses").textContent = "--";
+        document.getElementById("statActiveBuses").textContent = "--";
+        document.getElementById("statOfflineBuses").textContent = "--";
+        document.getElementById("statTotalDrivers").textContent = "--";
+        document.getElementById("statTotalStudents").textContent = "--";
+        document.getElementById("statTravellingToday").textContent = "--";
+        document.getElementById("statTotalRoutes").textContent = "--";
+        document.getElementById("statTotalStops").textContent = "--";
+
+        const activeTripsContainer = document.getElementById("dashboardActiveTrips");
+        if (activeTripsContainer) {
+            activeTripsContainer.innerHTML = `
+                <div class="p-8 text-center text-xs text-amber-800 bg-amber-50/60 border border-amber-200/80 rounded">
+                    <p class="font-bold text-sm">No Campus Selected</p>
+                    <p class="mt-1 text-slate-500">Please choose a campus from the dropdown in the top navigation to view active trips and dashboard statistics.</p>
+                </div>
+            `;
+        }
+
+        const recentAlertsContainer = document.getElementById("dashboardRecentAlerts");
+        if (recentAlertsContainer) {
+            recentAlertsContainer.innerHTML = `
+                <div class="p-8 text-center text-xs text-amber-800 bg-amber-50/60 border border-amber-200/80 rounded">
+                    <p class="font-bold text-sm">No Campus Selected</p>
+                    <p class="mt-1 text-slate-500">Please choose a campus from the dropdown in the top navigation to view recent alerts.</p>
+                </div>
+            `;
+        }
+    }
+
     async function loadDashboard() {
+        if (isPlatformSuperAdmin() && !getSelectedCampusId()) {
+            renderDashboardNoCampusSelected();
+            return;
+        }
+
         try {
             const data = await apiRequest("/admin/dashboard");
 
@@ -501,6 +622,13 @@
     async function loadBuses() {
         const container = document.getElementById("busesList");
         if (!container) return;
+
+        if (isPlatformSuperAdmin() && !getSelectedCampusId()) {
+            cachedBuses = [];
+            container.innerHTML = `<div class="p-8 text-center text-xs text-amber-800 bg-amber-50/60 border border-amber-200/80 rounded col-span-full font-semibold">No campus selected. Please select a campus from the top navigation to view its bus fleet.</div>`;
+            return;
+        }
+
         container.innerHTML = `<div class="p-8 text-center text-xs text-slate-400">Loading bus fleet...</div>`;
 
         try {
@@ -938,6 +1066,12 @@
         const container = document.getElementById("studentsList");
         if (!container) return;
 
+        if (isPlatformSuperAdmin() && !getSelectedCampusId()) {
+            cachedStudents = [];
+            container.innerHTML = `<div class="p-8 text-center text-xs text-amber-800 bg-amber-50/60 border border-amber-200/80 rounded font-semibold">No campus selected. Please select a campus from the top navigation to view student records.</div>`;
+            return;
+        }
+
         const search = document.getElementById("studentSearchInput")?.value.trim();
         const busId = document.getElementById("studentFilterBus")?.value;
         const travelling = document.getElementById("studentFilterTravelling")?.value;
@@ -1173,6 +1307,30 @@
         const container = document.getElementById("parentsList");
         if (!container) return;
 
+        const activeCampusId = isPlatformSuperAdmin() ? getSelectedCampusId() : (currentUser?.campus_id || 1);
+        const activeCampus = (cachedCampuses || []).find(c => c.id === activeCampusId);
+        if (activeCampus && (activeCampus.campus_type === 'college' || activeCampus.type === 'college')) {
+            container.innerHTML = `
+                <div class="p-8 text-center bg-white border border-slate-200/90 rounded-lg shadow-2xs">
+                    <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-2xl">
+                        🎓
+                    </div>
+                    <h3 class="text-sm font-bold text-navy mb-1.5">Parent Portal Not Applicable for Colleges</h3>
+                    <p class="text-xs text-ink-muted max-w-md mx-auto leading-relaxed">
+                        <strong>${escapeHtml(activeCampus.name)}</strong> is registered as a <strong>College / University</strong>.
+                        College students manage their own bus passes and live tracking directly.
+                        Parent accounts and parent-student links are only supported for <strong>School</strong> campuses.
+                    </p>
+                </div>
+            `;
+            const addParentBtn = document.querySelector("button[onclick*='openAddParentModal']");
+            if (addParentBtn) addParentBtn.disabled = true;
+            return;
+        } else {
+            const addParentBtn = document.querySelector("button[onclick*='openAddParentModal']");
+            if (addParentBtn) addParentBtn.disabled = false;
+        }
+
         const search = document.getElementById("parentSearchInput")?.value.trim();
         let query = "/admin/parents";
         if (search) {
@@ -1345,6 +1503,22 @@
         if (emailEl) emailEl.value = "";
         if (loginIdEl) loginIdEl.value = "";
 
+        const campusRow = document.getElementById("addParentCampusRow");
+        const campusSelect = document.getElementById("addParentCampusSelect");
+        if (isPlatformSuperAdmin()) {
+            if (campusRow) campusRow.classList.remove("hidden");
+            if (campusSelect) {
+                campusSelect.innerHTML = `<option value="">-- Select Campus --</option>` +
+                    (cachedCampuses || []).filter(c => c.is_active !== false).map(c =>
+                        `<option value="${c.id}">${escapeHtml(c.name)} (ID: ${c.id})</option>`
+                    ).join("");
+                const activeId = getSelectedCampusId();
+                if (activeId) campusSelect.value = String(activeId);
+            }
+        } else {
+            if (campusRow) campusRow.classList.add("hidden");
+        }
+
         document.getElementById("addParentModal")?.classList.remove("hidden");
     }
 
@@ -1373,6 +1547,23 @@
             return;
         }
 
+        let campusId = null;
+        if (isPlatformSuperAdmin()) {
+            const campusSelect = document.getElementById("addParentCampusSelect");
+            if (campusSelect && campusSelect.value) {
+                campusId = parseInt(campusSelect.value, 10);
+            } else {
+                campusId = getSelectedCampusId();
+            }
+            if (!campusId) {
+                if (errorEl) {
+                    errorEl.textContent = "Please select a campus for the parent account.";
+                    errorEl.classList.remove("hidden");
+                }
+                return;
+            }
+        }
+
         if (submitBtn) submitBtn.disabled = true;
 
         try {
@@ -1383,6 +1574,9 @@
                 email: email || null,
                 login_id: loginId || null,
             };
+            if (campusId) {
+                body.campus_id = campusId;
+            }
 
             const created = await apiRequest("/parent/create", {
                 method: "POST",
@@ -1577,6 +1771,13 @@
     async function loadStops() {
         const container = document.getElementById("stopsList");
         if (!container) return;
+
+        if (isPlatformSuperAdmin() && !getSelectedCampusId()) {
+            cachedStops = [];
+            container.innerHTML = `<div class="p-8 text-center text-xs text-amber-800 bg-amber-50/60 border border-amber-200/80 rounded font-semibold">No campus selected. Please select a campus from the top navigation to view its stops.</div>`;
+            return;
+        }
+
         container.innerHTML = `<div class="p-8 text-center text-xs text-slate-400">Loading stops...</div>`;
 
         try {
@@ -1808,6 +2009,7 @@
         localStorage.removeItem("kambus_token");
         localStorage.removeItem("kambus_role");
         localStorage.removeItem("kambus_user_id");
+        localStorage.removeItem("kambus_active_campus_id");
         window.location.href = "index.html";
     }
 
@@ -2017,6 +2219,13 @@
     async function loadRoutes() {
         const container = document.getElementById("routesList");
         if (!container) return;
+
+        if (isPlatformSuperAdmin() && !getSelectedCampusId()) {
+            cachedRoutes = [];
+            container.innerHTML = `<div class="p-8 text-center text-xs text-amber-800 bg-amber-50/60 border border-amber-200/80 rounded font-semibold">No campus selected. Please select a campus from the top navigation to view its routes.</div>`;
+            return;
+        }
+
         container.innerHTML = `<div class="p-8 text-center text-xs text-slate-400">Loading routes...</div>`;
 
         try {
@@ -3313,21 +3522,430 @@
     }
 
     // =========================================================================
-    // 9. ADMIN ACCOUNTS (super-admin only)
+    // 9. SUPER ADMIN & CAMPUS MANAGEMENT / ADMIN ACCOUNTS
     // =========================================================================
 
     function setupSuperAdminNav() {
-        if (!isSuperAdmin() || document.querySelector('[data-section="admins"]')) return;
-        const activityBtn = document.querySelector('[data-section="activity-logs"]');
-        if (!activityBtn) return;
+        const navGroup = document.getElementById("superAdminNavGroup");
+        if (isSuperAdmin()) {
+            if (navGroup) navGroup.classList.remove("hidden");
+        } else {
+            if (navGroup) navGroup.classList.add("hidden");
+        }
+    }
 
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "admin-nav-btn";
-        btn.setAttribute("data-section", "admins");
-        btn.innerHTML = '<svg class="w-4 h-4 shrink-0 inline mr-1.5" aria-hidden="true"><use href="icons.svg#icon-user-shield"/></svg> <span>Admin Accounts</span>';
-        btn.addEventListener("click", () => showSection("admins"));
-        activityBtn.insertAdjacentElement("afterend", btn);
+    function updateCampusHeaderDisplay(campusId) {
+        const badge = document.getElementById("superAdminActiveCampusBadge");
+        const banner = document.getElementById("dashboardCampusContextBanner");
+
+        if (!isPlatformSuperAdmin()) {
+            if (badge) badge.classList.add("hidden");
+            if (banner) banner.classList.add("hidden");
+            return;
+        }
+
+        if (!campusId) {
+            if (badge) {
+                badge.className = "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs";
+                badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>No Campus Selected`;
+                badge.classList.remove("hidden");
+            }
+            if (banner) {
+                banner.className = "p-3 rounded-lg border border-amber-200 bg-amber-50/80 text-amber-900 text-xs flex items-center justify-between";
+                banner.innerHTML = `<span><strong>Notice:</strong> No campus currently selected. Select a campus from the top navigation to view operational data.</span>`;
+                banner.classList.remove("hidden");
+            }
+            return;
+        }
+
+        const campus = (cachedCampuses || []).find(c => c.id === campusId);
+        const campusName = campus ? campus.name : `Campus ${campusId}`;
+        const isSchool = campus ? (campus.campus_type === 'school' || campus.type === 'school') : false;
+        const typeBadge = isSchool ? '🏫 School' : '🎓 College';
+
+        if (badge) {
+            badge.className = `inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold ${isSchool ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-blue-100 text-blue-900 border border-blue-300'} shadow-2xs`;
+            badge.innerHTML = `<span class="w-2 h-2 rounded-full ${isSchool ? 'bg-amber-600' : 'bg-blue-600'}"></span>${escapeHtml(campusName)} &bull; ${typeBadge}`;
+            badge.classList.remove("hidden");
+        }
+        if (banner) {
+            banner.className = `p-3 rounded-lg border ${isSchool ? 'border-amber-200 bg-amber-50/70 text-amber-900' : 'border-blue-200 bg-blue-50/70 text-blue-900'} text-xs flex items-center justify-between`;
+            banner.innerHTML = `<span>Active Context: <strong>${escapeHtml(campusName)} (ID: ${campusId})</strong> &bull; <span class="font-bold">${typeBadge}</span>. Showing scoped fleet, routes, and ${isSchool ? 'student & parent' : 'student'} data.</span>`;
+            banner.classList.remove("hidden");
+        }
+
+        const navBtnParents = document.getElementById("navBtnParents");
+        if (navBtnParents) {
+            if (isSchool || !campusId) {
+                navBtnParents.classList.remove("hidden");
+            } else {
+                navBtnParents.classList.add("hidden");
+                if (activeSection === "parents") {
+                    showSection("dashboard");
+                }
+            }
+        }
+    }
+
+    async function initSuperAdminCampusSelector() {
+        if (!isPlatformSuperAdmin()) return;
+
+        const container = document.getElementById("superAdminCampusSelectorContainer");
+        const mobileBar = document.getElementById("superAdminMobileCampusBar");
+        if (container) {
+            container.classList.remove("hidden");
+            container.classList.add("lg:flex");
+        }
+        if (mobileBar) {
+            mobileBar.classList.remove("hidden");
+            mobileBar.classList.add("flex");
+        }
+
+        const savedCampusId = getSelectedCampusId();
+        updateCampusHeaderDisplay(savedCampusId);
+
+        try {
+            if (!cachedCampuses || cachedCampuses.length === 0) {
+                const data = await apiRequest("/super-admin/campuses");
+                cachedCampuses = Array.isArray(data) ? data : [];
+            }
+            updateCampusDropdowns(cachedCampuses);
+        } catch (e) {
+            console.warn("Could not load campuses for context switcher:", e);
+        }
+    }
+
+    async function handleCampusContextChange(newCampusId) {
+        if (!isPlatformSuperAdmin()) return;
+
+        const parsedId = newCampusId ? parseInt(newCampusId, 10) : null;
+        setSelectedCampusId(parsedId);
+        updateCampusHeaderDisplay(parsedId);
+
+        // Synchronize desktop & mobile dropdowns
+        const superAdminSelect = document.getElementById("superAdminCampusSelect");
+        if (superAdminSelect && superAdminSelect.value !== String(newCampusId || "")) {
+            superAdminSelect.value = newCampusId || "";
+        }
+        const mobileSelect = document.getElementById("superAdminMobileCampusSelect");
+        if (mobileSelect && mobileSelect.value !== String(newCampusId || "")) {
+            mobileSelect.value = newCampusId || "";
+        }
+
+        // Reset operational caches so no stale data from previous campus lingers
+        cachedBuses = [];
+        cachedRoutes = [];
+        cachedStops = [];
+        cachedStudents = [];
+        cachedParents = [];
+
+        // Refresh dropdowns if campus is selected
+        if (parsedId) {
+            loadBusesDropdown();
+            loadRoutesDropdown();
+            loadStopsDropdown();
+        } else {
+            document.querySelectorAll(".bus-select-dropdown").forEach(s => { s.innerHTML = `<option value="">-- Select Campus First --</option>`; });
+            document.querySelectorAll(".route-select-dropdown").forEach(s => { s.innerHTML = `<option value="">-- Select Campus First --</option>`; });
+            document.querySelectorAll(".stop-select-dropdown").forEach(s => { s.innerHTML = `<option value="">-- Select Campus First --</option>`; });
+        }
+
+        // Refresh whichever section is currently active
+        switch (activeSection) {
+            case "dashboard":
+                loadDashboard();
+                break;
+            case "buses":
+                loadBuses();
+                break;
+            case "routes":
+                loadRoutes();
+                break;
+            case "stops":
+                loadStops();
+                break;
+            case "students":
+                loadStudents();
+                break;
+            case "parents":
+                loadParents();
+                break;
+            default:
+                showSection(activeSection);
+                break;
+        }
+    }
+
+    function updateCampusDropdowns(campuses) {
+        if (!Array.isArray(campuses)) return;
+
+        const currentSelected = getSelectedCampusId();
+        const activeCampusOptions = `<option value="">-- Select Campus --</option>` +
+            campuses.filter(c => c.is_active !== false).map(c => {
+                const typeLabel = (c.campus_type === 'school' || c.type === 'school') ? '🏫 School' : '🎓 College';
+                return `<option value="${c.id}">${escapeHtml(c.name)} (${typeLabel})</option>`;
+            }).join("");
+
+        // Dropdown in Top Header (Super-Admin Campus Context Switcher)
+        const superAdminSelect = document.getElementById("superAdminCampusSelect");
+        if (superAdminSelect && isPlatformSuperAdmin()) {
+            superAdminSelect.innerHTML = activeCampusOptions;
+            if (currentSelected && campuses.some(c => c.id === currentSelected && c.is_active !== false)) {
+                superAdminSelect.value = String(currentSelected);
+            } else {
+                superAdminSelect.value = "";
+            }
+        }
+
+        // Dropdown in Mobile Bar (< lg Context Switcher)
+        const mobileSelect = document.getElementById("superAdminMobileCampusSelect");
+        if (mobileSelect && isPlatformSuperAdmin()) {
+            mobileSelect.innerHTML = activeCampusOptions;
+            if (currentSelected && campuses.some(c => c.id === currentSelected && c.is_active !== false)) {
+                mobileSelect.value = String(currentSelected);
+            } else {
+                mobileSelect.value = "";
+            }
+        }
+
+        if (isPlatformSuperAdmin()) {
+            if (currentSelected && campuses.some(c => c.id === currentSelected && c.is_active !== false)) {
+                updateCampusHeaderDisplay(currentSelected);
+            } else {
+                setSelectedCampusId(null);
+                updateCampusHeaderDisplay(null);
+            }
+        }
+
+        // Dropdown in Add Parent Modal (Super-Admin: only School campuses)
+        const addParentSelect = document.getElementById("addParentCampusSelect");
+        if (addParentSelect) {
+            const currentVal = addParentSelect.value || currentSelected;
+            const schoolCampuses = campuses.filter(c => c.is_active !== false && (c.campus_type === 'school' || c.type === 'school'));
+            addParentSelect.innerHTML = `<option value="">-- Select School Campus --</option>` +
+                schoolCampuses.map(c => `<option value="${c.id}">${escapeHtml(c.name)} (School ID: ${c.id})</option>`).join("");
+            if (currentVal && schoolCampuses.some(c => String(c.id) === String(currentVal))) {
+                addParentSelect.value = String(currentVal);
+            }
+        }
+
+        // Dropdown in Add Admin Modal
+        const addAdminSelect = document.getElementById("addAdminCampusSelect");
+        if (addAdminSelect) {
+            const currentVal = addAdminSelect.value;
+            addAdminSelect.innerHTML = campuses.map(c =>
+                `<option value="${c.id}">${escapeHtml(c.name)} (ID: ${c.id})${!c.is_active ? ' - Inactive' : ''}</option>`
+            ).join("");
+            if (currentVal && campuses.some(c => String(c.id) === String(currentVal))) {
+                addAdminSelect.value = currentVal;
+            }
+        }
+
+        // Dropdown in Allot Admin Modal
+        const allotSelect = document.getElementById("allotCampusSelect");
+        if (allotSelect) {
+            const currentVal = allotSelect.value;
+            allotSelect.innerHTML = `
+                <option value="">-- Choose Target Campus --</option>
+                ${campuses.map(c => `
+                    <option value="${c.id}">${escapeHtml(c.name)} (ID: ${c.id})${!c.is_active ? ' - Inactive' : ''}</option>
+                `).join("")}
+            `;
+            if (currentVal && campuses.some(c => String(c.id) === String(currentVal))) {
+                allotSelect.value = currentVal;
+            }
+        }
+    }
+
+    async function loadCampuses() {
+        const container = document.getElementById("campusesList");
+        if (!container) return;
+
+        try {
+            const data = await apiRequest("/super-admin/campuses");
+            cachedCampuses = Array.isArray(data) ? data : [];
+            updateCampusDropdowns(cachedCampuses);
+
+            if (cachedCampuses.length === 0) {
+                container.innerHTML = `<div class="p-8 text-center text-xs text-slate-400 bg-white border border-slate-200/90 rounded">No campuses provisioned yet. Use Create Campus to add one.</div>`;
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="bg-white border border-slate-200/90 rounded overflow-hidden shadow-xs">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs border-collapse">
+                            <thead class="bg-slate-50 border-b border-slate-200/80 text-[11px] font-black text-slate-500 uppercase tracking-wider">
+                                <tr>
+                                    <th class="p-3.5">Campus</th>
+                                    <th class="p-3.5">Code / Slug</th>
+                                    <th class="p-3.5">Type & Plan</th>
+                                    <th class="p-3.5">Status</th>
+                                    <th class="p-3.5">Created</th>
+                                    <th class="p-3.5 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                ${cachedCampuses.map(c => `
+                                    <tr class="hover:bg-slate-50/80 transition">
+                                        <td class="p-3.5">
+                                            <div class="flex items-center gap-2.5">
+                                                <div class="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center justify-center font-black text-xs">
+                                                    ${escapeHtml(c.id)}
+                                                </div>
+                                                <div>
+                                                    <span class="font-bold text-slate-900">${escapeHtml(c.name)}</span>
+                                                    <p class="text-[10px] text-slate-400 font-mono">ID: ${escapeHtml(c.id)}</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="p-3.5">
+                                            <span class="font-mono text-[11px] text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">${escapeHtml(c.slug)}</span>
+                                        </td>
+                                        <td class="p-3.5 space-x-1">
+                                            ${(c.campus_type === 'school' || c.type === 'school')
+                                                ? '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">🏫 School</span>'
+                                                : '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-800 border border-blue-200">🎓 College</span>'
+                                            }
+                                            <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-purple-50 text-purple-700 border border-purple-200">${escapeHtml(c.plan_tier || 'basic')}</span>
+                                        </td>
+                                        <td class="p-3.5">
+                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-black ${c.is_active ? "bg-ok/10 text-ok" : "bg-danger/10 text-danger"}">${c.is_active ? "ACTIVE" : "INACTIVE"}</span>
+                                        </td>
+                                        <td class="p-3.5 text-slate-500">${formatDateTime(c.created_at)}</td>
+                                        <td class="p-3.5 text-right space-x-1">
+                                            <button type="button" onclick="window.KambusAdmin.openAddAdminForCampus(${Number(c.id)})" class="px-2.5 py-1 bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white rounded-lg text-[11px] font-bold border border-emerald-200 transition" title="Add Admin for this campus">+ Admin</button>
+                                            <button type="button" onclick="window.KambusAdmin.toggleCampusStatus(${Number(c.id)}, ${Boolean(c.is_active)})" class="px-2.5 py-1 bg-slate-100 hover:bg-danger hover:text-white rounded-lg text-[11px] font-bold text-slate-700 transition">${c.is_active ? "Deactivate" : "Activate"}</button>
+                                        </td>
+                                    </tr>
+                                `).join("")}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        } catch (e) {
+            container.innerHTML = `<div class="p-8 text-center text-xs text-red-500">Failed to load campuses: ${escapeHtml(e.message)}</div>`;
+        }
+    }
+
+    function handleNewCampusTypeChange(type) {
+        const help = document.getElementById("newCampusTypeHelp");
+        if (!help) return;
+        if (type === "school") {
+            help.textContent = "School mode: parent-linked tracking, parental travel notifications, driver scan notifications, and admin/parent-managed student profiles. Students do not self-register.";
+        } else {
+            help.textContent = "College mode: student-driven passes, student self-signup, attendance logs, and individual travel notifications. Parent portal is disabled.";
+        }
+    }
+
+    function openCreateCampusModal() {
+        const modal = document.getElementById("createCampusModal");
+        const errDiv = document.getElementById("createCampusError");
+        if (errDiv) {
+            errDiv.classList.add("hidden");
+            errDiv.textContent = "";
+        }
+        const nameInput = document.getElementById("newCampusName");
+        const slugInput = document.getElementById("newCampusSlug");
+        const typeSelect = document.getElementById("newCampusType");
+        if (nameInput) nameInput.value = "";
+        if (slugInput) {
+            slugInput.value = "";
+            delete slugInput.dataset.manuallyEdited;
+        }
+        if (typeSelect) {
+            typeSelect.value = "college";
+            handleNewCampusTypeChange("college");
+        }
+        modal?.classList.remove("hidden");
+    }
+
+    async function submitCreateCampus(event) {
+        event.preventDefault();
+        const form = event.target;
+        const errDiv = document.getElementById("createCampusError");
+        const submitBtn = document.getElementById("btnSubmitCreateCampus");
+        if (errDiv) {
+            errDiv.classList.add("hidden");
+            errDiv.textContent = "";
+        }
+
+        const name = form.elements.name.value.trim();
+        const slug = form.elements.slug.value.trim().toLowerCase();
+        const campus_type = form.elements.campus_type.value;
+        const plan_tier = form.elements.plan_tier.value;
+
+        if (!name || !slug) {
+            if (errDiv) {
+                errDiv.textContent = "Please fill in all required fields.";
+                errDiv.classList.remove("hidden");
+            }
+            return;
+        }
+
+        try {
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = "Creating...";
+            }
+
+            const created = await apiRequest("/super-admin/campuses", {
+                method: "POST",
+                body: {
+                    name,
+                    slug,
+                    campus_type,
+                    type: campus_type,
+                    plan_tier
+                }
+            });
+
+            showToast("success", "Campus Created", `Campus "${created.name}" (ID ${created.campus_id || created.id}) provisioned successfully.`);
+            document.getElementById("createCampusModal")?.classList.add("hidden");
+            form.reset();
+            await loadCampuses();
+        } catch (e) {
+            if (errDiv) {
+                errDiv.textContent = e.message || "Failed to create campus.";
+                errDiv.classList.remove("hidden");
+            }
+            showToast("error", "Campus Creation Failed", e.message);
+        } finally {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = "Create Campus";
+            }
+        }
+    }
+
+    async function toggleCampusStatus(campusId, isCurrentlyActive) {
+        const target = cachedCampuses.find(c => c.id === campusId);
+        const name = target ? target.name : `Campus ${campusId}`;
+        const action = isCurrentlyActive ? "deactivate" : "activate";
+        const question = isCurrentlyActive
+            ? `Deactivate ${name}? Users belonging to this campus will not be able to access the system.`
+            : `Activate ${name}?`;
+        const confirmed = await confirm(question);
+        if (!confirmed) return;
+
+        try {
+            await apiRequest(`/super-admin/campuses/${campusId}/${action}`, {
+                method: "POST"
+            });
+            showToast("success", isCurrentlyActive ? "Campus Deactivated" : "Campus Activated", `${name} is now ${isCurrentlyActive ? "inactive" : "active"}.`);
+            await loadCampuses();
+        } catch (e) {
+            showToast("error", "Update Failed", e.message);
+        }
+    }
+
+    function openAddAdminForCampus(campusId) {
+        openAddAdminModal();
+        const sel = document.getElementById("addAdminCampusSelect");
+        if (sel) {
+            sel.value = String(campusId);
+        }
     }
 
     async function loadAdmins() {
@@ -3335,6 +3953,14 @@
         if (!container) return;
 
         try {
+            if (cachedCampuses.length === 0) {
+                try {
+                    const cData = await apiRequest("/super-admin/campuses");
+                    cachedCampuses = Array.isArray(cData) ? cData : [];
+                    updateCampusDropdowns(cachedCampuses);
+                } catch (_) {}
+            }
+
             const data = await apiRequest("/admin/admins");
             cachedAdmins = Array.isArray(data) ? data : [];
 
@@ -3358,14 +3984,17 @@
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100">
-                                ${cachedAdmins.map(a => `
+                                ${cachedAdmins.map(a => {
+                                    const campusObj = cachedCampuses.find(c => c.id === a.campus_id);
+                                    const campusLabel = campusObj ? campusObj.name : `Campus ${a.campus_id || '1'}`;
+                                    return `
                                     <tr class="hover:bg-slate-50/80 transition">
                                         <td class="p-3.5">
                                              <span class="font-bold text-slate-900">${escapeHtml(a.name)}</span>
                                              <p class="text-[11px] text-slate-400 font-mono">${escapeHtml(a.phone)}</p>
                                         </td>
                                         <td class="p-3.5">
-                                            <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">Campus ${escapeHtml(a.campus_id || '1')}</span>
+                                            <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200" title="Campus ID: ${escapeHtml(a.campus_id || '1')}">${escapeHtml(campusLabel)}</span>
                                         </td>
                                         <td class="p-3.5 font-mono font-bold text-brand">${escapeHtml(a.admin_id)}</td>
                                         <td class="p-3.5">
@@ -3373,11 +4002,13 @@
                                         </td>
                                         <td class="p-3.5 text-slate-500">${formatDateTime(a.created_at)}</td>
                                         <td class="p-3.5 text-right space-x-1">
+                                            <button type="button" onclick="window.KambusAdmin.openAllotAdminModal(${Number(a.admin_id)})" class="px-2.5 py-1 bg-blue-50 text-blue-700 hover:bg-blue-600 hover:text-white rounded-lg text-[11px] font-bold border border-blue-200 transition" title="Allot or reassign to a campus">Allot Campus</button>
                                             <button type="button" onclick="window.KambusAdmin.openResetAdminPasswordModal(${Number(a.admin_id)})" class="px-2.5 py-1 bg-slate-100 hover:bg-brand hover:text-white rounded-lg text-[11px] font-bold text-slate-700 transition">Reset password</button>
                                             <button type="button" onclick="window.KambusAdmin.toggleAdminStatus(${Number(a.admin_id)})" class="px-2.5 py-1 bg-slate-100 hover:bg-danger hover:text-white rounded-lg text-[11px] font-bold text-slate-700 transition">${a.status === "active" ? "Disable" : "Enable"}</button>
                                         </td>
                                     </tr>
-                                `).join("")}
+                                    `;
+                                }).join("")}
                             </tbody>
                         </table>
                     </div>
@@ -3389,6 +4020,9 @@
     }
 
     function openAddAdminModal() {
+        if (cachedCampuses.length > 0) {
+            updateCampusDropdowns(cachedCampuses);
+        }
         document.getElementById("addAdminModal")?.classList.remove("hidden");
     }
 
@@ -3415,6 +4049,93 @@
         }
     }
 
+    async function openAllotAdminModal(adminId) {
+        const admin = cachedAdmins.find(a => a.admin_id === adminId);
+        if (!admin) return;
+
+        const modal = document.getElementById("allotAdminCampusModal");
+        const errDiv = document.getElementById("allotAdminError");
+        if (errDiv) {
+            errDiv.classList.add("hidden");
+            errDiv.textContent = "";
+        }
+
+        document.getElementById("allotTargetAdminId").value = admin.admin_id;
+        document.getElementById("allotAdminNameDisplay").textContent = admin.name;
+        document.getElementById("allotAdminPhoneDisplay").textContent = `Phone: ${admin.phone || '-'}`;
+
+        const currentCampus = cachedCampuses.find(c => c.id === admin.campus_id);
+        const currentCampusText = currentCampus ? `${currentCampus.name} (ID: ${currentCampus.id})` : `Campus ID ${admin.campus_id || '1'}`;
+        document.getElementById("allotAdminCurrentCampusDisplay").textContent = `Current: ${currentCampusText}`;
+
+        if (cachedCampuses.length === 0) {
+            try {
+                const camps = await apiRequest("/super-admin/campuses");
+                cachedCampuses = Array.isArray(camps) ? camps : [];
+                updateCampusDropdowns(cachedCampuses);
+            } catch (e) {
+                console.warn("Could not load campuses for allotment modal:", e);
+            }
+        } else {
+            updateCampusDropdowns(cachedCampuses);
+        }
+
+        const sel = document.getElementById("allotCampusSelect");
+        if (sel && admin.campus_id) {
+            sel.value = String(admin.campus_id);
+        }
+
+        modal?.classList.remove("hidden");
+    }
+
+    async function submitAllotAdminCampus(event) {
+        event.preventDefault();
+        const errDiv = document.getElementById("allotAdminError");
+        const submitBtn = document.getElementById("btnSubmitAllotAdmin");
+        if (errDiv) {
+            errDiv.classList.add("hidden");
+            errDiv.textContent = "";
+        }
+
+        const adminId = document.getElementById("allotTargetAdminId")?.value;
+        const campusIdVal = document.getElementById("allotCampusSelect")?.value;
+
+        if (!adminId || !campusIdVal) {
+            if (errDiv) {
+                errDiv.textContent = "Please select a target campus.";
+                errDiv.classList.remove("hidden");
+            }
+            return;
+        }
+
+        const campus_id = parseInt(campusIdVal, 10);
+        try {
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = "Allotting...";
+            }
+
+            const res = await apiRequest(`/super-admin/admins/${adminId}/allot-campus`, {
+                method: "POST",
+                body: { campus_id }
+            });
+
+            showToast("success", "Admin Allotted", res.message || `Admin successfully allotted to campus ${campus_id}.`);
+            document.getElementById("allotAdminCampusModal")?.classList.add("hidden");
+            await loadAdmins();
+        } catch (e) {
+            if (errDiv) {
+                errDiv.textContent = e.message || "Failed to allot admin.";
+                errDiv.classList.remove("hidden");
+            }
+            showToast("error", "Allotment Failed", e.message);
+        } finally {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = "Save Allotment";
+            }
+        }
+    }
 
     async function toggleAdminStatus(adminId) {
         const admin = cachedAdmins.find(a => a.admin_id === adminId);
@@ -3472,8 +4193,45 @@
         if (!checkAuth()) return;
 
         setupSuperAdminNav();
+        initSuperAdminCampusSelector();
         initAdminWebSocket();
         showSection("dashboard");
+
+        // Preload super admin campuses & wire slug listener
+        if (isSuperAdmin()) {
+            loadCampuses();
+        } else {
+            apiRequest("/admin/campuses").then(campuses => {
+                if (Array.isArray(campuses)) {
+                    cachedCampuses = campuses;
+                    const payload = getJwtPayload();
+                    const adminCampusId = payload ? payload.campus_id : 1;
+                    const myCampus = campuses.find(c => c.id === adminCampusId);
+                    const isSchool = myCampus ? (myCampus.campus_type === 'school' || myCampus.type === 'school') : false;
+                    const navBtnParents = document.getElementById("navBtnParents");
+                    if (navBtnParents) {
+                        if (isSchool) {
+                            navBtnParents.classList.remove("hidden");
+                        } else {
+                            navBtnParents.classList.add("hidden");
+                        }
+                    }
+                }
+            }).catch(() => {});
+        }
+
+        const campusNameInput = document.getElementById("newCampusName");
+        const campusSlugInput = document.getElementById("newCampusSlug");
+        if (campusNameInput && campusSlugInput) {
+            campusNameInput.addEventListener("input", (e) => {
+                if (!campusSlugInput.dataset.manuallyEdited) {
+                    campusSlugInput.value = e.target.value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+                }
+            });
+            campusSlugInput.addEventListener("input", () => {
+                campusSlugInput.dataset.manuallyEdited = "true";
+            });
+        }
 
         // Initial pre-load of dropdowns in background
         loadBusesDropdown();
@@ -3623,6 +4381,14 @@
         toggleAdminStatus,
         openResetAdminPasswordModal,
         submitResetAdminPassword,
+        loadCampuses,
+        openCreateCampusModal,
+        handleNewCampusTypeChange,
+        submitCreateCampus,
+        toggleCampusStatus,
+        openAddAdminForCampus,
+        openAllotAdminModal,
+        submitAllotAdminCampus,
         submitAddRoute,
         deleteRoute,
         reorderRouteStop,
@@ -3636,7 +4402,9 @@
         acknowledgeAlert,
         executeGlobalSearch,
         loadMessages,
-        markMessageRead
+        markMessageRead,
+        handleCampusContextChange,
+        initSuperAdminCampusSelector
     };
 
 })();
