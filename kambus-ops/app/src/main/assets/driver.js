@@ -148,26 +148,36 @@ async function handleDriverLogout(event) {
     if (isTripActive) {
         const confirmed = await confirm("You have an active trip in progress. Are you sure you want to log out? The trip will be ended automatically.");
         if (!confirmed) return;
+    }
 
-        // End the trip on the backend before clearing local state
+    const token = getToken();
+
+    // End active trip and notify backend before clearing local session
+    if (token) {
         try {
-            const token = getToken();
-            const response = await fetch(`${API_BASE}/driver/end-trip`, {
+            await fetch(`${API_BASE}/driver/end-trip`, {
                 method: "POST",
                 headers: {
                     "Authorization": `Bearer ${token}`,
                     "Content-Type": "application/json"
-                }
-            });
-            if (response.ok) {
-} else {
-                const data = await response.json().catch(() => ({}));
-                console.warn("[WARN] End-trip call during logout returned non-OK:", response.status, data.detail || "");
-                // Proceed with logout anyway — don't block the user
-            }
+                },
+                keepalive: true
+            }).catch(() => {});
         } catch (err) {
-            console.error("[ERROR] End-trip call during logout failed (network error):", err);
-            // Proceed with logout anyway — don't block the user
+            console.warn("[WARN] /driver/end-trip failed during logout:", err);
+        }
+
+        try {
+            await fetch(`${API_BASE}/auth/logout`, {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json"
+                },
+                keepalive: true
+            }).catch(() => {});
+        } catch (err) {
+            console.warn("[WARN] /auth/logout failed during logout:", err);
         }
     }
 

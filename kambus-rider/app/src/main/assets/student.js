@@ -107,7 +107,7 @@ let travelStatusKnown = false;
 // ========================================================================
 
 const GPS_GRACE_PERIOD_MS = 30000;
-const GPS_STALE_AFTER_MS = 90 * 1000;
+const GPS_STALE_AFTER_MS = 120 * 1000;
 const ARRIVAL_DISTANCE_METRES = 80;
 const PASSED_DISTANCE_METRES = 140;
 const FALLBACK_SPEED_KMH = 15;
@@ -768,7 +768,8 @@ async function fetchBusLocation() {
             data.active_trip === false ||
             data.trip_status === "inactive" ||
             data.latitude === null ||
-            data.latitude === undefined
+            data.latitude === undefined ||
+            !isFreshLocation(data.timestamp)
         ) {
             busTripActive = false;
             removeBusMarker();
@@ -1000,9 +1001,14 @@ async function loadStudentBus() {
                 bus_id: data.bus_id,
                 stop_passed: data.stop_passed === true
             };
-            busData = initialLocation;
-            updateBusOnMap(initialLocation);
-            updateEtaBanner(initialLocation);
+            if (isFreshLocation(initialLocation.timestamp)) {
+                busData = initialLocation;
+                updateBusOnMap(initialLocation);
+                updateEtaBanner(initialLocation);
+            } else {
+                removeBusMarker();
+                setEtaBanner("Trip ended", "Bus is not travelling");
+            }
         }
 
         await fetchBusLocation();

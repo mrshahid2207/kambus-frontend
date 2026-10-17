@@ -193,6 +193,12 @@
                 if (data.student) {
                     localStorage.setItem("kambus_student_dashboard", JSON.stringify(data.student));
                 }
+                if (data.driver) {
+                    localStorage.setItem("kambus_driver_dashboard", JSON.stringify(data.driver));
+                }
+                if (data.ops) {
+                    localStorage.setItem("kambus_ops_dashboard", JSON.stringify(data.ops));
+                }
 
                 if (rememberMe) {
                     localStorage.setItem("kambus_remember", "true");
