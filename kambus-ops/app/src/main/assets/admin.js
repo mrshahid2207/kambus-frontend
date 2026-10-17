@@ -1640,12 +1640,14 @@
         container.innerHTML = `<div class="p-3 text-center text-xs text-slate-400">Searching students...</div>`;
 
         try {
-            const endpoint = query ? `/admin/students?search=${encodeURIComponent(query)}` : "/admin/students";
+            const baseEndpoint = "/admin/students?campus_type=school";
+            const endpoint = query ? `${baseEndpoint}&search=${encodeURIComponent(query)}` : baseEndpoint;
             const data = await apiRequest(endpoint);
-            const students = data.students || [];
+            const rawStudents = data.students || [];
+            const students = rawStudents.filter(s => !s.campus_type || s.campus_type === "school");
 
             if (students.length === 0) {
-                container.innerHTML = `<div class="p-3 text-center text-xs text-slate-400">No students found matching "${escapeHtml(query)}".</div>`;
+                container.innerHTML = `<div class="p-3 text-center text-xs text-slate-400">No school students found matching "${escapeHtml(query)}".</div>`;
                 return;
             }
 
