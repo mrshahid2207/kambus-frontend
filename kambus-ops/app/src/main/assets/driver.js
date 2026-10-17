@@ -18,12 +18,22 @@ const OSRM_BASE = "https://kambus-orsm.onrender.com";
                 localStorage.removeItem("kambus_token");
                 localStorage.removeItem("kambus_role");
                 localStorage.removeItem("kambus_user_id");
+                localStorage.removeItem("kambus_driver_dashboard");
                 window.location.replace("index.html");
             }
         } catch (e) { /* never break the original request */ }
         return response;
     };
 })();
+
+function getInitialDriverDashboard() {
+    try {
+        const raw = localStorage.getItem("kambus_driver_dashboard");
+        return raw ? JSON.parse(raw) : null;
+    } catch (_) {
+        return null;
+    }
+}
 
 // Driver & Trip State
 let isTripActive = false;
@@ -190,6 +200,7 @@ async function handleDriverLogout(event) {
     localStorage.removeItem("kambus_token");
     localStorage.removeItem("kambus_role");
     localStorage.removeItem("kambus_user_id");
+    localStorage.removeItem("kambus_driver_dashboard");
 
     // Redirect to login page
     window.location.href = "index.html";
@@ -260,6 +271,27 @@ function updateTopStatusBar() {
 async function restoreDriverDashboardState() {
     const token = getToken();
     if (!token) return;
+
+    const initialLoginData = getInitialDriverDashboard();
+    if (!window.__driverStateRestoredFromLogin && initialLoginData) {
+        window.__driverStateRestoredFromLogin = true;
+
+        await loadDriverBus();
+        await loadDriverRouteStops();
+
+        const tripStatus = initialLoginData.trip_status;
+        if (tripStatus && tripStatus.active) {
+            isTripActive = true;
+            switchToActiveTripView();
+            startGpsTracking();
+            startWaitRequestsPolling();
+            startBusAssignmentPolling();
+        } else {
+            isTripActive = false;
+            switchToPreTripView();
+        }
+        return;
+    }
 
     // 1. Load Driver's Assigned Bus
     const myBus = await loadDriverBus();
@@ -362,18 +394,25 @@ async function loadDriverBus() {
     }
 
     try {
-        const response = await fetch(`${API_BASE}/driver/my-bus`, {
-            headers: {
-                "Accept": "application/json",
-                "Authorization": `Bearer ${token}`
+        let data = null;
+        const initialLoginData = getInitialDriverDashboard();
+        if (!window.__driverBusLoadedFromLogin && initialLoginData && initialLoginData.bus_id) {
+            window.__driverBusLoadedFromLogin = true;
+            data = initialLoginData;
+        } else {
+            const response = await fetch(`${API_BASE}/driver/my-bus`, {
+                headers: {
+                    "Accept": "application/json",
+                    "Authorization": `Bearer ${token}`
+                }
+            });
+
+            data = await response.json();
+
+            if (!response.ok || !data.bus_id) {
+                console.error("[ERROR] Failed to load driver bus:", data);
+                return { success: false, message: data.detail || "Bus unavailable" };
             }
-        });
-
-        const data = await response.json();
-
-        if (!response.ok || !data.bus_id) {
-            console.error("[ERROR] Failed to load driver bus:", data);
-            return { success: false, message: data.detail || "Bus unavailable" };
         }
 
         BUS_ID = data.bus_id;
@@ -397,9 +436,57 @@ async function loadDriverBus() {
 // LOAD ROUTE STOPS & EXPECTED STUDENTS
 // ========================================================================
 
+function applyRouteStopsPayload(data) {
+    if (!data) return false;
+    // The backend already returns stops in the active trip's direction.
+    const rawStops = Array.isArray(data.stops) ? data.stops : [];
+    driverRouteStops = [...rawStops];
+    activeTripType = data.trip_type || null;
+    if (selectedTripType && driverRouteStops.length > 0) {
+        const firstStopName = document.getElementById("preTripFirstStopName");
+        const firstStop = selectedTripType === "evening"
+            ? driverRouteStops[driverRouteStops.length - 1]
+            : driverRouteStops[0];
+        if (firstStopName && firstStop) firstStopName.textContent = firstStop.name;
+    }
+
+    // Dynamic College Coordinates from Backend if provided
+    if (data.college_location?.latitude && data.college_location?.longitude) {
+        COLLEGE_LOCATION.latitude = Number(data.college_location.latitude);
+        COLLEGE_LOCATION.longitude = Number(data.college_location.longitude);
+        if (data.college_location.name) COLLEGE_LOCATION.name = data.college_location.name;
+    }
+
+    // Update Today's Total Students Count
+    const todayStudentsElem = document.getElementById("todayStudentsCount");
+    if (todayStudentsElem) {
+        const count = data.total_students_today ?? data.total_assigned_students ?? "--";
+        todayStudentsElem.textContent = count;
+    }
+
+    updatePreTripOverview();
+    updateStopProgressionUI();
+
+    if (isTripActive) {
+        initOrUpdateRouteMap();
+        if (lastPosition) {
+            updateNextStopAndEta(lastPosition);
+            triggerRoadRouteFetchIfNeeded(lastPosition, true);
+        }
+    }
+    return true;
+}
+
 async function loadDriverRouteStops() {
     const token = getToken();
     if (!token) return;
+
+    const initialLoginData = getInitialDriverDashboard();
+    if (!window.__driverRouteStopsLoadedFromLogin && initialLoginData && initialLoginData.route_stops) {
+        window.__driverRouteStopsLoadedFromLogin = true;
+        applyRouteStopsPayload(initialLoginData.route_stops);
+        return;
+    }
 
     try {
         const response = await fetch(`${API_BASE}/driver/route-stops`, {
@@ -415,42 +502,7 @@ async function loadDriverRouteStops() {
             return;
         }
 
-        // The backend already returns stops in the active trip's direction.
-        const rawStops = Array.isArray(data.stops) ? data.stops : [];
-        driverRouteStops = [...rawStops];
-        activeTripType = data.trip_type || null;
-        if (selectedTripType && driverRouteStops.length > 0) {
-            const firstStopName = document.getElementById("preTripFirstStopName");
-            const firstStop = selectedTripType === "evening"
-                ? driverRouteStops[driverRouteStops.length - 1]
-                : driverRouteStops[0];
-            if (firstStopName && firstStop) firstStopName.textContent = firstStop.name;
-        }
-
-        // Dynamic College Coordinates from Backend if provided
-        if (data.college_location?.latitude && data.college_location?.longitude) {
-            COLLEGE_LOCATION.latitude = Number(data.college_location.latitude);
-            COLLEGE_LOCATION.longitude = Number(data.college_location.longitude);
-            if (data.college_location.name) COLLEGE_LOCATION.name = data.college_location.name;
-        }
-
-        // Update Today's Total Students Count
-        const todayStudentsElem = document.getElementById("todayStudentsCount");
-        if (todayStudentsElem) {
-            const count = data.total_students_today ?? data.total_assigned_students ?? "--";
-            todayStudentsElem.textContent = count;
-        }
-
-        updatePreTripOverview();
-        updateStopProgressionUI();
-
-        if (isTripActive) {
-            initOrUpdateRouteMap();
-            if (lastPosition) {
-                updateNextStopAndEta(lastPosition);
-                triggerRoadRouteFetchIfNeeded(lastPosition, true);
-            }
-        }
+        applyRouteStopsPayload(data);
     } catch (error) {
         console.error("loadDriverRouteStops error:", error);
     }

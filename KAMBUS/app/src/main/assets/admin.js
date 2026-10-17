@@ -224,6 +224,7 @@
                 if (res.status === 401) {
                     localStorage.removeItem("kambus_token");
                     localStorage.removeItem("kambus_role");
+                    localStorage.removeItem("kambus_ops_dashboard");
                     window.location.href = "index.html";
                     return;
                 }
@@ -546,69 +547,96 @@
         }
     }
 
+    function getInitialOpsDashboard() {
+        try {
+            const raw = localStorage.getItem("kambus_ops_dashboard");
+            return raw ? JSON.parse(raw) : null;
+        } catch {
+            return null;
+        }
+    }
+
+    function renderDashboardData(data) {
+        if (!data) return;
+
+        const setVal = (id, val) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = val ?? 0;
+        };
+        setVal("statTotalBuses", data.total_buses);
+        setVal("statActiveBuses", data.active_buses);
+        setVal("statOfflineBuses", data.offline_buses);
+        setVal("statTotalDrivers", data.total_drivers);
+        setVal("statTotalStudents", data.total_students);
+        setVal("statTravellingToday", data.students_travelling_today);
+        setVal("statTotalRoutes", data.total_routes);
+        setVal("statTotalStops", data.total_stops);
+
+        // Render Active Trips
+        const activeTripsContainer = document.getElementById("dashboardActiveTrips");
+        if (activeTripsContainer) {
+            if (!data.active_trips || data.active_trips.length === 0) {
+                activeTripsContainer.innerHTML = `<div class="p-6 text-center text-xs text-slate-400">No active trips currently in transit.</div>`;
+            } else {
+                activeTripsContainer.innerHTML = data.active_trips.map(trip => `
+                    <div class="p-3 bg-slate-50 border border-slate-200/80 rounded flex items-center justify-between gap-2">
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-ok/100 animate-pulse"></span>
+                                <span class="font-black text-slate-900 text-xs">${escapeHtml(trip.bus_number)}</span>
+                                <span class="text-slate-400">&bull;</span>
+                                <span class="text-slate-600 text-xs font-semibold">${escapeHtml(trip.route_name || 'Campus Route')}</span>
+                            </div>
+                            <p class="text-[11px] text-slate-500 mt-0.5">Driver: <strong>${escapeHtml(trip.driver_name)}</strong> &bull; Started: ${formatDateTime(trip.started_at)}</p>
+                        </div>
+                        <button onclick="window.KambusAdmin.openBusModal(${trip.bus_id})" class="px-2.5 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg text-xs font-bold text-slate-700 shadow-2xs">
+                            View Bus
+                        </button>
+                    </div>
+                `).join("");
+            }
+        }
+
+        // Render Recent Alerts
+        const recentAlertsContainer = document.getElementById("dashboardRecentAlerts");
+        if (recentAlertsContainer && data.recent_alerts) {
+            if (data.recent_alerts.length === 0) {
+                recentAlertsContainer.innerHTML = `<div class="p-6 text-center text-xs text-slate-400">No recent alerts logged.</div>`;
+            } else {
+                recentAlertsContainer.innerHTML = data.recent_alerts.slice(0, 4).map(alert => `
+                    <div class="py-2.5 flex items-start justify-between gap-3 text-xs">
+                        <div class="min-w-0">
+                            <div class="flex items-center gap-1.5">
+                                <span class="w-4 h-4 shrink-0 flex items-center justify-center">${alert.type === 'emergency_sos' ? '<svg class="w-4 h-4 text-danger"><use href="icons.svg#icon-alert"/></svg>' : '<svg class="w-4 h-4 text-warn"><use href="icons.svg#icon-alert"/></svg>'}</span>
+                                <span class="font-bold text-slate-900 truncate">${escapeHtml(alert.title)}</span>
+                            </div>
+                            <p class="text-slate-500 text-[11px] truncate mt-0.5">${escapeHtml(alert.message)}</p>
+                        </div>
+                        <span class="text-[10px] text-slate-400 shrink-0">${formatDateTime(alert.created_at)}</span>
+                    </div>
+                `).join("");
+            }
+        }
+    }
+
     async function loadDashboard() {
         if (isPlatformSuperAdmin() && !getSelectedCampusId()) {
             renderDashboardNoCampusSelected();
             return;
         }
 
+        if (!window.__opsDashboardLoadedFromLogin) {
+            const initialOps = getInitialOpsDashboard();
+            if (initialOps) {
+                window.__opsDashboardLoadedFromLogin = true;
+                renderDashboardData(initialOps);
+                return;
+            }
+        }
+
         try {
             const data = await apiRequest("/admin/dashboard");
-
-            document.getElementById("statTotalBuses").textContent = data.total_buses || 0;
-            document.getElementById("statActiveBuses").textContent = data.active_buses || 0;
-            document.getElementById("statOfflineBuses").textContent = data.offline_buses || 0;
-            document.getElementById("statTotalDrivers").textContent = data.total_drivers || 0;
-            document.getElementById("statTotalStudents").textContent = data.total_students || 0;
-            document.getElementById("statTravellingToday").textContent = data.students_travelling_today || 0;
-            document.getElementById("statTotalRoutes").textContent = data.total_routes || 0;
-            document.getElementById("statTotalStops").textContent = data.total_stops || 0;
-
-            // Render Active Trips
-            const activeTripsContainer = document.getElementById("dashboardActiveTrips");
-            if (activeTripsContainer) {
-                if (!data.active_trips || data.active_trips.length === 0) {
-                    activeTripsContainer.innerHTML = `<div class="p-6 text-center text-xs text-slate-400">No active trips currently in transit.</div>`;
-                } else {
-                    activeTripsContainer.innerHTML = data.active_trips.map(trip => `
-                        <div class="p-3 bg-slate-50 border border-slate-200/80 rounded flex items-center justify-between gap-2">
-                            <div>
-                                <div class="flex items-center gap-2">
-                                    <span class="w-2 h-2 rounded-full bg-ok/100 animate-pulse"></span>
-                                    <span class="font-black text-slate-900 text-xs">${escapeHtml(trip.bus_number)}</span>
-                                    <span class="text-slate-400">&bull;</span>
-                                    <span class="text-slate-600 text-xs font-semibold">${escapeHtml(trip.route_name || 'Campus Route')}</span>
-                                </div>
-                                <p class="text-[11px] text-slate-500 mt-0.5">Driver: <strong>${escapeHtml(trip.driver_name)}</strong> &bull; Started: ${formatDateTime(trip.started_at)}</p>
-                            </div>
-                            <button onclick="window.KambusAdmin.openBusModal(${trip.bus_id})" class="px-2.5 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg text-xs font-bold text-slate-700 shadow-2xs">
-                                View Bus
-                            </button>
-                        </div>
-                    `).join("");
-                }
-            }
-
-            // Render Recent Alerts
-            const recentAlertsContainer = document.getElementById("dashboardRecentAlerts");
-            if (recentAlertsContainer) {
-                if (!data.recent_alerts || data.recent_alerts.length === 0) {
-                    recentAlertsContainer.innerHTML = `<div class="p-6 text-center text-xs text-slate-400">No recent alerts logged.</div>`;
-                } else {
-                    recentAlertsContainer.innerHTML = data.recent_alerts.slice(0, 4).map(alert => `
-                        <div class="py-2.5 flex items-start justify-between gap-3 text-xs">
-                            <div class="min-w-0">
-                                <div class="flex items-center gap-1.5">
-                                    <span class="w-4 h-4 shrink-0 flex items-center justify-center">${alert.type === 'emergency_sos' ? '<svg class="w-4 h-4 text-danger"><use href="icons.svg#icon-alert"/></svg>' : '<svg class="w-4 h-4 text-warn"><use href="icons.svg#icon-alert"/></svg>'}</span>
-                                    <span class="font-bold text-slate-900 truncate">${escapeHtml(alert.title)}</span>
-                                </div>
-                                <p class="text-slate-500 text-[11px] truncate mt-0.5">${escapeHtml(alert.message)}</p>
-                            </div>
-                            <span class="text-[10px] text-slate-400 shrink-0">${formatDateTime(alert.created_at)}</span>
-                        </div>
-                    `).join("");
-                }
-            }
+            renderDashboardData(data);
         } catch (error) {
             console.error("Dashboard load failed:", error);
             showToast("error", "Error", "Could not refresh overview stats.");
@@ -2012,6 +2040,7 @@
         localStorage.removeItem("kambus_role");
         localStorage.removeItem("kambus_user_id");
         localStorage.removeItem("kambus_active_campus_id");
+        localStorage.removeItem("kambus_ops_dashboard");
         window.location.href = "index.html";
     }
 
