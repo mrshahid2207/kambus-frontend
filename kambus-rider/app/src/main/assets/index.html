@@ -244,6 +244,9 @@
                 localStorage.setItem("kambus_token", data.access_token);
                 localStorage.setItem("kambus_role", data.role);
                 localStorage.setItem("kambus_user_id", data.user_id);
+                if (data.student) {
+                    localStorage.setItem("kambus_student_dashboard", JSON.stringify(data.student));
+                }
 
                 if (rememberMe) {
                     localStorage.setItem("kambus_remember", "true");

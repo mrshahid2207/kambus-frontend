@@ -18,6 +18,7 @@ const WS_BASE = API_BASE.replace(/^http/, "ws");
                 localStorage.removeItem("kambus_token");
                 localStorage.removeItem("kambus_role");
                 localStorage.removeItem("kambus_user_id");
+                localStorage.removeItem("kambus_student_dashboard");
                 window.location.replace("index.html");
             }
         } catch (e) { /* never break the original request */ }
@@ -857,6 +858,65 @@ async function loadActiveAlternativeAllotment() {
     }
 }
 
+function getInitialLoginDashboard() {
+    try {
+        const raw = localStorage.getItem("kambus_student_dashboard");
+        return raw ? JSON.parse(raw) : null;
+    } catch (e) {
+        return null;
+    }
+}
+
+function applyStopDataFromPayload(stopData) {
+    if (!stopData || !stopData.stop_id) return false;
+    assignedStop = {
+        stop_id: stopData.stop_id,
+        name: stopData.stop_name || stopData.name || "Assigned Stop",
+        latitude: Number(stopData.latitude),
+        longitude: Number(stopData.longitude),
+        stop_order: stopData.stop_order || 1,
+        is_temporary: stopData.is_temporary === true,
+        is_custom_point: stopData.is_custom_point === true,
+        temporary_start_date: stopData.temporary_start_date || null,
+        temporary_end_date: stopData.temporary_end_date || null
+    };
+    window.assignedStop = assignedStop;
+
+    const assignment = studentAssignment || stopData || {};
+    const isTemp = assignedStop.is_temporary === true;
+
+    const myStopTag = document.querySelector("#myStopCard p.tracking-wider");
+    if (myStopTag) {
+        if (isTemp) {
+            myStopTag.textContent = "TEMPORARY STOP";
+            myStopTag.className = "text-[9px] font-bold tracking-wider text-brand uppercase";
+        } else {
+            myStopTag.textContent = "MY STOP";
+            myStopTag.className = "text-[9px] font-bold tracking-wider text-brand uppercase";
+        }
+    }
+
+    const routeText = isTemp && assignedStop.temporary_start_date
+        ? `${assignment.route_name || 'Route ' + (stopData.route_id || '')} • ${assignedStop.temporary_start_date} → ${assignedStop.temporary_end_date}`
+        : (assignment.route_name || `Route ${stopData.route_id || ''}`);
+
+    setMyStopState(
+        assignedStop.name,
+        routeText,
+        `Bus: ${assignment.bus_number || "Unavailable"}`,
+        `Driver: ${assignment.driver_name || "Unavailable"}`
+    );
+
+    const passStopName = document.getElementById("passStopName");
+    if (passStopName) {
+        passStopName.textContent = assignedStop.name;
+    }
+
+    window.updateDrawerHeader?.();
+    updateStopMarker();
+    return true;
+}
+
 async function loadStudentBus() {
     const request = ++studentAssignmentRequest;
     const token = getToken();
@@ -866,25 +926,35 @@ async function loadStudentBus() {
     }
 
     try {
-        const response = await fetch(`${API_BASE}/student/my-bus`, {
-            method: "GET",
-            headers: {
-                "Accept": "application/json",
-                "Authorization": `Bearer ${token}`
+        let data = null;
+        const initialLoginData = getInitialLoginDashboard();
+        if (!window.__studentBusLoadedFromLogin && initialLoginData && initialLoginData.bus_id) {
+            window.__studentBusLoadedFromLogin = true;
+            data = initialLoginData;
+            if (data.stop_id && (!assignedStop || !assignedStop.stop_id)) {
+                applyStopDataFromPayload(data);
             }
-        });
+        } else {
+            const response = await fetch(`${API_BASE}/student/my-bus`, {
+                method: "GET",
+                headers: {
+                    "Accept": "application/json",
+                    "Authorization": `Bearer ${token}`
+                }
+            });
 
-        const data = await response.json();
-        if (request !== studentAssignmentRequest) return false;
+            data = await response.json();
+            if (request !== studentAssignmentRequest) return false;
 
-        if (!response.ok || !data.bus_id) {
-            console.error("[ERROR] Student bus unavailable:", data);
-            if (data?.detail === "No bus assigned to this student") {
-                setEtaBanner("No bus assigned yet", "Contact the transport office");
-            } else {
-                setEtaBanner("Bus unavailable", "ETA unavailable");
+            if (!response.ok || !data.bus_id) {
+                console.error("[ERROR] Student bus unavailable:", data);
+                if (data?.detail === "No bus assigned to this student") {
+                    setEtaBanner("No bus assigned yet", "Contact the transport office");
+                } else {
+                    setEtaBanner("Bus unavailable", "ETA unavailable");
+                }
+                return false;
             }
-            return false;
         }
 
         // The backend resolves the full effective bus, driver and route together.
@@ -990,6 +1060,19 @@ async function loadMyStop(showLoading = true) {
     const token = getToken();
     if (!token) return false;
 
+    // Use initial login stop data if already populated
+    if (assignedStop && !showLoading) {
+        return true;
+    }
+
+    const initialLoginData = getInitialLoginDashboard();
+    if (!window.__studentStopLoadedFromLogin && initialLoginData && initialLoginData.stop_id) {
+        window.__studentStopLoadedFromLogin = true;
+        if (applyStopDataFromPayload(initialLoginData)) {
+            return true;
+        }
+    }
+
     if (showLoading || !assignedStop) {
         setMyStopState(
             "Loading assigned stop…",
@@ -1027,53 +1110,7 @@ async function loadMyStop(showLoading = true) {
             return false;
         }
 
-        assignedStop = {
-            stop_id: stopData.stop_id,
-            name: stopData.stop_name,
-            latitude: Number(stopData.latitude),
-            longitude: Number(stopData.longitude),
-            stop_order: stopData.stop_order,
-            is_temporary: stopData.is_temporary === true,
-            is_custom_point: stopData.is_custom_point === true,
-            temporary_start_date: stopData.temporary_start_date || null,
-            temporary_end_date: stopData.temporary_end_date || null
-        };
-        window.assignedStop = assignedStop;
-
-        const assignment = studentAssignment || {};
-        const isTemp = assignedStop.is_temporary === true;
-
-        const myStopTag = document.querySelector("#myStopCard p.tracking-wider");
-        if (myStopTag) {
-            if (isTemp) {
-                myStopTag.textContent = "TEMPORARY STOP";
-                myStopTag.className = "text-[9px] font-bold tracking-wider text-brand uppercase";
-            } else {
-                myStopTag.textContent = "MY STOP";
-                myStopTag.className = "text-[9px] font-bold tracking-wider text-brand uppercase";
-            }
-        }
-
-        const routeText = isTemp && assignedStop.temporary_start_date
-            ? `${assignment.route_name || 'Route ' + stopData.route_id} • ${assignedStop.temporary_start_date} → ${assignedStop.temporary_end_date}`
-            : (assignment.route_name || `Route ${stopData.route_id}`);
-
-        setMyStopState(
-            assignedStop.name,
-            routeText,
-            `Bus: ${assignment.bus_number || "Unavailable"}`,
-            `Driver: ${assignment.driver_name || "Unavailable"}`
-        );
-
-        const passStopName = document.getElementById("passStopName");
-        if (passStopName) {
-            passStopName.textContent = assignedStop.name;
-        }
-
-        window.updateDrawerHeader?.();
-
-        updateStopMarker();
-        return true;
+        return applyStopDataFromPayload(stopData);
     } catch (error) {
         if (version !== studentAssignmentVersion) return false;
         console.error("[ERROR] Unable to load assigned stop from API:", error);
@@ -2535,7 +2572,18 @@ function formatDateForInput(date) {
 // ========================================================================
 
 document.addEventListener("DOMContentLoaded", () => {
-// 1. Initialize Map
+    // 0. Pre-hydrate personalized dashboard directly from login response
+    const initialLoginData = getInitialLoginDashboard();
+    if (initialLoginData) {
+        if (initialLoginData.bus_id) {
+            updateStudentDashboard(initialLoginData);
+        }
+        if (initialLoginData.stop_id) {
+            applyStopDataFromPayload(initialLoginData);
+        }
+    }
+
+    // 1. Initialize Map
     initializeMap();
 
     // 2. Bind Stop Action Buttons
@@ -2796,6 +2844,7 @@ window.handleStudentLogout = function() {
     localStorage.removeItem("kambus_token");
     localStorage.removeItem("kambus_role");
     localStorage.removeItem("kambus_user_id");
+    localStorage.removeItem("kambus_student_dashboard");
     window.location.replace("index.html");
 };
 
