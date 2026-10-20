@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>KAMBUS Rider</title>
-    <meta name="theme-color" content="#17333f">
-    <meta name="description" content="KAMBUS Rider, live bus tracking and transport schedules.">
+    <meta name="theme-color" content="#0d222a">
+    <meta name="description" content="KAMBUS Rider - Safe Rides, Smarter Campus. Live bus tracking and transport schedules.">
     <link rel="icon" href="favicon.svg?v=2" type="image/svg+xml">
     <link rel="icon" href="favicon.ico?v=2" sizes="48x48">
     <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2">
@@ -13,150 +13,330 @@
     <link rel="stylesheet" href="kambus.css">
     <script src="kambus-ui.js"></script>
     <style>
+        * {
+            box-sizing: border-box;
+        }
         body.login-page {
-            position: relative;
-            overflow-x: hidden;
-            overflow-y: auto;
-            background: #f8fafb;
+            margin: 0;
+            padding: 0;
+            background-color: #0b1a20;
+            background-image: url('rider-login-bg.png');
+            background-repeat: no-repeat;
+            background-position: top center;
+            background-size: 100% auto;
             min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            padding: 24px 16px;
-            padding-top: max(24px, calc(16px + max(var(--safe-top, 0px), env(safe-area-inset-top, 0px))));
-            padding-bottom: max(24px, calc(16px + max(var(--safe-bottom, 0px), env(safe-area-inset-bottom, 0px))));
+            justify-content: flex-start;
+            overflow-x: hidden;
+            overflow-y: auto;
+            -webkit-tap-highlight-color: transparent;
         }
-        body.login-page input { scroll-margin-top: 24px; scroll-margin-bottom: 24px; }
-        /* Subtle decorative brand curves: reduced to ~1/3 original height */
-        body.login-page::before, body.login-page::after {
-            content: "";
-            position: fixed;
-            z-index: 0;
-            width: 140vw;
-            pointer-events: none;
-        }
-        body.login-page::before {
-            top: -46px;
-            left: -20vw;
-            height: 72px;
-            border-radius: 0 0 50% 50%;
-            background: radial-gradient(ellipse at 50% 100%, rgba(79, 179, 169, 0.4), transparent 70%), linear-gradient(135deg, #17333f, #224c5b);
-            box-shadow: 0 4px 16px rgba(23, 51, 63, 0.12);
-        }
-        body.login-page::after {
-            bottom: -46px;
-            right: -20vw;
-            height: 72px;
-            border-radius: 50% 50% 0 0;
-            background: radial-gradient(ellipse at 50% 0%, rgba(79, 179, 169, 0.35), transparent 70%), linear-gradient(135deg, #224c5b, #17333f);
-            box-shadow: 0 -4px 16px rgba(23, 51, 63, 0.08);
-        }
-        .login-shell {
-            position: relative;
-            z-index: 1;
+        .login-viewport {
             width: 100%;
-            max-width: 400px;
+            max-width: 472px;
+            min-height: 100vh;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 0 18px 28px;
+            box-sizing: border-box;
+        }
+        /* Positions the card precisely where it sits in the mockup */
+        .login-card-anchor {
+            width: 100%;
+            max-width: 396px;
+            margin-top: calc(334 / 472 * 100vw);
+            margin-bottom: 24px;
             flex-shrink: 0;
-            margin: auto 0;
-            animation: login-enter 220ms ease-out both;
+            animation: card-enter 240ms cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+        @media (min-width: 472px) {
+            .login-card-anchor {
+                margin-top: 334px;
+            }
+        }
+        @keyframes card-enter {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         .login-card {
             position: relative;
-            padding: 26px 24px;
-            background: #fff;
-            border: 1px solid #e2e8f0;
-            border-radius: 20px;
-            box-shadow: 0 12px 32px rgba(23, 53, 65, 0.08);
-        }
-        .login-brand {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 20px;
-        }
-        .campus-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 7px;
-            padding: 5px 12px;
-            background: #f1f5f9;
-            border: 1px solid #e2e8f0;
-            border-radius: 9999px;
-            font-size: 12px;
-            font-weight: 500;
-            color: #475569;
-            letter-spacing: 0.01em;
-        }
-        .campus-dot {
-            width: 7px;
-            height: 7px;
-            border-radius: 50%;
-            background: #4fb3a9;
-            flex-shrink: 0;
+            background: #ffffff;
+            border-radius: 32px;
+            padding: 24px 22px 26px;
+            box-shadow: 0 20px 48px rgba(10, 30, 40, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.85);
         }
         .role-tabs {
-            --role-position: 0;
-            position: relative;
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 3px;
+            grid-template-columns: 1fr 1fr;
+            background: #f1f5f9;
             padding: 4px;
-            border: 1px solid #dce5e8;
-            border-radius: 14px;
-            background: #edf2f3;
-        }
-        .role-indicator {
-            position: absolute;
-            top: 4px;
-            bottom: 4px;
-            left: 4px;
-            width: calc((100% - 8px) / 2);
-            border-radius: 10px;
-            background: linear-gradient(135deg, #17333f, #285466);
-            box-shadow: 0 3px 8px rgba(23, 53, 65, 0.2);
-            transform: translateX(calc(var(--role-position) * 100%));
-            transition: transform 230ms cubic-bezier(.2, .8, .2, 1);
+            border-radius: 16px;
+            gap: 4px;
+            border: 1px solid #e2e8f0;
         }
         .role-tab {
-            position: relative;
-            z-index: 1;
+            height: 46px;
+            min-height: 46px !important;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
-            min-height: 48px !important;
-            padding: 8px 12px !important;
-            border: 0;
-            border-radius: 10px;
-            color: #66767d;
-            background: transparent;
-            font-size: 14px !important;
+            border-radius: 12px;
+            font-size: 15px !important;
             font-weight: 600;
+            color: #475569 !important;
+            background: transparent !important;
+            border: 0;
             cursor: pointer;
-            transition: color 160ms ease;
-        }
-        .role-tab.is-active {
-            color: #fff !important;
+            transition: all 180ms ease;
         }
         .role-tab svg {
-            width: 18px;
-            height: 18px;
+            width: 19px;
+            height: 19px;
+            stroke: #475569;
             flex-shrink: 0;
+            transition: stroke 180ms ease;
+        }
+        .role-tab.is-active {
+            background: #17333f !important;
+            color: #ffffff !important;
+            box-shadow: 0 4px 12px rgba(23, 51, 63, 0.25);
+        }
+        .role-tab.is-active svg {
+            stroke: #ffffff !important;
+        }
+        .field-group {
+            margin-top: 16px;
+        }
+        .field-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 700;
+            color: #17333f;
+            margin-bottom: 7px;
         }
         .input-wrap {
-            height: 52px;
-            min-height: 52px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            height: 50px;
+            min-height: 50px;
+            border-radius: 12px;
+            border: 1.5px solid #cbd5e1;
+            background: #ffffff;
+            padding: 0 14px;
+            transition: border-color 160ms ease, box-shadow 160ms ease;
         }
-        .phone-prefix {
-            border-top-left-radius: 12px;
-            border-bottom-left-radius: 12px;
-            font-size: 14px !important;
+        .input-wrap:focus-within {
+            border-color: #0d9488;
+            box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
+        }
+        .input-icon {
+            display: flex;
+            align-items: center;
+            color: #1e293b;
+            margin-right: 12px;
+            flex-shrink: 0;
+            pointer-events: none;
         }
         .login-input {
+            flex: 1;
             height: 100%;
+            background: transparent;
+            border: 0;
+            font-size: 15px !important;
+            font-weight: 500;
+            color: #1e293b;
+            padding: 0;
+            outline: none;
+        }
+        .login-input::placeholder {
+            color: #94a3b8;
+            font-weight: 400;
+        }
+        .field-hint {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-top: 6px;
+            font-weight: 400;
+        }
+        .phone-prefix {
+            display: none;
+            align-items: center;
+            padding-right: 10px;
+            margin-right: 10px;
+            border-right: 1.5px solid #cbd5e1;
+            color: #17333f;
+            font-size: 14px;
+            font-weight: 700;
+            user-select: none;
+        }
+        .phone-prefix.is-visible {
+            display: flex;
+        }
+        .pw-toggle-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 6px;
+            margin-right: -4px;
+            color: #1e293b;
+            background: transparent;
+            border: 0;
+            cursor: pointer;
+            border-radius: 8px;
+        }
+        .pw-toggle-btn:hover {
+            color: #0d9488;
+        }
+        .remember-forgot-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: 14px 0 16px;
+            user-select: none;
+        }
+        .remember-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+        .custom-checkbox {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 20px !important;
+            height: 20px !important;
+            min-width: 20px !important;
+            min-height: 20px !important;
+            border-radius: 5px;
+            border: 1.8px solid #17333f;
+            background: #ffffff;
+            cursor: pointer;
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            flex-shrink: 0;
+            transition: all 140ms ease;
+        }
+        .custom-checkbox:checked {
+            background: #17333f;
+            border-color: #17333f;
+        }
+        .custom-checkbox:checked::after {
+            content: "";
+            width: 5px;
+            height: 10px;
+            border: solid #ffffff;
+            border-width: 0 2.2px 2.2px 0;
+            transform: rotate(45deg);
+            margin-bottom: 2px;
+        }
+        .remember-text {
+            font-size: 13px;
+            font-weight: 500;
+            color: #1e293b;
+        }
+        .forgot-link {
+            font-size: 13px;
+            font-weight: 600;
+            color: #00838f;
+            text-decoration: none;
+            cursor: pointer;
+            transition: opacity 160ms ease;
+        }
+        .forgot-link:hover {
+            text-decoration: underline;
+            opacity: 0.85;
+        }
+        .signin-btn {
+            position: relative;
+            overflow: hidden;
+            width: 100%;
+            height: 52px;
+            min-height: 52px !important;
+            border-radius: 16px !important;
+            background: #17333f !important;
+            color: #ffffff !important;
             font-size: 16px !important;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            border: 0;
+            cursor: pointer;
+            box-shadow: 0 8px 20px rgba(23, 51, 63, 0.28);
+            transition: transform 160ms ease, box-shadow 160ms ease;
+        }
+        .signin-btn::after {
+            content: "";
+            position: absolute;
+            right: -25px;
+            top: -26px;
+            width: 104px;
+            height: 104px;
+            border-radius: 50%;
+            background: #2b7085;
+            pointer-events: none;
+            z-index: 1;
+        }
+        .signin-btn > * {
+            position: relative;
+            z-index: 2;
+        }
+        .signin-btn:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 9px 24px rgba(23, 51, 63, 0.35);
+        }
+        .signin-btn:active:not(:disabled) {
+            transform: scale(0.98);
+        }
+        .login-divider {
+            display: flex;
+            align-items: center;
+            margin: 18px 0 14px;
+            color: #94a3b8;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+        .login-divider::before, .login-divider::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: #e2e8f0;
+        }
+        .login-divider span {
+            padding: 0 12px;
+        }
+        .signup-row {
+            text-align: center;
+            font-size: 13px;
+            color: #64748b;
+            margin: 2px 0 0;
+        }
+        .register-link {
+            color: #00838f;
+            font-weight: 700;
+            border: 0;
+            background: transparent;
+            padding: 2px 4px;
+            cursor: pointer;
+            transition: opacity 160ms ease;
+        }
+        .register-link:hover {
+            text-decoration: underline;
         }
         .login-error {
             display: none;
@@ -173,211 +353,130 @@
         }
         .login-error.visible { display: flex; }
         .login-error svg { width: 16px; height: 16px; flex: none; margin-top: 1px; }
-        input[type="checkbox"] {
-            min-width: 18px !important;
-            min-height: 18px !important;
-            width: 18px !important;
-            height: 18px !important;
-            accent-color: #17333f;
-            cursor: pointer;
-            flex-shrink: 0;
-            margin: 0;
-        }
-        .remember-row {
-            min-height: 44px;
-            display: inline-flex;
-            align-items: center;
-            gap: 9px;
-            margin: 2px 0 14px;
-            font-size: 14px !important;
-            color: #475569 !important;
-            cursor: pointer;
-            user-select: none;
-        }
-        #btnSubmit {
-            min-height: 52px !important;
-            border-radius: 14px !important;
-            font-size: 16px !important;
-            font-weight: 600;
-            background: linear-gradient(135deg, #17333f, #285466) !important;
-            box-shadow: 0 6px 16px rgba(23, 51, 63, 0.22);
-            transition: transform 160ms ease, box-shadow 160ms ease, opacity 160ms ease;
-        }
-        #btnSubmit:hover:not(:disabled) {
-            transform: translateY(-1px);
-            box-shadow: 0 9px 20px rgba(23, 51, 63, 0.28);
-        }
-        #btnSubmit:active:not(:disabled) {
-            transform: scale(0.98);
-        }
-        .login-footer {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 9px;
-            margin: 16px 0 0;
-            color: #64748b;
-            text-align: center;
-            font-size: 11px;
-            letter-spacing: .08em;
-            font-weight: 600;
-        }
-        .login-footer::before, .login-footer::after {
-            content: "";
-            height: 1px;
-            flex: 1;
-            background: linear-gradient(90deg, transparent, #cbd5e1);
-        }
-        .login-footer::after {
-            background: linear-gradient(90deg, #cbd5e1, transparent);
-        }
+
         body.login-page .kambus-toast, body.login-page #kambusNotificationPanel {
             background: rgba(255, 255, 255, .98);
             border-color: #dce7e9;
             border-radius: 14px;
             box-shadow: 0 14px 32px rgba(23, 53, 65, .13);
         }
-        @keyframes login-enter {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        @media (max-width: 380px) {
-            .login-card { padding: 22px 18px; }
-        }
-        @media (max-height: 660px) {
-            body.login-page { padding: 12px 14px; }
-            .login-brand { margin-bottom: 14px; }
-            .role-tabs { margin-bottom: 12px; }
-        }
     </style>
 </head>
-<body class="login-page text-navy font-sans min-h-screen flex flex-col items-center justify-center p-4">
+<body class="login-page">
 
-    <!-- Inline SVG sprite for guaranteed rendering on file:/// and WebViews -->
-    <svg xmlns="http://www.w3.org/2000/svg" style="display: none;" aria-hidden="true">
-        <defs>
-            <symbol id="icon-user-graduate" viewBox="0 0 24 24">
-                <path d="M22 10v6M2 10l10-5 10 5-10 5z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter"/>
-                <path d="M6 12v5c3 3 9 3 12 0v-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter"/>
-            </symbol>
-            <symbol id="icon-users" viewBox="0 0 24 24">
-                <path d="M17 21v-2a4 4 0 0 0-3-3.87" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"/>
-                <path d="M7 21v-2a4 4 0 0 1 3-3.87" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"/>
-                <circle cx="9" cy="7" r="4" fill="none" stroke="currentColor" stroke-width="2"/>
-                <path d="M23 21v-2a4 4 0 0 0-3-3.87" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"/>
-                <circle cx="16" cy="7" r="4" fill="none" stroke="currentColor" stroke-width="2"/>
-            </symbol>
-            <symbol id="icon-id-card" viewBox="0 0 24 24">
-                <rect x="2" y="4" width="20" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter"/>
-                <line x1="2" y1="10" x2="22" y2="10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"/>
-            </symbol>
-            <symbol id="icon-phone" viewBox="0 0 24 24">
-                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter"/>
-            </symbol>
-            <symbol id="icon-lock" viewBox="0 0 24 24">
-                <rect x="5" y="11" width="14" height="10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter"/>
-                <path d="M8 11V7a4 4 0 0 1 8 0v4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter"/>
-            </symbol>
-            <symbol id="icon-eye" viewBox="0 0 24 24">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter"/>
-                <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/>
-            </symbol>
-            <symbol id="icon-eye-slash" viewBox="0 0 24 24">
-                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter"/>
-                <line x1="1" y1="1" x2="23" y2="23" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"/>
-            </symbol>
-            <symbol id="icon-alert" viewBox="0 0 24 24">
-                <polygon points="12 2 1 21 23 21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter"/>
-                <line x1="12" y1="9" x2="12" y2="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"/>
-                <line x1="12" y1="17" x2="12.01" y2="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"/>
-            </symbol>
-            <symbol id="icon-arrow-right" viewBox="0 0 24 24">
-                <line x1="5" y1="12" x2="19" y2="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"/>
-                <polyline points="12 5 19 12 12 19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter"/>
-            </symbol>
-            <symbol id="icon-spinner" viewBox="0 0 24 24">
-                <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="32" stroke-dashoffset="16"/>
-            </symbol>
-        </defs>
-    </svg>
+    <!-- Campus context preserved in DOM for existing JS logic -->
+    <div id="campusBadge" style="display: none;" aria-hidden="true">
+        <span id="campusName">Signing in to KITS Warangal</span>
+    </div>
 
-    <main class="login-shell">
-      <section class="login-card">
-        <header class="login-brand">
-            <div class="flex items-center justify-center gap-2.5 mb-2.5">
-                <img src="kambus-logo.svg" alt="KAMBUS Mark" class="w-11 h-11 rounded-xl shadow-xs">
-                <img src="brand/wordmark-navy.svg" alt="KAMBUS" class="h-6 w-auto">
-            </div>
-            <div id="campusBadge" class="campus-badge" title="Active campus context">
-                <span class="campus-dot" aria-hidden="true"></span>
-                <span id="campusName">Signing in to KITS Warangal</span>
-            </div>
-        </header>
-
-        <!-- Role Selector: Student (roll number) vs Parent (phone) -->
-        <div class="role-tabs mb-4" id="roleTabs" role="tablist" aria-label="Select login role">
-            <div class="role-indicator" aria-hidden="true"></div>
-            <button type="button" class="role-tab is-active" id="tabStudent" data-role="student" role="tab" aria-selected="true" onclick="setRole('student')">
-                <svg aria-hidden="true"><use href="#icon-user-graduate"/></svg>
-                <span>Student</span>
-            </button>
-            <button type="button" class="role-tab" id="tabParent" data-role="parent" role="tab" aria-selected="false" onclick="setRole('parent')">
-                <svg aria-hidden="true"><use href="#icon-users"/></svg>
-                <span>Parent</span>
-            </button>
-        </div>
-
-        <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4" novalidate>
-            <div>
-                <label id="identityLabel" for="username" class="block text-sm font-semibold mb-1.5 text-navy">Roll number</label>
-                <div class="input-wrap relative flex items-stretch rounded-xl border border-line bg-[#f7fafb] focus-within:border-[#4e9ab5] focus-within:bg-white focus-within:ring-4 focus-within:ring-[#4e9ab5]/15 transition-all overflow-hidden">
-                    <div id="phonePrefix" class="phone-prefix hidden items-center px-3 border-r border-line bg-slate-100/80 text-navy font-semibold text-sm select-none">
-                        <span class="mr-1.5 text-xs text-ink-muted">🇮🇳</span>+91
-                    </div>
-                    <span id="studentIcon" class="flex items-center pl-3.5 pr-1 text-ink-muted pointer-events-none">
-                        <svg class="w-5 h-5" aria-hidden="true"><use href="#icon-id-card"/></svg>
-                    </span>
-                    <input type="text" id="username" name="username" required autocomplete="username"
-                           autocapitalize="characters" autocorrect="off" spellcheck="false" enterkeyhint="next"
-                           placeholder="e.g. B24CS071"
-                           class="login-input flex-1 px-3 py-2 bg-transparent border-0 text-base text-navy placeholder-ink-muted focus:outline-none">
-                </div>
-                <p id="identityHint" class="text-xs text-slate-500 mt-1.5">Enter your institutional roll number</p>
-            </div>
-
-            <div>
-                <label for="password" class="block text-sm font-semibold mb-1.5 text-navy">Password</label>
-                <div class="input-wrap relative flex items-stretch rounded-xl border border-line bg-[#f7fafb] focus-within:border-[#4e9ab5] focus-within:bg-white focus-within:ring-4 focus-within:ring-[#4e9ab5]/15 transition-all overflow-hidden">
-                    <span class="flex items-center pl-3.5 pr-1 text-ink-muted pointer-events-none">
-                        <svg class="w-5 h-5" aria-hidden="true"><use href="#icon-lock"/></svg>
-                    </span>
-                    <input type="password" id="password" name="password" required autocomplete="current-password" placeholder="Enter password" enterkeyhint="go"
-                           class="login-input flex-1 px-3 py-2 bg-transparent border-0 text-base text-navy placeholder-ink-muted focus:outline-none">
-                    <button type="button" onclick="togglePasswordVisibility('password', 'passwordToggleIcon')" aria-label="Show or hide password" aria-pressed="false" class="min-w-[48px] min-h-[48px] flex items-center justify-center text-ink-muted hover:text-navy focus:outline-none cursor-pointer">
-                        <svg id="passwordToggleIcon" class="w-5 h-5" aria-hidden="true"><use href="#icon-eye"/></svg>
+    <div class="login-viewport">
+        <!-- Floating Interactive Card -->
+        <main class="login-card-anchor">
+            <section class="login-card">
+                <!-- Role Selector: Student vs Parent -->
+                <div class="role-tabs" id="roleTabs" role="tablist" aria-label="Select login role">
+                    <button type="button" class="role-tab is-active" id="tabStudent" data-role="student" role="tab" aria-selected="true" onclick="setRole('student')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+                            <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+                        </svg>
+                        <span>Student</span>
+                    </button>
+                    <button type="button" class="role-tab" id="tabParent" data-role="parent" role="tab" aria-selected="false" onclick="setRole('parent')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                            <circle cx="9" cy="7" r="4"/>
+                            <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                        </svg>
+                        <span>Parent</span>
                     </button>
                 </div>
-            </div>
 
-            <label for="rememberMe" class="remember-row select-none">
-                <input type="checkbox" id="rememberMe">
-                <span class="text-sm text-slate-600 font-medium">Remember me</span>
-            </label>
+                <form id="loginForm" onsubmit="handleLogin(event)" novalidate>
+                    <!-- Identifier Field -->
+                    <div class="field-group">
+                        <label id="identityLabel" for="username" class="field-label">Roll number</label>
+                        <div class="input-wrap">
+                            <div id="phonePrefix" class="phone-prefix">
+                                <span style="margin-right: 5px; font-size: 13px;">🇮🇳</span>+91
+                            </div>
+                            <span id="studentIcon" class="input-icon">
+                                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <rect x="3" y="4" width="18" height="16" rx="2"/>
+                                    <line x1="3" y1="10" x2="21" y2="10"/>
+                                </svg>
+                            </span>
+                            <input type="text" id="username" name="username" required autocomplete="username"
+                                   autocapitalize="characters" autocorrect="off" spellcheck="false" enterkeyhint="next"
+                                   placeholder="e.g. B24CS073"
+                                   class="login-input">
+                        </div>
+                        <p id="identityHint" class="field-hint">Enter your institutional roll number</p>
+                    </div>
 
-            <div id="loginError" class="login-error" role="alert" aria-live="polite"><svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="#icon-alert"/></svg><span></span></div>
+                    <!-- Password Field -->
+                    <div class="field-group">
+                        <label for="password" class="field-label">Password</label>
+                        <div class="input-wrap">
+                            <span class="input-icon">
+                                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <rect x="5" y="11" width="14" height="10" rx="2"/>
+                                    <path d="M8 11V7a4 4 0 0 1 8 0v4"/>
+                                </svg>
+                            </span>
+                            <input type="password" id="password" name="password" required autocomplete="current-password"
+                                   placeholder="Enter password" enterkeyhint="go"
+                                   class="login-input">
+                            <button type="button" onclick="togglePasswordVisibility('password', 'passwordToggleIcon')" aria-label="Show or hide password" aria-pressed="false" class="pw-toggle-btn">
+                                <svg id="passwordToggleIcon" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                    <circle cx="12" cy="12" r="3"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
 
-            <button type="submit" id="btnSubmit" class="w-full py-3 px-4 text-white text-base font-semibold flex items-center justify-center gap-2.5 rounded-xl transition-all disabled:opacity-60 cursor-pointer">
-                <span>Sign In</span>
-                <svg class="w-5 h-5" aria-hidden="true"><use href="#icon-arrow-right"/></svg>
-            </button>
+                    <!-- Remember me & Forgot password row -->
+                    <div class="remember-forgot-row">
+                        <label for="rememberMe" class="remember-label">
+                            <input type="checkbox" id="rememberMe" class="custom-checkbox" checked>
+                            <span class="remember-text">Remember me</span>
+                        </label>
+                        <a href="javascript:void(0)" onclick="handleForgotPassword()" class="forgot-link">Forgot password?</a>
+                    </div>
 
-            <p id="signupLinkRow" class="text-center text-sm text-slate-500 mt-4">
-                New student? <button type="button" onclick="openSignupModal()" class="text-[#17333f] font-semibold hover:text-[#4fb3a9] underline underline-offset-2 p-1">Register here</button>
-            </p>
-        </form>
-      </section>
-      <p class="login-footer">KAMBUS &middot; Rider</p>
-    </main>
+                    <!-- Error Alert -->
+                    <div id="loginError" class="login-error" role="alert" aria-live="polite">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="12" y1="8" x2="12" y2="12"/>
+                            <line x1="12" y1="16" x2="12.01" y2="16"/>
+                        </svg>
+                        <span></span>
+                    </div>
+
+                    <!-- Submit Button with Teal Crescent -->
+                    <button type="submit" id="btnSubmit" class="signin-btn">
+                        <span>Sign In</span>
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M5 12h14M12 5l7 7-7 7"/>
+                        </svg>
+                    </button>
+
+                    <!-- OR Divider -->
+                    <div class="login-divider">
+                        <span>OR</span>
+                    </div>
+
+                    <!-- Registration Link -->
+                    <p id="signupLinkRow" class="signup-row">
+                        New student? <button type="button" onclick="openSignupModal()" class="register-link">Register here</button>
+                    </p>
+                </form>
+            </section>
+        </main>
+    </div>
 
     <!-- STUDENT SIGNUP MODAL -->
     <div id="signupModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
@@ -439,7 +538,6 @@
 
         function setRole(role) {
             currentRole = role;
-            const tabsContainer = document.getElementById("roleTabs");
             const tabStudent = document.getElementById("tabStudent");
             const tabParent = document.getElementById("tabParent");
             const label = document.getElementById("identityLabel");
@@ -448,21 +546,19 @@
             const studentIcon = document.getElementById("studentIcon");
             const hint = document.getElementById("identityHint");
             const signupRow = document.getElementById("signupLinkRow");
+            const orDivider = document.querySelector(".login-divider");
 
             hideLoginError();
 
             if (role === "parent") {
-                if (tabsContainer) tabsContainer.style.setProperty("--role-position", "1");
                 tabStudent?.classList.remove("is-active");
                 tabStudent?.setAttribute("aria-selected", "false");
                 tabParent?.classList.add("is-active");
                 tabParent?.setAttribute("aria-selected", "true");
 
                 if (label) label.textContent = "Phone number";
-                if (prefix) prefix.classList.remove("hidden");
-                if (prefix) prefix.classList.add("flex");
-                if (studentIcon) studentIcon.classList.add("hidden");
-                if (studentIcon) studentIcon.classList.remove("flex");
+                if (prefix) prefix.classList.add("is-visible");
+                if (studentIcon) studentIcon.style.display = "none";
                 if (input) {
                     input.type = "tel";
                     input.inputMode = "tel";
@@ -472,36 +568,35 @@
                     input.autocapitalize = "none";
                 }
                 if (hint) hint.textContent = "Enter your registered 10-digit mobile number";
-                if (signupRow) signupRow.classList.add("hidden");
+                if (signupRow) signupRow.style.display = "none";
+                if (orDivider) orDivider.style.display = "none";
             } else {
-                if (tabsContainer) tabsContainer.style.setProperty("--role-position", "0");
                 tabParent?.classList.remove("is-active");
                 tabParent?.setAttribute("aria-selected", "false");
                 tabStudent?.classList.add("is-active");
                 tabStudent?.setAttribute("aria-selected", "true");
 
                 if (label) label.textContent = "Roll number";
-                if (prefix) prefix.classList.add("hidden");
-                if (prefix) prefix.classList.remove("flex");
-                if (studentIcon) studentIcon.classList.remove("hidden");
-                if (studentIcon) studentIcon.classList.add("flex");
+                if (prefix) prefix.classList.remove("is-visible");
+                if (studentIcon) studentIcon.style.display = "flex";
                 if (input) {
                     input.type = "text";
                     input.inputMode = "text";
                     input.removeAttribute("maxlength");
-                    input.placeholder = "e.g. B24CS071";
+                    input.placeholder = "e.g. B24CS073";
                     input.autocomplete = "username";
                     input.autocapitalize = "characters";
                 }
                 if (hint) hint.textContent = "Enter your institutional roll number";
-                if (signupRow) signupRow.classList.remove("hidden");
+                if (signupRow) signupRow.style.display = "block";
+                if (orDivider) orDivider.style.display = "flex";
             }
         }
 
         document.addEventListener("DOMContentLoaded", () => {
             initCampusBadge();
 
-            const isRemembered = localStorage.getItem("kambus_remember") === "true";
+            const isRemembered = localStorage.getItem("kambus_remember");
             const savedIdentifier = localStorage.getItem("kambus_saved_identifier");
             const savedRole = localStorage.getItem("kambus_saved_role");
             const rememberCheckbox = document.getElementById("rememberMe");
@@ -512,7 +607,9 @@
                 setRole("student");
             }
 
-            if (isRemembered && rememberCheckbox) {
+            if (isRemembered === "false" && rememberCheckbox) {
+                rememberCheckbox.checked = false;
+            } else if (rememberCheckbox) {
                 rememberCheckbox.checked = true;
                 if (savedIdentifier) {
                     const usernameInput = document.getElementById("username");
@@ -540,9 +637,23 @@
 
             const isPassword = passwordInput.type === "password";
             passwordInput.type = isPassword ? "text" : "password";
-            toggleIcon.innerHTML = `<use href="#icon-${isPassword ? 'eye-slash' : 'eye'}"/>`;
+            if (isPassword) {
+                toggleIcon.innerHTML = `
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                    <line x1="1" y1="1" x2="23" y2="23"/>
+                `;
+            } else {
+                toggleIcon.innerHTML = `
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                `;
+            }
             const toggleButton = toggleIcon.closest("button");
             if (toggleButton) toggleButton.setAttribute("aria-pressed", String(isPassword));
+        }
+
+        function handleForgotPassword() {
+            notifyUser("info", "Password Reset", "Please contact your campus transport administrator to reset your password.");
         }
 
         async function handleLogin(e) {
@@ -574,7 +685,9 @@
             button.disabled = true;
             button.innerHTML = `
                 <span>Signing In...</span>
-                <svg class="w-5 h-5 animate-spin" aria-hidden="true"><use href="#icon-spinner"/></svg>
+                <svg class="w-5 h-5 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10" stroke-dasharray="32" stroke-dashoffset="16"/>
+                </svg>
             `;
 
             try {
