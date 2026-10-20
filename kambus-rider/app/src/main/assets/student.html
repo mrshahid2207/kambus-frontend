@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>KAMBUS - Student Live Tracking</title>
     <meta name="theme-color" content="#173541">
     <meta name="description" content="KAMBUS, live bus tracking for KITSW.">
@@ -66,6 +66,8 @@
             align-items: center !important;
             justify-content: space-between !important;
             box-sizing: border-box !important;
+            -webkit-user-select: none !important;
+            user-select: none !important;
         }
 
         @media (min-width: 768px) {
@@ -73,6 +75,91 @@
                 padding-top: max(var(--safe-top, 0px), 10px) !important;
                 padding-bottom: 10px !important;
             }
+        }
+
+        /* Bottom Action Bar Safe Area Padding */
+        #actionFooter {
+            padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px)) !important;
+            padding-left: max(0.75rem, env(safe-area-inset-left, 0.75rem)) !important;
+            padding-right: max(0.75rem, env(safe-area-inset-right, 0.75rem)) !important;
+            -webkit-user-select: none !important;
+            user-select: none !important;
+        }
+
+        /* Non-selectable UI Chrome, copyable data */
+        header, nav, button, .action-btn, .btn-bell, .btn-logout, .btn-pass, .modal-box, .badge, .status-dot {
+            -webkit-user-select: none !important;
+            user-select: none !important;
+        }
+        input, textarea, .copyable, .selectable, #passStudentName, #passStudentDetails, #studentBusRoute, #myStopName {
+            -webkit-user-select: text !important;
+            user-select: text !important;
+        }
+
+        /* Scrollable container bounce kill */
+        #studentDrawer, .kambus-modal-window, .modal-scroll, #kambusNotificationList, #stopListContainer {
+            overscroll-behavior: contain !important;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* Consistent thin scrollbars */
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(23, 53, 65, 0.2) transparent;
+        }
+        *::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        *::-webkit-scrollbar-thumb {
+            background: rgba(23, 53, 65, 0.2);
+            border-radius: 4px;
+        }
+        *::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        #actionGrid {
+            scrollbar-width: none !important;
+        }
+        #actionGrid::-webkit-scrollbar {
+            display: none !important;
+        }
+
+        /* Modal transitions */
+        .kambus-modal-backdrop:not(.hidden) {
+            animation: modalBackdropFade 0.2s ease-out both !important;
+        }
+        .kambus-modal-backdrop:not(.hidden) > div,
+        .kambus-modal-backdrop:not(.hidden) .kambus-modal-window {
+            animation: modalSheetSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) both !important;
+        }
+
+        /* Tactile button press feedback */
+        button:active:not(:disabled),
+        .action-btn:active:not(:disabled),
+        .btn-action:active:not(:disabled),
+        .btn-bell:active,
+        .btn-logout:active,
+        .btn-pass:active {
+            transform: scale(0.96) !important;
+        }
+        button, .action-btn, .btn-action, .btn-pass, .btn-bell, .btn-logout {
+            transition: transform 0.08s ease, background-color 0.15s ease, opacity 0.15s ease !important;
+            -webkit-tap-highlight-color: transparent !important;
+        }
+
+        /* Pulsing skeleton loaders */
+        @keyframes kambusPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.38; }
+        }
+        .k-skel, .kambus-skeleton {
+            background: rgba(226, 232, 240, 0.85) !important;
+            animation: kambusPulse 1.6s ease-in-out infinite !important;
+            border-radius: 4px;
+            display: inline-block;
+            color: transparent !important;
+            pointer-events: none;
         }
 
         /* Typography & Layout */
@@ -88,6 +175,8 @@
             max-height: 100dvh;
             overflow-x: hidden;
             -webkit-font-smoothing: antialiased;
+            -webkit-tap-highlight-color: transparent !important;
+            overscroll-behavior: none !important;
         }
 
         /* Smooth rounded geometry */
@@ -1782,7 +1871,7 @@
                 </span>
             </div>
             <p id="studentBusRoute" class="text-xs text-slate-500 font-semibold truncate mt-1 leading-tight flex items-center gap-1">
-                Loading assigned bus...
+                <span class="k-skel inline-block w-28 h-3.5">Loading assigned bus...</span>
             </p>
         </div>
     </div>
@@ -1854,10 +1943,10 @@
             <div class="w-px h-9 bg-white/15 shrink-0"></div>
 
             <div class="text-right min-w-0 flex-1">
-                    <span class="text-[10px] font-extrabold uppercase tracking-wider text-sky-200/80 flex items-center justify-end gap-0.5 leading-tight">
-                        <span class="text-xs">📍</span> Pickup Stop
+                    <span class="text-[10px] font-extrabold uppercase tracking-wider text-sky-200/80 flex items-center justify-end gap-1 leading-tight">
+                        <svg class="w-3 h-3 text-sky-200" aria-hidden="true"><use href="icons.svg#icon-map-pin"/></svg> Pickup Stop
                     </span>
-                <div id="myStopName" class="text-xs sm:text-sm font-bold text-white truncate mt-0.5 leading-tight">Loading stop...</div>
+                <div id="myStopName" class="text-xs sm:text-sm font-bold text-white truncate mt-0.5 leading-tight"><span class="k-skel inline-block w-24 h-4">Loading stop...</span></div>
                 <div id="myStopDistance" class="text-[11px] font-semibold text-sky-200 truncate mt-0.5 leading-tight">Distance: calculating...</div>
                 <div id="myStopRetryRow" class="hidden mt-1 text-right">
                     <button id="retryMyStop" type="button" class="px-2 py-0.5 rounded-full bg-rose-500 text-white font-bold text-[10px]">Retry</button>
@@ -1899,17 +1988,17 @@
             </div>
             <div class="min-w-0">
                 <h2 id="driverName" class="text-xs sm:text-sm font-extrabold text-slate-900 truncate leading-tight">Driver unavailable</h2>
-                <p id="driverDetails" class="text-[11px] text-slate-500 font-medium truncate leading-tight mt-0.5">Loading assignment...</p>
+                <p id="driverDetails" class="text-[11px] text-slate-500 font-medium truncate leading-tight mt-0.5"><span class="k-skel inline-block w-28 h-3">Loading assignment...</span></p>
             </div>
 
-            <button id="driverComplaintButton" type="button" onclick="openDriverComplaintModal()" aria-label="Report a problem with the driver" title="Report driver">
-                <span>⚠️</span>
+            <button id="driverComplaintButton" type="button" onclick="openDriverComplaintModal()" aria-label="Report a problem with the driver" title="Report driver" class="p-1.5 rounded-lg hover:bg-slate-200/60 transition-colors">
+                <svg class="w-4 h-4 text-amber-500" aria-hidden="true"><use href="icons.svg#icon-alert"/></svg>
             </button>
         </div>
 
         <div class="flex items-center gap-2 shrink-0">
-            <a id="driverPhoneLink" href="#" aria-label="Call driver">
-                <span>📞</span>
+            <a id="driverPhoneLink" href="#" aria-label="Call driver" class="inline-flex items-center gap-1 px-2.5 py-1.5 bg-slate-200/70 hover:bg-slate-200 rounded-lg text-xs font-bold text-slate-700">
+                <svg class="w-3.5 h-3.5 text-slate-700" aria-hidden="true"><use href="icons.svg#icon-phone"/></svg>
                 <span>Call</span>
             </a>
         </div>
@@ -1925,7 +2014,7 @@
 
         <!-- 2. Not Travelling: Neutral Slate -->
         <button id="btnNotTravelling" type="button" onclick="openNotTravellingModal()" class="action-btn">
-            <i id="btnIcon" class="not-italic shrink-0 text-sm">🚫</i>
+            <svg id="btnIcon" class="w-4 h-4 shrink-0 text-slate-700" aria-hidden="true"><use href="icons.svg#icon-user-slash"/></svg>
             <span id="btnText" class="truncate">Not Travelling</span>
         </button>
 
@@ -1937,7 +2026,7 @@
 
         <!-- 4. Temporary Stop: Sky Blue (Single text span to avoid student.js dual-line bug!) -->
         <button id="btnTemporaryStop" type="button" onclick="openTemporaryStopModal()" class="action-btn">
-            <i class="not-italic shrink-0 text-sm">📍</i>
+            <svg class="w-4 h-4 shrink-0 text-sky-600" aria-hidden="true"><use href="icons.svg#icon-map-pin"/></svg>
             <span class="truncate">Change Stop</span>
         </button>
     </div>
@@ -2006,6 +2095,7 @@
                     <p id="waitRequestStateTitle" class="kx-callout-text">Wait request created</p>
                     <p id="waitRequestStateMessage" class="kx-note" style="margin-top:2px">Waiting for decision window...</p>
                     <button type="button" id="waitBoardedBtn" onclick="confirmWaitBoarded()" class="hidden mt-3 w-full px-3 py-2 bg-brand text-white text-xs font-semibold rounded transition-colors hover:bg-navy">I've boarded</button>
+                    <button type="button" id="waitCancelBtn" onclick="cancelStudentWaitRequest()" class="hidden mt-2 w-full px-3 py-2 border border-rose-300 text-rose-700 bg-rose-50 hover:bg-rose-100 text-xs font-semibold rounded transition-colors">Cancel wait request</button>
                 </div>
             </div>
         </div>
@@ -2015,17 +2105,18 @@
 <!-- DIGITAL PASS MODAL -->
 <div id="passModal" class="kambus-modal-backdrop hidden">
     <div class="kambus-modal-window text-center space-y-4 border-2 border-emerald-300">
-        <button type="button" onclick="togglePassModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 text-slate-500 font-bold hover:bg-slate-200 flex items-center justify-center" aria-label="Close pass">
-            ✕
+        <button type="button" onclick="togglePassModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 text-slate-500 font-bold hover:bg-slate-200 flex items-center justify-center transition-colors" aria-label="Close pass">
+            <svg class="w-4 h-4 text-slate-600" aria-hidden="true"><use href="icons.svg#icon-xmark"/></svg>
         </button>
 
-        <span class="inline-block px-3 py-1 bg-emerald-100 border-2 border-emerald-300 text-emerald-800 text-xs font-black rounded-full uppercase tracking-wider">
-                ✅ PASS ACTIVE
-            </span>
+        <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-100 border-2 border-emerald-300 text-emerald-800 text-xs font-black rounded-full uppercase tracking-wider">
+            <svg class="w-3.5 h-3.5 text-emerald-700" aria-hidden="true"><use href="icons.svg#icon-check"/></svg>
+            <span>PASS ACTIVE</span>
+        </span>
 
         <div>
             <h3 id="passStudentName" class="text-xl font-black text-slate-900">Student</h3>
-            <p id="passStudentDetails" class="text-xs text-slate-500 font-semibold">Loading profile...</p>
+            <p id="passStudentDetails" class="text-xs text-slate-500 font-semibold"><span class="k-skel inline-block w-32 h-3">Loading profile...</span></p>
         </div>
 
         <!-- QR Box -->
@@ -2270,7 +2361,7 @@
                     </select>
                 </div>
 
-                <div>
+                <div id="studentComplaintAudienceGroup">
                     <label for="studentComplaintAudienceSelect" class="kx-label">Poll Audience (Who verifies this?)</label>
                     <select id="studentComplaintAudienceSelect" class="w-full px-3 py-2.5 border border-slate-300 rounded-lg text-xs font-semibold text-slate-800 bg-white">
                         <option value="both">Both (All bus students)</option>
@@ -2676,6 +2767,12 @@
     let waitRequestLastStatus = null;
 
     async function openWaitModal() {
+        if (typeof window.hasEntitlement === "function" && !window.hasEntitlement("wait_request")) {
+            if (typeof window.showPlanUpgradePrompt === "function") {
+                window.showPlanUpgradePrompt("Wait Request", "Top", "Allow students to request short delays when running late.");
+            }
+            return;
+        }
         if (typeof travelStatusKnown !== "undefined" && (!travelStatusKnown || !studentTravellingToday)) {
             KambusNotify.notify({ type: "info", title: "Wait request unavailable", message: "You are marked as not travelling today." });
             return;
@@ -2687,6 +2784,13 @@
         const eligibilityText = document.getElementById("waitEligibilityText");
         const waitOptions = document.getElementById("waitOptions");
         const waitState = document.getElementById("waitRequestState");
+
+        if (waitRequestActiveId) {
+            if (waitOptions) waitOptions.classList.add("hidden");
+            if (waitState) waitState.classList.remove("hidden");
+            if (eligibilityText) eligibilityText.textContent = "Your wait request is currently active.";
+            return;
+        }
 
         if (waitOptions) waitOptions.classList.remove("hidden");
         if (waitState) waitState.classList.add("hidden");
@@ -2775,8 +2879,9 @@
     function showWaitRequestBanner(data) {
         const button = document.getElementById("btnWaitRequest");
         if (!button) return;
-        button.disabled = true;
-        button.className = "action-btn opacity-75 cursor-not-allowed";
+        button.disabled = false;
+        button.className = "action-btn border border-amber-300 bg-amber-50 text-amber-800";
+        button.onclick = openWaitModal;
         button.innerHTML = `<svg class="w-4 h-4 text-amber-700 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>Wait Active</span>`;
     }
 
@@ -2787,6 +2892,10 @@
     }
 
     async function loadWaitRequestStatus() {
+        if (typeof window.hasEntitlement === "function" && !window.hasEntitlement("wait_request")) {
+            stopWaitRequestStatusPolling();
+            return;
+        }
         const token = getToken();
         if (!token) return;
         try {
@@ -2805,8 +2914,13 @@
             if (data.status === "completed") {
                 stopWaitRequestStatusPolling();
                 document.getElementById("waitBoardedBtn")?.classList.add("hidden");
+                document.getElementById("waitCancelBtn")?.classList.add("hidden");
                 updateWaitRequestStateUI("completed", data);
-                KambusNotify.notify({ type: "ok", title: "Wait completed", message: "The bus has finished waiting." });
+                if (data.boarding_confirmed) {
+                    KambusNotify.notify({ type: "ok", title: "Boarding confirmed", message: "Your boarding was confirmed." });
+                } else {
+                    KambusNotify.notify({ type: "warn", title: "Wait time ended", message: "The wait period has elapsed. Please check if the bus is still at your stop." });
+                }
                 waitRequestActiveId = null;
                 restoreWaitRequestButton(true);
                 return;
@@ -2852,6 +2966,7 @@
         waitOptions?.classList.add("hidden");
         waitState?.classList.remove("hidden");
         boardedButton?.classList.remove("hidden");
+        document.getElementById("waitCancelBtn")?.classList.add("hidden");
 
         if (waitCountdownTimer) clearInterval(waitCountdownTimer);
         let fallbackSeconds = Math.max(0, Number(data.wait_remaining_seconds) || 0);
@@ -2899,6 +3014,7 @@
             document.getElementById("waitModal")?.classList.add("hidden");
             document.getElementById("waitRequestState")?.classList.add("hidden");
             boardedButton?.classList.add("hidden");
+            document.getElementById("waitCancelBtn")?.classList.add("hidden");
             waitRequestActiveId = null;
             restoreWaitRequestButton(true);
             KambusNotify.notify({ type: "ok", title: "Boarding confirmed", message: "The driver can continue the trip." });
@@ -2911,29 +3027,86 @@
         }
     }
 
+    async function cancelStudentWaitRequest() {
+        if (waitRequestActiveId === null) return;
+
+        const token = getToken();
+        if (!token) return;
+
+        const cancelBtn = document.getElementById("waitCancelBtn");
+        if (cancelBtn) {
+            cancelBtn.disabled = true;
+            cancelBtn.textContent = "Cancelling…";
+        }
+
+        try {
+            const response = await fetch(`${API_BASE}/student/wait-request/${waitRequestActiveId}/cancel`, {
+                method: "POST",
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.detail || "Unable to cancel wait request.");
+
+            stopWaitRequestStatusPolling();
+            document.getElementById("waitModal")?.classList.add("hidden");
+            document.getElementById("waitRequestState")?.classList.add("hidden");
+            cancelBtn?.classList.add("hidden");
+            document.getElementById("waitBoardedBtn")?.classList.add("hidden");
+            waitRequestActiveId = null;
+            waitRequestLastStatus = null;
+            restoreWaitRequestButton(true);
+            KambusNotify.notify({ type: "info", title: "Wait request cancelled", message: "Your wait request has been cancelled." });
+        } catch (error) {
+            KambusNotify.notify({ type: "warn", title: "Unable to cancel", message: error.message || "Please try again." });
+            if (cancelBtn) {
+                cancelBtn.disabled = false;
+                cancelBtn.textContent = "Cancel wait request";
+            }
+        }
+    }
+    window.cancelStudentWaitRequest = cancelStudentWaitRequest;
+
     function updateWaitRequestStateUI(status, data) {
         const title = document.getElementById("waitRequestStateTitle");
         const message = document.getElementById("waitRequestStateMessage");
+        const cancelBtn = document.getElementById("waitCancelBtn");
+        const boardedBtn = document.getElementById("waitBoardedBtn");
         if (!title || !message) return;
         const minutes = Number(data.minutes || 0);
+
         if (status === "pending") {
             title.textContent = "Wait request active";
             message.textContent = `Your ${minutes}-minute request is pending.`;
+            cancelBtn?.classList.remove("hidden");
+            boardedBtn?.classList.add("hidden");
         } else if (status === "accepted") {
             title.textContent = "Wait accepted";
             message.textContent = `The bus will wait approximately ${minutes} minute(s).`;
+            cancelBtn?.classList.remove("hidden");
+            boardedBtn?.classList.add("hidden");
         } else if (status === "waiting") {
             const remainingSeconds = Math.max(0, Number(data.wait_remaining_seconds) || 0);
             const remainingMinutes = Math.floor(remainingSeconds / 60);
             const remainingSecondsText = String(remainingSeconds % 60).padStart(2, "0");
             title.textContent = "Bus waiting";
             message.textContent = `Bus waiting — ${remainingMinutes}:${remainingSecondsText} remaining`;
+            cancelBtn?.classList.add("hidden");
+            boardedBtn?.classList.remove("hidden");
         } else if (status === "rejected") {
             title.textContent = "Wait skipped";
             message.textContent = "The driver skipped this wait request.";
+            cancelBtn?.classList.add("hidden");
+            boardedBtn?.classList.add("hidden");
         } else if (status === "completed") {
-            title.textContent = "Wait completed";
-            message.textContent = "The bus has finished waiting and resumed travel.";
+            cancelBtn?.classList.add("hidden");
+            boardedBtn?.classList.add("hidden");
+            if (data.boarding_confirmed) {
+                title.textContent = "Boarding confirmed";
+                message.textContent = "The bus has finished waiting and resumed travel with you on board.";
+            } else {
+                title.textContent = "Wait time ended";
+                message.textContent = "The wait window has closed. Please check if the bus is still at your stop.";
+            }
         }
     }
 

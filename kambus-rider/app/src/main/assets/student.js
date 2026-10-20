@@ -49,6 +49,9 @@ let routeStops = [];
 let routeStopsBusId = null;
 let routeStopsGroup = null;
 let routePolylineLayer = null;
+let routeArrowLayer = null;
+let currentStudentRouteLatLngs = [];
+let currentRouteStopsTripType = "morning";
 let collegeMarker = null;
 
 let isStudentRouteFetchInFlight = false;
@@ -91,6 +94,8 @@ function clearStudentAssignmentTracking() {
     if (stopMarker && map) map.removeLayer(stopMarker);
     stopMarker = null;
     routePolylineLayer?.clearLayers();
+    routeArrowLayer?.clearLayers();
+    currentStudentRouteLatLngs = [];
     setEtaBanner("Updating bus assignment", "ETA unavailable");
     updateMyStopLive("Updating…");
 }
@@ -367,7 +372,7 @@ function initializeMap() {
 
         const tileLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
             maxZoom: 19,
-            attribution: "&copy; <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a> contributors"
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
 
         tileLayer.on("tileerror", function (error) {
@@ -379,6 +384,13 @@ function initializeMap() {
         routePolylineLayer = L.geoJSON(null, {
             style: { color: "#4A6F79", weight: 5, opacity: 0.85 }
         }).addTo(map);
+
+        routeArrowLayer = L.layerGroup().addTo(map);
+        map.on("zoomend", function () {
+            if (currentStudentRouteLatLngs && currentStudentRouteLatLngs.length >= 2) {
+                renderDirectionArrows(map, routeArrowLayer, currentStudentRouteLatLngs, "#ffffff");
+            }
+        });
 
         updateCollegeMarker();
 
@@ -456,12 +468,35 @@ async function loadRouteStops() {
         const data = await response.json();
         if (version !== studentAssignmentVersion) return;
         routeStops = Array.isArray(data.stops) ? data.stops : [];
+        currentRouteStopsTripType = data.trip_type || (data.is_evening ? "evening" : "morning");
+        if (data.college_location?.latitude && data.college_location?.longitude) {
+            COLLEGE_LOCATION.latitude = Number(data.college_location.latitude);
+            COLLEGE_LOCATION.longitude = Number(data.college_location.longitude);
+            if (data.college_location.name) COLLEGE_LOCATION.name = data.college_location.name;
+        }
         temporaryMyBusStops = Array.isArray(data.map_stops) ? data.map_stops : routeStops;
         routeStopsBusId = data.bus_id ?? null;
         window.routeStops = routeStops;
         window.routeStopsBusId = routeStopsBusId;
         renderRouteStops();
-        fetchAndDrawStudentRoute(true);
+        if (Array.isArray(data.active_polyline) && data.active_polyline.length >= 2) {
+            currentStudentRouteLatLngs = data.active_polyline.map(p => [Number(p[0]), Number(p[1])]);
+            if (routePolylineLayer) {
+                routePolylineLayer.clearLayers();
+                routePolylineLayer.addData({
+                    type: "Feature",
+                    geometry: {
+                        type: "LineString",
+                        coordinates: currentStudentRouteLatLngs.map(p => [p[1], p[0]])
+                    }
+                });
+            }
+            if (routeArrowLayer && map) {
+                renderDirectionArrows(map, routeArrowLayer, currentStudentRouteLatLngs, "#ffffff");
+            }
+        } else {
+            fetchAndDrawStudentRoute(true);
+        }
     } catch (error) {
         if (version !== studentAssignmentVersion) return;
         console.error("Failed to load route stops from API:", error);
@@ -495,16 +530,28 @@ async function fetchAndDrawStudentRoute(force = false) {
         const sortedStops = [...routeStops]
             .filter(s => Number.isFinite(Number(s.latitude)) && Number.isFinite(Number(s.longitude)));
 
-        const waypoints = [
-            ...sortedStops.map(s => ({
-                latitude: Number(s.latitude),
-                longitude: Number(s.longitude)
-            })),
-            {
-                latitude: COLLEGE_LOCATION.latitude,
-                longitude: COLLEGE_LOCATION.longitude
-            }
-        ];
+        const isEvening = (currentRouteStopsTripType === "evening") || (studentAssignment?.trip_type === "evening");
+
+        // Morning: Stop 1 -> Stop 2 -> ... -> Stop N -> College
+        // Evening: College -> Stop N -> ... -> Stop 2 -> Stop 1
+        const waypoints = isEvening
+            ? [
+                { latitude: COLLEGE_LOCATION.latitude, longitude: COLLEGE_LOCATION.longitude },
+                ...sortedStops.map(s => ({
+                    latitude: Number(s.latitude),
+                    longitude: Number(s.longitude)
+                }))
+              ]
+            : [
+                ...sortedStops.map(s => ({
+                    latitude: Number(s.latitude),
+                    longitude: Number(s.longitude)
+                })),
+                {
+                    latitude: COLLEGE_LOCATION.latitude,
+                    longitude: COLLEGE_LOCATION.longitude
+                }
+              ];
 
         if (waypoints.length < 2) return;
 
@@ -522,15 +569,74 @@ async function fetchAndDrawStudentRoute(force = false) {
         const geoJsonRoute = data.routes[0].geometry;
         if (version !== studentAssignmentVersion) return;
 
+        // Extract road-snapped coordinates from OSRM [lon, lat]
+        const coordinates = geoJsonRoute.coordinates;
+        currentStudentRouteLatLngs = coordinates.map(([lon, lat]) => [lat, lon]);
+
         if (routePolylineLayer) {
             routePolylineLayer.clearLayers();
             routePolylineLayer.addData(geoJsonRoute);
+        }
+        if (routeArrowLayer) {
+            renderDirectionArrows(map, routeArrowLayer, currentStudentRouteLatLngs, "#ffffff");
         }
     } catch (error) {
         console.warn("Student road routing notice:", error.message);
     } finally {
         isStudentRouteFetchInFlight = false;
         if (version !== studentAssignmentVersion) fetchAndDrawStudentRoute(true);
+    }
+}
+
+function renderDirectionArrows(mapInstance, arrowLayer, polylinePoints, color = "#ffffff") {
+    if (!mapInstance || !arrowLayer || !Array.isArray(polylinePoints) || polylinePoints.length < 2) return;
+    arrowLayer.clearLayers();
+    const zoom = mapInstance.getZoom();
+
+    const arrowSpacing = 85;
+    let untilArrow = 45;
+
+    for (let i = 1; i < polylinePoints.length; i++) {
+        const p1 = polylinePoints[i - 1];
+        const p2 = polylinePoints[i];
+
+        const lat1 = Array.isArray(p1) ? p1[0] : p1.lat;
+        const lng1 = Array.isArray(p1) ? p1[1] : p1.lng;
+        const lat2 = Array.isArray(p2) ? p2[0] : p2.lat;
+        const lng2 = Array.isArray(p2) ? p2[1] : p2.lng;
+
+        if (!Number.isFinite(lat1) || !Number.isFinite(lng1) || !Number.isFinite(lat2) || !Number.isFinite(lng2)) continue;
+
+        const a = mapInstance.project([lat1, lng1], zoom);
+        const b = mapInstance.project([lat2, lng2], zoom);
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        const length = Math.hypot(dx, dy);
+        if (!length) continue;
+
+        for (; untilArrow <= length; untilArrow += arrowSpacing) {
+            const x = a.x + (dx * untilArrow) / length;
+            const y = a.y + (dy * untilArrow) / length;
+            const ux = dx / length;
+            const uy = dy / length;
+
+            const arrowPixels = [
+                [x - ux * 7 - uy * 4, y - uy * 7 + ux * 4],
+                [x, y],
+                [x - ux * 7 + uy * 4, y - uy * 7 - ux * 4]
+            ];
+
+            const arrowLatLngs = arrowPixels.map(p => mapInstance.unproject(p, zoom));
+            L.polyline(arrowLatLngs, {
+                color: color,
+                weight: 2.5,
+                opacity: 0.95,
+                lineCap: "round",
+                lineJoin: "round",
+                interactive: false
+            }).addTo(arrowLayer);
+        }
+        untilArrow -= length;
     }
 }
 
@@ -1569,6 +1675,28 @@ if (wsReconnectTimer) {
                     return;
                 }
 
+                // ROUTE REROUTED / DETOUR UPDATE
+                if (data.type === "route_rerouted" || data.type === "route_update") {
+                    const poly = data.polyline;
+                    if (Array.isArray(poly) && poly.length >= 2) {
+                        currentStudentRouteLatLngs = poly.map(p => [Number(p[0]), Number(p[1])]);
+                        if (routePolylineLayer) {
+                            routePolylineLayer.clearLayers();
+                            routePolylineLayer.addData({
+                                type: "Feature",
+                                geometry: {
+                                    type: "LineString",
+                                    coordinates: currentStudentRouteLatLngs.map(p => [p[1], p[0]])
+                                }
+                            });
+                        }
+                        if (routeArrowLayer && map) {
+                            renderDirectionArrows(map, routeArrowLayer, currentStudentRouteLatLngs, "#ffffff");
+                        }
+                    }
+                    return;
+                }
+
                 // 1. EMERGENCY SOS ALERT FROM DRIVER
                 if (data.type === "emergency_sos") {
 if (typeof KambusNotify !== "undefined") {
@@ -1619,11 +1747,11 @@ if (typeof KambusNotify !== "undefined") {
                     return;
                 }
 
-                // 4. WAIT REQUEST ACCEPTED / REJECTED / SKIPPED
-                if (data.type === "wait_accepted" || data.type === "wait_rejected") {
+                // 4. WAIT REQUEST ACCEPTED / REJECTED / SKIPPED / BOARDED
+                if (data.type === "wait_accepted" || data.type === "wait_rejected" || data.type === "wait_request_boarded") {
                     if (typeof KambusNotify !== "undefined") {
                         KambusNotify.notify({
-                            type: data.type === "wait_accepted" ? "success" : "warning",
+                            type: (data.type === "wait_accepted" || data.type === "wait_request_boarded") ? "success" : "warning",
                             title: data.title || "Wait Request Update",
                             message: data.message
                         });
@@ -2018,11 +2146,36 @@ window.answerDriverComplaintPoll = answerDriverComplaintPoll;
 // DRIVER COMPLAINT MODAL HANDLERS
 // ========================================================================
 
+function updateComplaintAudienceVisibility(genderRestriction = null) {
+    const audienceGroup = document.getElementById("studentComplaintAudienceGroup");
+    const audienceSelect = document.getElementById("studentComplaintAudienceSelect");
+    if (!audienceGroup || !audienceSelect) return;
+
+    const restriction = (
+        genderRestriction ||
+        window.studentAssignment?.gender_restriction ||
+        window.regularStudentAssignment?.gender_restriction ||
+        ""
+    ).trim().toLowerCase();
+
+    if (restriction === "girls_only" || restriction === "boys_only") {
+        audienceGroup.classList.add("hidden");
+        audienceSelect.value = restriction === "girls_only" ? "girls" : "boys";
+    } else {
+        audienceGroup.classList.remove("hidden");
+        if (!audienceSelect.value) {
+            audienceSelect.value = "both";
+        }
+    }
+}
+window.updateComplaintAudienceVisibility = updateComplaintAudienceVisibility;
+
 function openDriverComplaintModal() {
     const modal = document.getElementById("driverComplaintModal");
     if (!modal) return;
 
     resetDriverComplaintModal();
+    updateComplaintAudienceVisibility();
     modal.classList.remove("hidden");
 }
 window.openDriverComplaintModal = openDriverComplaintModal;
@@ -2053,6 +2206,8 @@ function resetDriverComplaintModal() {
     if (optionsView) optionsView.classList.remove("hidden");
     if (otherView) otherView.classList.add("hidden");
     if (studentView) studentView.classList.add("hidden");
+
+    updateComplaintAudienceVisibility();
 
     const textarea = document.getElementById("driverComplaintOtherText");
     if (textarea) textarea.value = "";
@@ -2139,6 +2294,8 @@ window.setComplaintTargetType = async function(type) {
         if (driverView) driverView.classList.add("hidden");
         if (studentView) studentView.classList.remove("hidden");
 
+        updateComplaintAudienceVisibility();
+
         const select = document.getElementById("complaintTargetStudentSelect");
         if (select && select.options.length <= 1) {
             const token = typeof getToken === "function" ? getToken() : localStorage.getItem("kambus_token");
@@ -2149,6 +2306,9 @@ window.setComplaintTargetType = async function(type) {
                     });
                     if (res.ok) {
                         const data = await res.json();
+                        if (data.gender_restriction) {
+                            updateComplaintAudienceVisibility(data.gender_restriction);
+                        }
                         const peers = data.peers || [];
                         select.innerHTML = `<option value="">-- Select student on your bus --</option>` +
                             peers.map(p => `<option value="${p.student_id}">${escapeHtml(p.name)} (${escapeHtml(p.roll_number || 'No roll')})</option>`).join("");
@@ -2574,10 +2734,98 @@ function formatDateForInput(date) {
 // the shared temporary-stop.js module, reused by both student.html and parent.html.
 
 // ========================================================================
+// CAMPUS PLAN ENTITLEMENTS & FEATURE GATING
+// ========================================================================
+
+let campusEntitlements = null;
+
+async function loadCampusEntitlements() {
+    const token = getToken();
+    if (!token) return;
+    try {
+        const response = await fetch(`${API_BASE}/me/entitlements`, {
+            headers: {
+                "Authorization": `Bearer ${token}`,
+                "Accept": "application/json"
+            }
+        });
+        if (response.ok) {
+            campusEntitlements = await response.json();
+            window.campusEntitlements = campusEntitlements;
+            applyStudentFeatureGating();
+        }
+    } catch (e) {
+        console.warn("Could not load campus entitlements:", e);
+    }
+}
+
+function hasEntitlement(featureName) {
+    if (!campusEntitlements || !Array.isArray(campusEntitlements.features)) {
+        return true; // default open while loading
+    }
+    return campusEntitlements.features.includes(featureName);
+}
+
+function showPlanUpgradePrompt(featureName, requiredTier, benefitDescription) {
+    const tierName = requiredTier.charAt(0).toUpperCase() + requiredTier.slice(1);
+    const msg = `${featureName} requires the ${tierName} plan or higher.\n${benefitDescription || "Contact your campus administrator to upgrade."}`;
+    if (typeof KambusNotify !== "undefined" && KambusNotify.notify) {
+        KambusNotify.notify({
+            type: "warn",
+            title: `${tierName} Plan Required`,
+            message: msg
+        });
+    } else {
+        alert(msg);
+    }
+}
+
+function applyStudentFeatureGating() {
+    const btnWait = document.getElementById("btnWaitRequest");
+    if (btnWait && !hasEntitlement("wait_request")) {
+        btnWait.classList.add("plan-gated-feature");
+        if (!btnWait.querySelector(".plan-gate-badge")) {
+            const badge = document.createElement("span");
+            badge.className = "plan-gate-badge text-[9px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded ml-1.5 inline-flex items-center gap-0.5";
+            badge.innerHTML = `<svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg> Top`;
+            btnWait.appendChild(badge);
+        }
+    }
+
+    const btnTemp = document.getElementById("btnTemporaryStop");
+    if (btnTemp && !hasEntitlement("temporary_stop_change")) {
+        btnTemp.classList.add("plan-gated-feature");
+        if (!btnTemp.querySelector(".plan-gate-badge")) {
+            const badge = document.createElement("span");
+            badge.className = "plan-gate-badge text-[9px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded ml-1.5 inline-flex items-center gap-0.5";
+            badge.innerHTML = `<svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg> Top`;
+            btnTemp.appendChild(badge);
+        }
+    }
+
+    const btnMsg = document.querySelector(`[onclick*="openMessageAdminModal"]`);
+    if (btnMsg && !hasEntitlement("student_to_admin_query")) {
+        btnMsg.classList.add("plan-gated-feature");
+        if (!btnMsg.querySelector(".plan-gate-badge")) {
+            const badge = document.createElement("span");
+            badge.className = "plan-gate-badge text-[9px] font-bold uppercase tracking-wider bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded ml-auto inline-flex items-center gap-0.5";
+            badge.innerHTML = `<svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg> Premium`;
+            btnMsg.appendChild(badge);
+        }
+    }
+}
+
+window.hasEntitlement = hasEntitlement;
+window.showPlanUpgradePrompt = showPlanUpgradePrompt;
+window.loadCampusEntitlements = loadCampusEntitlements;
+window.applyStudentFeatureGating = applyStudentFeatureGating;
+
+// ========================================================================
 // INITIALIZATION ON DOM CONTENT LOADED
 // ========================================================================
 
 document.addEventListener("DOMContentLoaded", () => {
+    loadCampusEntitlements();
     // 0. Pre-hydrate personalized dashboard directly from login response
     const initialLoginData = getInitialLoginDashboard();
     if (initialLoginData) {
@@ -2666,6 +2914,10 @@ window.addEventListener("orientationchange", () => {
 // MESSAGE ADMIN HANDLERS
 // ========================================================================
 window.openMessageAdminModal = function() {
+    if (typeof window.hasEntitlement === "function" && !window.hasEntitlement("student_to_admin_query")) {
+        window.showPlanUpgradePrompt("Message Admin", "Premium", "Direct inquiry channel with campus transport administrators.");
+        return;
+    }
     const modal = document.getElementById("messageAdminModal");
     if (!modal) return;
     const textarea = document.getElementById("adminMessageText");

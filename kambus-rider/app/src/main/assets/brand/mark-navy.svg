@@ -1,1 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="8 6 48 48" width="512" height="512"><path d="M14,50L32,14L50,50" fill="none" stroke="#173541" stroke-width="7" stroke-linejoin="miter" stroke-linecap="butt"/><circle cx="32" cy="40" r="5" fill="#4A6F79"/></svg>
+<svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">
+<rect x="0" y="0" width="160" height="160" rx="12" fill="#17333f"/>
+<polygon points="40,38 58,38 58,122 40,122" fill="#ffffff"/>
+<polygon points="62,75 120,35 115,48 81,77 115,108 120,122 62,85" fill="#4fb3a9"/>
+<line x1="73" y1="78" x2="110" y2="107" stroke="#17333f" stroke-width="5" stroke-dasharray="12 9"/>
+</svg>

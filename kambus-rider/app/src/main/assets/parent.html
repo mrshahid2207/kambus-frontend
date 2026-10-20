@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>KAMBUS - Parent Portal</title>
     <meta name="theme-color" content="#173541">
     <meta name="description" content="KAMBUS School Transport - Parent Live Tracking & Attendance">
@@ -78,7 +78,23 @@
                 <h2>Your children <span id="childrenCountBadge" style="color:var(--muted);font-weight:600">0</span></h2>
                 <button type="button" class="pd-link" onclick="window.parentApp?.fitAllMarkers?.()">Show all buses</button>
             </div>
-            <div id="childrenCardsContainer" style="display:flex;flex-direction:column;gap:12px"></div>
+            <div id="childrenCardsContainer" style="display:flex;flex-direction:column;gap:12px">
+                <div class="pd-card pd-card-skeleton">
+                    <div class="pd-top">
+                        <div class="pd-av pd-skeleton"></div>
+                        <div class="pd-who" style="display:flex;flex-direction:column;gap:6px">
+                            <span class="pd-skeleton" style="width:120px;height:16px;display:block"></span>
+                            <span class="pd-skeleton" style="width:80px;height:12px;display:block"></span>
+                        </div>
+                        <span class="pd-skeleton" style="width:70px;height:24px;border-radius:999px;margin-left:auto;display:block"></span>
+                    </div>
+                    <div class="pd-eta pd-skeleton" style="height:72px;border-radius:12px"></div>
+                    <div class="pd-acts">
+                        <div class="pd-skeleton" style="height:44px;border-radius:12px"></div>
+                        <div class="pd-skeleton" style="height:44px;border-radius:12px"></div>
+                    </div>
+                </div>
+            </div>
         </div>
     </section>
 
@@ -87,7 +103,13 @@
             <div><h2>Last 30 days</h2><p>Boarding and drop-off scans for your children</p></div>
             <select id="historyChildFilter" class="pd-select" aria-label="Filter by child" onchange="window.parentApp?.filterTripHistory?.(this.value)"><option value="all">All children</option></select>
         </div>
-        <div id="historyContentContainer" style="display:flex;flex-direction:column;gap:14px"><div class="pd-empty">Loading trip records...</div></div>
+        <div id="historyContentContainer" style="display:flex;flex-direction:column;gap:14px">
+            <div class="pd-hcard" style="padding:16px;display:flex;flex-direction:column;gap:12px">
+                <div class="pd-skeleton" style="width:140px;height:18px"></div>
+                <div class="pd-skeleton" style="width:100%;height:32px"></div>
+                <div class="pd-skeleton" style="width:100%;height:32px"></div>
+            </div>
+        </div>
     </section>
 </main>
 

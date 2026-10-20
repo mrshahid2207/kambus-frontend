@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
         <title>KAMBUS</title>
     <meta name="theme-color" content="#173541">
     <meta name="description" content="KAMBUS, live bus tracking for KITSW.">
@@ -15,11 +15,21 @@
     <script src="vendor/leaflet/leaflet.js"></script>
 
         <style>
+        :root {
+            --safe-top: env(safe-area-inset-top, 0px);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+            --safe-left: env(safe-area-inset-left, 0px);
+            --safe-right: env(safe-area-inset-right, 0px);
+        }
+
         html, body {
             width: 100%;
             max-width: 100%;
-            overflow-x: hidden;
+            overflow-x: clip;
+            overscroll-behavior-y: auto;
             background-color: #FAFAF8;
+            -webkit-tap-highlight-color: transparent;
+            font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans Devanagari', 'Noto Sans Telugu', sans-serif;
         }
 
         *, *::before, *::after {
@@ -28,8 +38,78 @@
         }
 
         body {
-            padding-top: env(safe-area-inset-top);
-            padding-bottom: env(safe-area-inset-bottom);
+            padding-top: max(var(--safe-top, 0px), env(safe-area-inset-top, 0px));
+            padding-bottom: max(var(--safe-bottom, 0px), env(safe-area-inset-bottom, 0px));
+            padding-left: max(var(--safe-left, 0px), env(safe-area-inset-left, 0px));
+            padding-right: max(var(--safe-right, 0px), env(safe-area-inset-right, 0px));
+        }
+
+        /* Status bar background filler for edge-to-edge mobile app */
+        body::before {
+            content: "";
+            display: block;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: max(var(--safe-top, 0px), env(safe-area-inset-top, 0px));
+            background-color: #FFFFFF;
+            z-index: 45;
+            pointer-events: none;
+        }
+
+        /* Sticky header offset for mobile edge-to-edge status bar */
+        header.sticky, header[class*="sticky"] {
+            top: max(var(--safe-top, 0px), env(safe-area-inset-top, 0px)) !important;
+        }
+
+        /* Mobile bottom nav safe-area offset */
+        nav.fixed.bottom-0 {
+            padding-bottom: calc(0.5rem + max(var(--safe-bottom, 0px), env(safe-area-inset-bottom, 0px))) !important;
+        }
+
+        /* Non-selectable UI Chrome, copyable data */
+        header, nav, .admin-nav-btn, button, [role="button"], table th, .card, .sheet, .panel, .badge {
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        input, textarea, table td, code, pre, .selectable, .copyable, [selectable] {
+            -webkit-user-select: text;
+            user-select: text;
+        }
+
+        /* Scrollable container bounce kill */
+        #kambusNotificationList, .modal-scroll {
+            overscroll-behavior: contain;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* Wide data tables: horizontal swipe inside table, vertical swipe scrolls page */
+        .overflow-x-auto {
+            overflow-x: auto !important;
+            overflow-y: visible !important;
+            overscroll-behavior-x: contain;
+            overscroll-behavior-y: auto;
+            touch-action: pan-x pan-y;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* Consistent thin scrollbars */
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(23, 53, 65, 0.2) transparent;
+        }
+        *::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        *::-webkit-scrollbar-thumb {
+            background: rgba(23, 53, 65, 0.2);
+            border-radius: 4px;
+        }
+        *::-webkit-scrollbar-track {
+            background: transparent;
         }
 
         .admin-nav-btn {
@@ -43,7 +123,7 @@
             font-weight: 600;
             color: #52707A;
             background: transparent;
-            transition: all 0.15s ease;
+            transition: all 0.15s ease, transform 0.08s ease;
             text-align: left;
             border: 1px solid transparent;
         }
@@ -58,19 +138,64 @@
             color: #FFFFFF;
         }
 
+        /* Tactile button press feedback */
+        button:active:not(:disabled),
+        .admin-nav-btn:active:not(:disabled),
+        a.button:active,
+        [role="button"]:active:not(:disabled) {
+            transform: scale(0.97);
+        }
+        button, a.button, [role="button"] {
+            transition: transform 0.08s ease, background-color 0.15s ease, opacity 0.15s ease, border-color 0.15s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+
         .admin-section {
             display: none;
         }
 
         .admin-section.active {
             display: block;
+            animation: adminSectionIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+
+        @keyframes adminSectionIn {
+            from {
+                opacity: 0;
+                transform: translateY(6px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Modal presentation animation */
+        .fixed.inset-0:not(.hidden) {
+            animation: modalBackdropFade 0.2s ease-out both;
+        }
+        .fixed.inset-0:not(.hidden) > div {
+            animation: modalSheetSlideUp 0.24s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+
+        /* Skeleton pulse animation */
+        @keyframes kambusPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.38; }
+        }
+        .kambus-skeleton {
+            background-color: var(--line, #E3E8E8);
+            animation: kambusPulse 1.6s ease-in-out infinite;
+            border-radius: 4px;
+            color: transparent !important;
+            pointer-events: none;
         }
 
         .announcement-card {
             position: relative;
             overflow: hidden;
             border: 1px solid rgba(23, 53, 65, 0.10);
-            border-radius: 16px;
+            border-radius: 8px;
             padding: 14px 14px 14px 18px;
             animation: announcement-card-in 240ms ease-out both;
         }
@@ -80,7 +205,7 @@
             position: absolute;
             inset: 0 auto 0 0;
             width: 4px;
-            border-radius: 16px 0 0 16px;
+            border-radius: 8px 0 0 8px;
             background: #D9922E;
         }
 
@@ -140,6 +265,8 @@
                 left: 0;
                 z-index: 100;
                 width: 260px;
+                padding-top: calc(1rem + max(var(--safe-top, 0px), env(safe-area-inset-top, 0px)));
+                padding-bottom: calc(1rem + max(var(--safe-bottom, 0px), env(safe-area-inset-bottom, 0px)));
                 transform: translateX(-100%);
             }
             #adminSidebar.open {
@@ -313,7 +440,7 @@
         <!-- ========================================================= -->
         <!-- CONTENT AREA -->
         <!-- ========================================================= -->
-        <main class="flex-1 p-4 sm:p-6 lg:p-8 min-w-0 overflow-y-auto max-w-full">
+        <main class="flex-1 p-4 sm:p-6 lg:p-8 min-w-0 overflow-visible max-w-full pb-24 lg:pb-12">
 
             <!-- SECTION 1:  DASHBOARD -->
             <section id="section-dashboard" class="admin-section active space-y-6">
@@ -405,7 +532,26 @@
                             </button>
                         </div>
                         <div id="dashboardActiveTrips" class="space-y-2.5">
-                            <div class="p-6 text-center text-xs text-ink-muted">Loading active trips...</div>
+                            <div class="p-3 bg-bg border border-line rounded flex items-center justify-between">
+                                <div class="flex items-center gap-2.5">
+                                    <span class="w-8 h-8 rounded bg-line kambus-skeleton shrink-0"></span>
+                                    <div class="space-y-1.5">
+                                        <span class="block w-24 h-3.5 bg-line kambus-skeleton"></span>
+                                        <span class="block w-36 h-2.5 bg-line kambus-skeleton"></span>
+                                    </div>
+                                </div>
+                                <span class="w-16 h-4 bg-line kambus-skeleton"></span>
+                            </div>
+                            <div class="p-3 bg-bg border border-line rounded flex items-center justify-between">
+                                <div class="flex items-center gap-2.5">
+                                    <span class="w-8 h-8 rounded bg-line kambus-skeleton shrink-0"></span>
+                                    <div class="space-y-1.5">
+                                        <span class="block w-20 h-3.5 bg-line kambus-skeleton"></span>
+                                        <span class="block w-32 h-2.5 bg-line kambus-skeleton"></span>
+                                    </div>
+                                </div>
+                                <span class="w-14 h-4 bg-line kambus-skeleton"></span>
+                            </div>
                         </div>
                     </div>
 
@@ -420,7 +566,22 @@
                             </button>
                         </div>
                         <div id="dashboardRecentAlerts" class="divide-y divide-slate-100">
-                            <div class="p-6 text-center text-xs text-ink-muted">Loading alerts...</div>
+                            <div class="space-y-2 py-1">
+                                <div class="flex items-center gap-3 py-2">
+                                    <span class="w-6 h-6 rounded-full bg-line kambus-skeleton shrink-0"></span>
+                                    <div class="flex-1 space-y-1.5">
+                                        <span class="block w-40 h-3 bg-line kambus-skeleton"></span>
+                                        <span class="block w-56 h-2.5 bg-line kambus-skeleton"></span>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-3 py-2">
+                                    <span class="w-6 h-6 rounded-full bg-line kambus-skeleton shrink-0"></span>
+                                    <div class="flex-1 space-y-1.5">
+                                        <span class="block w-32 h-3 bg-line kambus-skeleton"></span>
+                                        <span class="block w-48 h-2.5 bg-line kambus-skeleton"></span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -439,7 +600,14 @@
                 </div>
 
                 <div id="busesList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div class="p-8 text-center text-xs text-ink-muted">Loading buses...</div>
+                    <div class="p-4 bg-surface border border-line rounded space-y-3">
+                        <div class="flex items-center justify-between"><span class="w-20 h-4 bg-line kambus-skeleton"></span><span class="w-12 h-4 bg-line kambus-skeleton"></span></div>
+                        <div class="space-y-1.5"><span class="block w-32 h-3 bg-line kambus-skeleton"></span><span class="block w-24 h-2.5 bg-line kambus-skeleton"></span></div>
+                    </div>
+                    <div class="p-4 bg-surface border border-line rounded space-y-3">
+                        <div class="flex items-center justify-between"><span class="w-20 h-4 bg-line kambus-skeleton"></span><span class="w-12 h-4 bg-line kambus-skeleton"></span></div>
+                        <div class="space-y-1.5"><span class="block w-28 h-3 bg-line kambus-skeleton"></span><span class="block w-20 h-2.5 bg-line kambus-skeleton"></span></div>
+                    </div>
                 </div>
             </section>
 
@@ -456,7 +624,10 @@
                 </div>
 
                 <div id="driversList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div class="p-8 text-center text-xs text-ink-muted">Loading drivers...</div>
+                    <div class="p-4 bg-surface border border-line rounded space-y-3">
+                        <div class="flex items-center justify-between"><span class="w-24 h-4 bg-line kambus-skeleton"></span><span class="w-12 h-4 bg-line kambus-skeleton"></span></div>
+                        <div class="space-y-1.5"><span class="block w-32 h-3 bg-line kambus-skeleton"></span><span class="block w-24 h-2.5 bg-line kambus-skeleton"></span></div>
+                    </div>
                 </div>
             </section>
 
@@ -493,7 +664,16 @@
 
                 <!-- Student List Container -->
                 <div id="studentsList">
-                    <div class="p-8 text-center text-xs text-ink-muted">Loading students...</div>
+                    <div class="bg-surface border border-line rounded p-4 space-y-3">
+                        <div class="flex items-center gap-3">
+                            <span class="w-8 h-8 rounded-full bg-line kambus-skeleton shrink-0"></span>
+                            <div class="flex-1 space-y-1.5"><span class="block w-40 h-3.5 bg-line kambus-skeleton"></span><span class="block w-24 h-2.5 bg-line kambus-skeleton"></span></div>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="w-8 h-8 rounded-full bg-line kambus-skeleton shrink-0"></span>
+                            <div class="flex-1 space-y-1.5"><span class="block w-36 h-3.5 bg-line kambus-skeleton"></span><span class="block w-28 h-2.5 bg-line kambus-skeleton"></span></div>
+                        </div>
+                    </div>
                 </div>
             </section>
 
@@ -518,7 +698,12 @@
 
                 <!-- Parent List Container -->
                 <div id="parentsList">
-                    <div class="p-8 text-center text-xs text-ink-muted">Loading parents...</div>
+                    <div class="bg-surface border border-line rounded p-4 space-y-3">
+                        <div class="flex items-center gap-3">
+                            <span class="w-8 h-8 rounded-full bg-line kambus-skeleton shrink-0"></span>
+                            <div class="flex-1 space-y-1.5"><span class="block w-36 h-3.5 bg-line kambus-skeleton"></span><span class="block w-28 h-2.5 bg-line kambus-skeleton"></span></div>
+                        </div>
+                    </div>
                 </div>
             </section>
 
@@ -535,7 +720,8 @@
                 </div>
 
                 <div id="routesList" class="space-y-4">
-                    <div class="p-8 text-center text-xs text-ink-muted">Loading routes...</div>
+                    <div class="p-4 bg-surface border border-line rounded flex items-center justify-between"><div class="space-y-1.5"><span class="block w-36 h-4 bg-line kambus-skeleton"></span><span class="block w-48 h-3 bg-line kambus-skeleton"></span></div><span class="w-16 h-6 bg-line kambus-skeleton"></span></div>
+                    <div class="p-4 bg-surface border border-line rounded flex items-center justify-between"><div class="space-y-1.5"><span class="block w-40 h-4 bg-line kambus-skeleton"></span><span class="block w-44 h-3 bg-line kambus-skeleton"></span></div><span class="w-16 h-6 bg-line kambus-skeleton"></span></div>
                 </div>
             </section>
 
@@ -560,7 +746,10 @@
                 </div>
 
                 <div id="stopsList" class="space-y-3">
-                    <div class="p-8 text-center text-xs text-ink-muted">Loading stops...</div>
+                    <div class="p-4 bg-surface border border-line rounded space-y-2">
+                        <span class="block w-32 h-4 bg-line kambus-skeleton"></span>
+                        <span class="block w-48 h-3 bg-line kambus-skeleton"></span>
+                    </div>
                 </div>
             </section>
 
@@ -993,7 +1182,7 @@
     <!-- ========================================================= -->
 
     <!-- BUS DETAILS MODAL (WITH EDITABLE FIELDS + QUICK DRIVER/ROUTE CHANGE) -->
-    <div id="busDetailsModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+    <div id="busDetailsModal" data-modal="true" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
         <div class="bg-surface rounded max-w-lg w-full max-h-[90vh] flex flex-col border border-line overflow-hidden border border-slate-100">
             <!-- Modal Header -->
             <div class="p-5 bg-bg border-b border-slate-100 flex items-center justify-between">
@@ -1090,7 +1279,7 @@
     </div>
 
     <!-- DRIVER DETAILS MODAL -->
-    <div id="driverDetailsModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+    <div id="driverDetailsModal" data-modal="true" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
         <div class="bg-surface rounded max-w-md w-full max-h-[85vh] flex flex-col border border-line overflow-hidden border border-slate-100">
             <div class="p-5 bg-bg border-b border-slate-100 flex items-center justify-between">
                 <div>
@@ -1118,7 +1307,7 @@
     </div>
 
     <!-- ADD BUS MODAL -->
-    <div id="addBusModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+    <div id="addBusModal" data-modal="true" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
         <div class="bg-surface rounded max-w-md w-full p-6 border border-line border border-slate-100">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-base font-semibold text-navy">Add New Bus</h3>
@@ -1152,7 +1341,7 @@
     </div>
 
     <!-- ADD DRIVER MODAL -->
-    <div id="addDriverModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+    <div id="addDriverModal" data-modal="true" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
         <div class="bg-surface rounded max-w-md w-full p-6 border border-line border border-slate-100">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-base font-semibold text-navy">Add New Driver</h3>
@@ -1190,7 +1379,7 @@
     </div>
 
     <!-- EDIT DRIVER MODAL -->
-    <div id="editDriverModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+    <div id="editDriverModal" data-modal="true" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
         <div class="bg-surface rounded max-w-md w-full p-6 border border-line border border-slate-100">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-base font-semibold text-navy">Edit Driver</h3>
@@ -1229,7 +1418,7 @@
     </div>
 
     <!-- ADD STUDENT MODAL -->
-    <div id="addStudentModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+    <div id="addStudentModal" data-modal="true" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
         <div class="bg-surface rounded max-w-md w-full p-6 border border-line border border-slate-100">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-base font-semibold text-navy">Add New Student</h3>
@@ -1284,7 +1473,7 @@
     </div>
 
     <!-- EDIT STUDENT MODAL -->
-    <div id="editStudentModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+    <div id="editStudentModal" data-modal="true" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
         <div class="bg-surface rounded max-w-md w-full p-6 border border-line border border-slate-100">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-base font-semibold text-navy">Edit Student</h3>
@@ -1333,7 +1522,7 @@
     </div>
 
     <!-- ADD ADMIN MODAL (super-admin only) -->
-    <div id="addAdminModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+    <div id="addAdminModal" data-modal="true" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
         <div class="bg-surface rounded max-w-md w-full p-6 border border-line border border-slate-100">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-base font-semibold text-navy">Add Admin</h3>
@@ -1371,7 +1560,7 @@
     </div>
 
     <!-- RESET ADMIN PASSWORD MODAL (super-admin only) -->
-    <div id="resetAdminPasswordModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+    <div id="resetAdminPasswordModal" data-modal="true" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
         <div class="bg-surface rounded max-w-md w-full p-6 border border-line border border-slate-100">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-base font-semibold text-navy">Reset Admin Password</h3>
@@ -1395,7 +1584,7 @@
     </div>
 
     <!-- CREATE CAMPUS MODAL (super-admin) -->
-    <div id="createCampusModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+    <div id="createCampusModal" data-modal="true" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
         <div class="bg-surface rounded-xl max-w-md w-full p-6 border border-line border border-slate-100 shadow-xl">
             <div class="flex items-center justify-between mb-4">
                 <div class="flex items-center gap-2">
@@ -1446,7 +1635,7 @@
     </div>
 
     <!-- ALLOT ADMIN CAMPUS MODAL (super-admin) -->
-    <div id="allotAdminCampusModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+    <div id="allotAdminCampusModal" data-modal="true" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
         <div class="bg-surface rounded-xl max-w-md w-full p-6 border border-line border border-slate-100 shadow-xl">
             <div class="flex items-center justify-between mb-4">
                 <div class="flex items-center gap-2">
@@ -1488,7 +1677,7 @@
 
 
     <!-- ASSIGN STUDENT BUS/STOP MODAL -->
-    <div id="assignStudentModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+    <div id="assignStudentModal" data-modal="true" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
         <div class="bg-surface rounded max-w-sm w-full p-5 border border-line border border-slate-100">
             <h3 class="text-sm font-semibold text-navy mb-1">Assign Bus & Stop</h3>
             <p id="assignStudentName" class="text-xs text-brand font-semibold mb-3"></p>
@@ -1512,7 +1701,7 @@
     </div>
 
     <!-- ADD STOP MODAL (WITH INTERACTIVE MAP PICKER) -->
-    <div id="addStopModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+    <div id="addStopModal" data-modal="true" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
         <div class="bg-surface rounded max-w-lg w-full p-6 border border-line border border-slate-100 flex flex-col max-h-[90vh]">
             <div class="flex items-center justify-between mb-3">
                 <div>
@@ -1570,7 +1759,7 @@
     </div>
 
     <!-- EDIT STOP MODAL -->
-    <div id="editStopModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+    <div id="editStopModal" data-modal="true" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
         <div class="bg-surface rounded max-w-lg w-full p-6 border border-line border border-slate-100 flex flex-col max-h-[90vh]">
             <div class="flex items-center justify-between mb-3">
                 <div>
@@ -1627,7 +1816,7 @@
     </div>
 
     <!-- ADD ROUTE MODAL -->
-    <div id="addRouteModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+    <div id="addRouteModal" data-modal="true" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
         <div class="bg-surface rounded max-w-md w-full p-6 border border-line border border-slate-100">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-base font-semibold text-navy">Create New Route</h3>
@@ -1653,7 +1842,7 @@
     </div>
 
     <!-- ROUTE PREVIEW ROAD MAP MODAL -->
-    <div id="routePreviewModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+    <div id="routePreviewModal" data-modal="true" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
         <div class="bg-surface rounded max-w-2xl w-full p-6 border border-line border border-slate-100 flex flex-col max-h-[90vh]">
             <div class="flex items-center justify-between mb-3">
                 <div>
@@ -1671,7 +1860,7 @@
     </div>
 
     <!-- SUPER-ADMIN COMPLAINT DETAIL & VOTER BREAKDOWN MODAL -->
-    <div id="complaintDetailModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+    <div id="complaintDetailModal" data-modal="true" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
         <div class="bg-surface rounded max-w-2xl w-full p-6 border border-line border border-slate-100 flex flex-col max-h-[90vh] overflow-y-auto space-y-4">
             <div class="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div class="flex items-center gap-2">
@@ -1729,7 +1918,7 @@
     </div>
 
     <!-- ADD PARENT MODAL -->
-    <div id="addParentModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+    <div id="addParentModal" data-modal="true" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
         <div class="bg-surface rounded max-w-md w-full p-6 border border-line border border-slate-100">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-base font-semibold text-navy">Add New Parent</h3>
@@ -1776,7 +1965,7 @@
     </div>
 
     <!-- LINK CHILD MODAL -->
-    <div id="linkChildModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+    <div id="linkChildModal" data-modal="true" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
         <div class="bg-surface rounded max-w-lg w-full p-6 border border-line border border-slate-100">
             <div class="flex items-center justify-between mb-4">
                 <div>

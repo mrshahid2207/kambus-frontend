@@ -256,13 +256,12 @@
         }
 
         try {
-            const res = await fetch(`${API_BASE}/auth/login`, {
+            const res = await fetch(`${API_BASE}/auth/login/rider`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     identifier: phoneOrId,
-                    password: password,
-                    role: "parent"
+                    password: password
                 })
             });
 
@@ -376,6 +375,7 @@
         }).setView([17.51, 78.52], 13);
 
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
             maxZoom: 19
         }).addTo(map);
     }

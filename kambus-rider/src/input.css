@@ -295,3 +295,87 @@ textarea:focus-visible,
     transition-duration: 0.01ms !important;
   }
 }
+
+
+/* ========================================================
+   KAMBUS NATIVE POLISH (Chrome Removal, Touch Feedback, Transitions, Skeletons)
+   ======================================================== */
+html, body {
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+header, nav, button, [role="button"], .card, .sheet, .panel, .badge, .status-dot {
+  -webkit-user-select: none;
+  user-select: none;
+}
+input, textarea, [contenteditable="true"], .selectable, .copyable, [selectable] {
+  -webkit-user-select: text;
+  user-select: text;
+}
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(23, 53, 65, 0.2) transparent;
+}
+*::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: rgba(23, 53, 65, 0.2);
+  border-radius: 4px;
+}
+.no-scrollbar, .scrollbar-none {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+.no-scrollbar::-webkit-scrollbar, .scrollbar-none::-webkit-scrollbar {
+  display: none !important;
+}
+
+/* Button & interactive tactile press feedback */
+button:active:not(:disabled),
+[role="button"]:active:not(:disabled),
+a.button:active,
+.btn:active:not(:disabled),
+.action-btn:active:not(:disabled),
+.admin-nav-btn:active:not(:disabled),
+.trip-type-btn:active:not(:disabled),
+.pd-btn:active:not(:disabled),
+.pd-ibtn:active,
+.pd-chip:active,
+.pd-submit:active {
+  transform: scale(0.97);
+}
+button, [role="button"], a.button, .btn, .action-btn, .admin-nav-btn, .trip-type-btn, .pd-btn, .pd-ibtn, .pd-chip, .pd-submit {
+  transition: transform 0.08s ease, background-color 0.15s ease, opacity 0.15s ease, border-color 0.15s ease;
+}
+
+/* Pulsing Skeleton Loaders */
+@keyframes kambusPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.38; }
+}
+.kambus-skeleton, .k-skel, .skeleton-pulse {
+  background-color: var(--line, #E3E8E8) !important;
+  animation: kambusPulse 1.6s ease-in-out infinite !important;
+  border-radius: 4px;
+  color: transparent !important;
+  pointer-events: none;
+}
+
+/* View & Modal Transitions */
+@keyframes kambusViewFade {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes modalBackdropFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes modalSheetSlideUp {
+  from { opacity: 0; transform: translateY(16px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}

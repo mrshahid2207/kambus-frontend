@@ -637,6 +637,7 @@
             const pickerMap = tempStopPickerMap;
 
             L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
                 maxZoom: 19
             }).addTo(tempStopPickerMap);
 
@@ -803,6 +804,11 @@
     }
 
     async function loadTemporaryStopChange(targetStudentId = null) {
+        if (typeof window.hasEntitlement === "function" && !window.hasEntitlement("temporary_stop_change")) {
+            temporaryStopChange = null;
+            renderTemporaryStopStatus();
+            return null;
+        }
         const token = getAuthToken();
         if (!token) return null;
         const effectiveStudentId = targetStudentId || currentTemporaryContext?.studentId || null;
@@ -955,6 +961,12 @@
     }
 
     async function openTemporaryStopModal(targetContext = null) {
+        if (typeof window.hasEntitlement === "function" && !window.hasEntitlement("temporary_stop_change")) {
+            if (typeof window.showPlanUpgradePrompt === "function") {
+                window.showPlanUpgradePrompt("Temporary Stop Change", "Top", "Allow students to temporarily use an alternate stop along the bus route.");
+            }
+            return;
+        }
         ensureTemporaryStopModalInDOM();
         const modal = document.getElementById("temporaryStopModal");
         if (!modal) return;

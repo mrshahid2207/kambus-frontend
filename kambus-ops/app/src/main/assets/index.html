@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>KAMBUS Ops</title>
-    <meta name="theme-color" content="#173541">
-    <meta name="description" content="KAMBUS Ops, live bus tracking and operations for KITSW.">
+    <meta name="theme-color" content="#17333f">
+    <meta name="description" content="KAMBUS Ops, bus tracking and transport operations.">
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
     <link rel="icon" href="favicon.ico" sizes="48x48">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -13,18 +13,223 @@
     <link rel="stylesheet" href="kambus.css">
     <script src="kambus-ui.js"></script>
     <style>
-        body.login-page { position:relative; overflow-x:hidden; overflow-y:auto; background:#fff; min-height:100vh; justify-content:flex-start; padding:96px 0 104px; padding-top:max(96px, calc(16px + var(--safe-top, 0px))); padding-bottom:calc(104px + var(--safe-bottom, 0px)); }
-        body.login-page input { scroll-margin-top:24px; scroll-margin-bottom:24px; }
-        body.login-page::before, body.login-page::after { content:""; position:fixed; z-index:0; width:150vw; pointer-events:none; }
-        body.login-page::before { top:-126px; left:-25vw; height:212px; border-radius:0 0 50% 50%; background:radial-gradient(ellipse at 50% 100%, rgba(91,157,179,.28), transparent 58%), linear-gradient(135deg, #10303c, #1d4a5a); box-shadow:0 8px 28px rgba(23,53,65,.12); }
-        body.login-page::after { bottom:-146px; right:-29vw; height:238px; border-radius:50% 50% 0 0; background:radial-gradient(ellipse at 50% 0%, rgba(111,183,204,.34), transparent 60%), linear-gradient(135deg, #174251, #0f2b36); box-shadow:0 -8px 28px rgba(23,53,65,.08); }
-        .login-shell { position:relative; z-index:1; width:calc(100% - 32px); max-width:420px; flex-shrink:0; margin:auto 0; animation:login-enter 220ms ease-out both; }
-        .login-card { position:relative; padding:24px; background:#fff; border:1px solid #e2e8f0; border-radius:24px; box-shadow:0 12px 32px rgba(23,53,65,.10); }
-        .login-brand { display:flex; align-items:center; justify-content:center; margin-bottom:25px; }.login-crest { width:58px!important; height:58px!important; border-radius:50%; object-fit:cover; box-shadow:0 7px 18px rgba(23,53,65,.16); }.login-wordmark { height:23px!important; }.login-brand > div { gap:0!important; }
-        .role-tabs { --role-position: 0; position:relative; display:grid; grid-template-columns:repeat(2,1fr); gap:2px; padding:4px; border:1px solid #dce5e8; border-radius:14px; background:#edf2f3; }.role-indicator { position:absolute; top:4px; bottom:4px; left:4px; width:calc((100% - 8px)/2); border-radius:10px; background:linear-gradient(135deg,#173541,#285466); box-shadow:0 3px 8px rgba(23,53,65,.2); transform:translateX(calc(var(--role-position)*100%)); transition:transform 230ms cubic-bezier(.2,.8,.2,1); }.role-tab { position:relative; z-index:1; display:flex; align-items:center; justify-content:center; gap:5px; min-height:36px!important; padding:7px 3px!important; border:0; border-radius:10px; color:#66767d; background:transparent; font-size:11px!important; font-weight:600; transition:color 160ms ease; }.role-tab.is-active { color:#fff!important; }.role-tab svg { width:13px; height:13px; }
-        .login-input { height:46px; border-radius:12px!important; background:#f7fafb!important; transition:border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease; }.login-input:focus { border-color:#4e9ab5!important; background:#fff!important; box-shadow:0 0 0 4px rgba(78,154,181,.15); }.login-error { display:none; align-items:flex-start; gap:8px; margin:0 0 14px; padding:10px 11px; border:1px solid #f0b9b9; border-radius:11px; color:#992f2f; background:#fff1f1; font-size:12px; line-height:1.35; }.login-error.visible { display:flex; }.login-error svg { width:15px; height:15px; flex:none; margin-top:1px; }.remember-row { margin:2px 0 16px; font-size:10px!important; line-height:1!important; color:#71868e!important; }.remember-row input { width:12px!important; height:12px!important; min-width:12px!important; min-height:12px!important; }.remember-row span { font-size:10px; }
-        #btnSubmit { min-height:47px; border-radius:13px!important; background:linear-gradient(135deg,#173541,#285466)!important; box-shadow:0 8px 16px rgba(23,53,65,.26); transition:transform 160ms ease, box-shadow 160ms ease, opacity 160ms ease; }#btnSubmit:hover:not(:disabled) { transform:translateY(-1px); box-shadow:0 11px 20px rgba(23,53,65,.32); }.login-footer { display:flex; align-items:center; justify-content:center; gap:9px; margin:8px 0 0; color:#547681; text-align:center; font-size:10px; letter-spacing:.08em; font-weight:600; }.login-footer::before,.login-footer::after { content:""; height:1px; flex:1; background:linear-gradient(90deg, transparent, #a9cbd5); }.login-footer::after { background:linear-gradient(90deg, #a9cbd5, transparent); } body.login-page .kambus-toast, body.login-page #kambusNotificationPanel { background:rgba(255,255,255,.98); border-color:#dce7e9; border-radius:14px; box-shadow:0 14px 32px rgba(23,53,65,.13); } @keyframes login-enter { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } } @media(max-width:380px) { body.login-page::before { top:-142px; }.role-tab { font-size:10px!important; }.role-tab svg { display:none; } }
-        @media (max-height:700px) { .login-brand { margin-bottom:12px; } .role-tabs { margin-bottom:8px; } }
+        body.login-page {
+            position: relative;
+            overflow-x: hidden;
+            overflow-y: auto;
+            background: #f8fafb;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 24px 16px;
+            padding-top: max(24px, calc(16px + max(var(--safe-top, 0px), env(safe-area-inset-top, 0px))));
+            padding-bottom: max(24px, calc(16px + max(var(--safe-bottom, 0px), env(safe-area-inset-bottom, 0px))));
+        }
+        body.login-page input { scroll-margin-top: 24px; scroll-margin-bottom: 24px; }
+        /* Subtle decorative brand curves: reduced to ~1/3 original height */
+        body.login-page::before, body.login-page::after {
+            content: "";
+            position: fixed;
+            z-index: 0;
+            width: 140vw;
+            pointer-events: none;
+        }
+        body.login-page::before {
+            top: -46px;
+            left: -20vw;
+            height: 72px;
+            border-radius: 0 0 50% 50%;
+            background: radial-gradient(ellipse at 50% 100%, rgba(79, 179, 169, 0.4), transparent 70%), linear-gradient(135deg, #17333f, #224c5b);
+            box-shadow: 0 4px 16px rgba(23, 51, 63, 0.12);
+        }
+        body.login-page::after {
+            bottom: -46px;
+            right: -20vw;
+            height: 72px;
+            border-radius: 50% 50% 0 0;
+            background: radial-gradient(ellipse at 50% 0%, rgba(79, 179, 169, 0.35), transparent 70%), linear-gradient(135deg, #224c5b, #17333f);
+            box-shadow: 0 -4px 16px rgba(23, 51, 63, 0.08);
+        }
+        .login-shell {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 400px;
+            flex-shrink: 0;
+            margin: auto 0;
+            animation: login-enter 220ms ease-out both;
+        }
+        .login-card {
+            position: relative;
+            padding: 26px 24px;
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            box-shadow: 0 12px 32px rgba(23, 53, 65, 0.08);
+        }
+        .login-brand {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .campus-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 11px;
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            border-radius: 9999px;
+            font-size: 11px;
+            font-weight: 500;
+            color: #475569;
+            letter-spacing: 0.01em;
+        }
+        .campus-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #4fb3a9;
+            flex-shrink: 0;
+        }
+        .role-tabs {
+            --role-position: 0;
+            position: relative;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 2px;
+            padding: 4px;
+            border: 1px solid #dce5e8;
+            border-radius: 14px;
+            background: #edf2f3;
+        }
+        .role-indicator {
+            position: absolute;
+            top: 4px;
+            bottom: 4px;
+            left: 4px;
+            width: calc((100% - 8px) / 2);
+            border-radius: 10px;
+            background: linear-gradient(135deg, #17333f, #285466);
+            box-shadow: 0 3px 8px rgba(23, 53, 65, 0.2);
+            transform: translateX(calc(var(--role-position) * 100%));
+            transition: transform 230ms cubic-bezier(.2, .8, .2, 1);
+        }
+        .role-tab {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            min-height: 38px !important;
+            padding: 7px 4px !important;
+            border: 0;
+            border-radius: 10px;
+            color: #66767d;
+            background: transparent;
+            font-size: 12px !important;
+            font-weight: 600;
+            cursor: pointer;
+            transition: color 160ms ease;
+        }
+        .role-tab.is-active {
+            color: #fff !important;
+        }
+        .role-tab svg {
+            width: 14px;
+            height: 14px;
+            flex-shrink: 0;
+        }
+        .input-wrap {
+            height: 46px;
+        }
+        .phone-prefix {
+            border-top-left-radius: 12px;
+            border-bottom-left-radius: 12px;
+        }
+        .login-input {
+            height: 100%;
+            font-size: 14px;
+        }
+        .login-error {
+            display: none;
+            align-items: flex-start;
+            gap: 8px;
+            margin: 0 0 14px;
+            padding: 10px 12px;
+            border: 1px solid #f0b9b9;
+            border-radius: 11px;
+            color: #992f2f;
+            background: #fff1f1;
+            font-size: 12px;
+            line-height: 1.35;
+        }
+        .login-error.visible { display: flex; }
+        .login-error svg { width: 15px; height: 15px; flex: none; margin-top: 1px; }
+        .remember-row {
+            margin: 2px 0 16px;
+            font-size: 12px !important;
+            color: #64748b !important;
+        }
+        #btnSubmit {
+            min-height: 46px;
+            border-radius: 12px !important;
+            background: linear-gradient(135deg, #17333f, #285466) !important;
+            box-shadow: 0 6px 16px rgba(23, 51, 63, 0.22);
+            transition: transform 160ms ease, box-shadow 160ms ease, opacity 160ms ease;
+        }
+        #btnSubmit:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 9px 20px rgba(23, 51, 63, 0.28);
+        }
+        #btnSubmit:active:not(:disabled) {
+            transform: scale(0.98);
+        }
+        .login-footer {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 9px;
+            margin: 12px 0 0;
+            color: #64748b;
+            text-align: center;
+            font-size: 10px;
+            letter-spacing: .08em;
+            font-weight: 600;
+        }
+        .login-footer::before, .login-footer::after {
+            content: "";
+            height: 1px;
+            flex: 1;
+            background: linear-gradient(90deg, transparent, #cbd5e1);
+        }
+        .login-footer::after {
+            background: linear-gradient(90deg, #cbd5e1, transparent);
+        }
+        body.login-page .kambus-toast, body.login-page #kambusNotificationPanel {
+            background: rgba(255, 255, 255, .98);
+            border-color: #dce7e9;
+            border-radius: 14px;
+            box-shadow: 0 14px 32px rgba(23, 53, 65, .13);
+        }
+        @keyframes login-enter {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @media (max-width: 380px) {
+            .login-card { padding: 20px 18px; }
+            .role-tab { font-size: 11px !important; }
+        }
+        @media (max-height: 660px) {
+            body.login-page { padding: 12px 14px; }
+            .login-brand { margin-bottom: 14px; }
+            .role-tabs { margin-bottom: 12px; }
+        }
     </style>
 </head>
 <body class="login-page text-navy font-sans min-h-screen flex flex-col items-center justify-center p-4">
@@ -32,20 +237,44 @@
     <main class="login-shell">
       <section class="login-card">
         <header class="login-brand">
-            <img src="brand/kitsw-crest.png" alt="Kakatiya Institute of Technology and Science, Warangal" class="login-crest">
-            <div><img src="brand/wordmark-navy.svg" alt="KAMBUS" class="login-wordmark"></div>
+            <div class="flex items-center justify-center gap-2.5 mb-2">
+                <img src="kambus-logo.svg" alt="KAMBUS Mark" class="w-10 h-10 rounded-lg shadow-xs">
+                <img src="brand/wordmark-navy.svg" alt="KAMBUS" class="h-6 w-auto">
+            </div>
+            <div id="campusBadge" class="campus-badge" title="Active campus context">
+                <span class="campus-dot" aria-hidden="true"></span>
+                <span id="campusName">Signing in to KITS Warangal</span>
+            </div>
         </header>
+
+        <!-- Role Selector: Driver (phone) vs Admin (ID) -->
+        <div class="role-tabs mb-4" id="roleTabs" role="tablist" aria-label="Select login role">
+            <div class="role-indicator" aria-hidden="true"></div>
+            <button type="button" class="role-tab is-active" id="tabDriver" data-role="driver" role="tab" aria-selected="true" onclick="setRole('driver')">
+                <svg aria-hidden="true"><use href="icons.svg#icon-bus"/></svg>
+                <span>Driver</span>
+            </button>
+            <button type="button" class="role-tab" id="tabAdmin" data-role="admin" role="tab" aria-selected="false" onclick="setRole('admin')">
+                <svg aria-hidden="true"><use href="icons.svg#icon-user-shield"/></svg>
+                <span>Admin</span>
+            </button>
+        </div>
 
         <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4" novalidate>
             <div>
-                <label id="identityLabel" for="username" class="block text-xs font-semibold mb-1.5 text-navy">Driver Code, Admin ID, Phone or Email</label>
-                <div class="relative flex items-center">
-                    <span class="absolute left-3 text-ink-muted flex items-center pointer-events-none">
-                        <svg class="w-4 h-4" aria-hidden="true"><use href="icons.svg#icon-id-card"/></svg>
+                <label id="identityLabel" for="username" class="block text-xs font-semibold mb-1.5 text-navy">Phone number</label>
+                <div class="input-wrap relative flex items-stretch rounded-xl border border-line bg-[#f7fafb] focus-within:border-[#4e9ab5] focus-within:bg-white focus-within:ring-4 focus-within:ring-[#4e9ab5]/15 transition-all overflow-hidden">
+                    <div id="phonePrefix" class="phone-prefix flex items-center px-3 border-r border-line bg-slate-100/80 text-navy font-semibold text-xs select-none">
+                        <span class="mr-1 text-[11px] text-ink-muted">🇮🇳</span>+91
+                    </div>
+                    <span id="adminIcon" class="hidden items-center pl-3 text-ink-muted pointer-events-none">
+                        <svg class="w-4 h-4" aria-hidden="true"><use href="icons.svg#icon-user-shield"/></svg>
                     </span>
-                    <input type="text" id="username" name="username" required autocomplete="username" placeholder="Enter driver code, admin ID, phone or email" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="next"
-                           class="login-input w-full pl-9 pr-3 py-2 border border-line text-sm text-navy placeholder-ink-muted focus:outline-none">
+                    <input type="tel" id="username" name="username" required autocomplete="tel" inputmode="tel" maxlength="10"
+                           placeholder="10-digit mobile number" enterkeyhint="next"
+                           class="login-input flex-1 px-3 py-2 bg-transparent border-0 text-sm text-navy placeholder-ink-muted focus:outline-none">
                 </div>
+                <p id="identityHint" class="text-[11px] text-ink-muted mt-1">Enter your registered 10-digit mobile number</p>
             </div>
 
             <div>
@@ -55,32 +284,112 @@
                         <svg class="w-4 h-4" aria-hidden="true"><use href="icons.svg#icon-lock"/></svg>
                     </span>
                     <input type="password" id="password" name="password" required autocomplete="current-password" placeholder="Enter password" enterkeyhint="go"
-                           class="login-input w-full pl-9 pr-10 py-2 border border-line text-sm text-navy placeholder-ink-muted focus:outline-none">
-                    <button type="button" onclick="togglePasswordVisibility('password', 'passwordToggleIcon')" aria-label="Show or hide password" aria-pressed="false" class="absolute right-2.5 text-ink-muted hover:text-navy p-1 focus:outline-none">
+                           class="login-input w-full pl-9 pr-10 py-2 border border-line rounded-xl text-sm text-navy placeholder-ink-muted bg-[#f7fafb] focus:outline-none focus:border-[#4e9ab5] focus:bg-white focus:ring-4 focus:ring-[#4e9ab5]/15 transition-all">
+                    <button type="button" onclick="togglePasswordVisibility('password', 'passwordToggleIcon')" aria-label="Show or hide password" aria-pressed="false" class="absolute right-2.5 text-ink-muted hover:text-navy p-1.5 focus:outline-none">
                         <svg id="passwordToggleIcon" class="w-4 h-4" aria-hidden="true"><use href="icons.svg#icon-eye"/></svg>
                     </button>
                 </div>
             </div>
-            <label for="rememberMe" class="remember-row flex items-center gap-1.5 w-fit cursor-pointer select-none">
-                <input type="checkbox" id="rememberMe" class="w-3.5 h-3.5 rounded-sm border-line text-navy accent-navy">
-                <span>Remember me</span>
+
+            <label for="rememberMe" class="remember-row flex items-center gap-2 w-fit cursor-pointer select-none">
+                <input type="checkbox" id="rememberMe" class="w-3.5 h-3.5 rounded-sm border-line text-navy accent-navy cursor-pointer">
+                <span class="text-xs text-ink-muted">Remember me</span>
             </label>
 
             <div id="loginError" class="login-error" role="alert" aria-live="polite"><svg aria-hidden="true"><use href="icons.svg#icon-alert"/></svg><span></span></div>
-            <button type="submit" id="btnSubmit" class="w-full py-2.5 px-4 text-white text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-60">
+
+            <button type="submit" id="btnSubmit" class="w-full py-2.5 px-4 text-white text-sm font-semibold flex items-center justify-center gap-2 rounded-xl transition-all disabled:opacity-60 cursor-pointer">
                 <span>Sign In</span>
                 <svg class="w-4 h-4" aria-hidden="true"><use href="icons.svg#icon-arrow-right"/></svg>
             </button>
         </form>
-      </section><p class="login-footer">KITS Warangal &middot; KAMBUS</p>
+      </section>
+      <p class="login-footer">KAMBUS &middot; Operations</p>
     </main>
 
     <script>
         const API_BASE = "https://kambus-backend.onrender.com";
+        let currentRole = "driver";
+
+        function initCampusBadge() {
+            const campusName = localStorage.getItem("kambus_campus_name") || "KITS Warangal";
+            const el = document.getElementById("campusName");
+            if (el) {
+                el.textContent = `Signing in to ${campusName}`;
+            }
+        }
+
+        function setRole(role) {
+            currentRole = role;
+            const tabsContainer = document.getElementById("roleTabs");
+            const tabDriver = document.getElementById("tabDriver");
+            const tabAdmin = document.getElementById("tabAdmin");
+            const label = document.getElementById("identityLabel");
+            const input = document.getElementById("username");
+            const prefix = document.getElementById("phonePrefix");
+            const adminIcon = document.getElementById("adminIcon");
+            const hint = document.getElementById("identityHint");
+
+            hideLoginError();
+
+            if (role === "admin") {
+                if (tabsContainer) tabsContainer.style.setProperty("--role-position", "1");
+                tabDriver?.classList.remove("is-active");
+                tabDriver?.setAttribute("aria-selected", "false");
+                tabAdmin?.classList.add("is-active");
+                tabAdmin?.setAttribute("aria-selected", "true");
+
+                if (label) label.textContent = "Admin ID";
+                if (prefix) prefix.classList.add("hidden");
+                if (prefix) prefix.classList.remove("flex");
+                if (adminIcon) adminIcon.classList.remove("hidden");
+                if (adminIcon) adminIcon.classList.add("flex");
+                if (input) {
+                    input.type = "text";
+                    input.inputMode = "text";
+                    input.maxLength = 64;
+                    input.placeholder = "Enter admin ID or username";
+                    input.autocomplete = "username";
+                    input.autocapitalize = "none";
+                }
+                if (hint) hint.textContent = "Enter your administrator ID or username";
+            } else {
+                if (tabsContainer) tabsContainer.style.setProperty("--role-position", "0");
+                tabAdmin?.classList.remove("is-active");
+                tabAdmin?.setAttribute("aria-selected", "false");
+                tabDriver?.classList.add("is-active");
+                tabDriver?.setAttribute("aria-selected", "true");
+
+                if (label) label.textContent = "Phone number";
+                if (prefix) prefix.classList.remove("hidden");
+                if (prefix) prefix.classList.add("flex");
+                if (adminIcon) adminIcon.classList.add("hidden");
+                if (adminIcon) adminIcon.classList.remove("flex");
+                if (input) {
+                    input.type = "tel";
+                    input.inputMode = "tel";
+                    input.maxLength = 10;
+                    input.placeholder = "10-digit mobile number";
+                    input.autocomplete = "tel";
+                    input.autocapitalize = "none";
+                }
+                if (hint) hint.textContent = "Enter your registered 10-digit mobile number";
+            }
+        }
+
         document.addEventListener("DOMContentLoaded", () => {
+            initCampusBadge();
+
             const isRemembered = localStorage.getItem("kambus_remember") === "true";
             const savedIdentifier = localStorage.getItem("kambus_saved_identifier");
+            const savedRole = localStorage.getItem("kambus_saved_role");
             const rememberCheckbox = document.getElementById("rememberMe");
+
+            if (savedRole === "admin") {
+                setRole("admin");
+            } else {
+                setRole("driver");
+            }
 
             if (isRemembered && rememberCheckbox) {
                 rememberCheckbox.checked = true;
@@ -93,12 +402,14 @@
 
         function showLoginError(message) {
             const banner = document.getElementById("loginError");
+            if (!banner) return;
             banner.querySelector("span").textContent = message;
             banner.classList.add("visible");
         }
 
         function hideLoginError() {
-            document.getElementById("loginError").classList.remove("visible");
+            const banner = document.getElementById("loginError");
+            if (banner) banner.classList.remove("visible");
         }
 
         function togglePasswordVisibility(inputId, iconId) {
@@ -117,14 +428,25 @@
             e.preventDefault();
             hideLoginError();
 
-            const identifier = document.getElementById("username").value.trim();
+            let identifier = document.getElementById("username").value.trim();
             const password = document.getElementById("password").value;
             const rememberMe = document.getElementById("rememberMe")?.checked || false;
             const button = document.getElementById("btnSubmit");
 
             if (!identifier || !password) {
-                notifyUser("warn", "Required Fields", "Please enter your identifier and password.");
+                const fieldName = currentRole === "driver" ? "phone number" : "admin ID";
+                notifyUser("warn", "Required Fields", `Please enter your ${fieldName} and password.`);
                 return;
+            }
+
+            // Clean phone number prefix if driver entered +91 or spaces
+            if (currentRole === "driver") {
+                const digits = identifier.replace(/\D/g, "");
+                if (digits.length === 12 && digits.startsWith("91")) {
+                    identifier = digits.slice(2);
+                } else if (digits.length === 10) {
+                    identifier = digits;
+                }
             }
 
             const originalButtonContent = button.innerHTML;
@@ -151,16 +473,17 @@
                     response = await fetch(`${API_BASE}/auth/login`, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ identifier: identifier, password: password, role: "driver" })
+                        body: JSON.stringify({ identifier: identifier, password: password, role: currentRole })
                     });
                     if (response.status === 401) {
-                        const adminTry = await fetch(`${API_BASE}/auth/login`, {
+                        const fallbackRole = currentRole === "driver" ? "admin" : "driver";
+                        const altTry = await fetch(`${API_BASE}/auth/login`, {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ identifier: identifier, password: password, role: "admin" })
+                            body: JSON.stringify({ identifier: identifier, password: password, role: fallbackRole })
                         });
-                        if (adminTry.ok) {
-                            response = adminTry;
+                        if (altTry.ok) {
+                            response = altTry;
                         }
                     }
                 }
@@ -205,7 +528,7 @@
                 if (rememberMe) {
                     localStorage.setItem("kambus_remember", "true");
                     localStorage.setItem("kambus_saved_identifier", identifier);
-                    localStorage.setItem("kambus_saved_role", data.role);
+                    localStorage.setItem("kambus_saved_role", currentRole);
                 } else {
                     localStorage.setItem("kambus_remember", "false");
                     localStorage.removeItem("kambus_saved_identifier");
@@ -219,6 +542,8 @@
                         window.location.href = "driver.html";
                     } else if (data.role === "admin") {
                         window.location.href = "admin.html";
+                    } else {
+                        window.location.href = currentRole === "admin" ? "admin.html" : "driver.html";
                     }
                 }, 150);
 

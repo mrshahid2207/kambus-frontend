@@ -239,6 +239,98 @@
     }
 
     // =========================================================================
+    // CAMPUS PLAN ENTITLEMENTS & FEATURE GATING
+    // =========================================================================
+
+    let adminCampusEntitlements = null;
+
+    async function loadAdminCampusEntitlements(overrideCampusId = null) {
+        try {
+            const payload = getJwtPayload();
+            const campusId = overrideCampusId !== null ? overrideCampusId : (getSelectedCampusId() || (payload ? payload.campus_id : null));
+            const endpoint = campusId ? `/campus/me/entitlements?campus_id=${campusId}` : `/me/entitlements`;
+            const data = await apiRequest(endpoint);
+            if (data && Array.isArray(data.features)) {
+                adminCampusEntitlements = data;
+                applyAdminFeatureGating();
+            }
+        } catch (e) {
+            console.warn("Could not load campus entitlements:", e);
+        }
+    }
+
+    function hasAdminEntitlement(featureName) {
+        if (!adminCampusEntitlements || !Array.isArray(adminCampusEntitlements.features)) {
+            return true; // default open while loading
+        }
+        return adminCampusEntitlements.features.includes(featureName);
+    }
+
+    function renderPlanUpgradeView(container, featureTitle, requiredTier, featureDescription, priceInfo) {
+        if (!container) return;
+        if (!container.dataset.originalContent) {
+            container.dataset.originalContent = container.innerHTML;
+        }
+        const tierBadgeClass = requiredTier === "Premium" ? "bg-purple-100 text-purple-800 border-purple-200" : "bg-amber-100 text-amber-800 border-amber-200";
+        container.innerHTML = `
+            <div class="max-w-2xl mx-auto my-12 p-8 bg-surface rounded-2xl border border-line shadow-xs text-center">
+                <div class="w-14 h-14 mx-auto mb-4 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                </div>
+                <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${tierBadgeClass} mb-3">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    <span>Requires ${requiredTier} Plan</span>
+                </div>
+                <h2 class="text-xl font-bold text-navy tracking-tight">${escapeHtml(featureTitle)}</h2>
+                <p class="text-xs text-ink-muted mt-2 max-w-md mx-auto leading-relaxed">${escapeHtml(featureDescription)}</p>
+                
+                <div class="mt-6 p-4 rounded-xl bg-bg border border-line text-xs text-ink max-w-md mx-auto flex items-center justify-between">
+                    <span class="font-medium text-ink-muted">Plan tier required:</span>
+                    <span class="font-bold text-navy">${requiredTier} (${priceInfo})</span>
+                </div>
+
+                <div class="mt-6 flex items-center justify-center gap-3">
+                    <a href="mailto:support@kambus.in?subject=Upgrade%20Campus%20to%20${requiredTier}%20Plan" class="px-5 py-2.5 rounded-lg bg-brand text-white text-xs font-semibold hover:bg-brand/90 transition shadow-xs">
+                        Contact Support to Upgrade
+                    </a>
+                </div>
+            </div>
+        `;
+    }
+
+    function restorePlanContent(container) {
+        if (!container) return;
+        if (container.dataset.originalContent) {
+            container.innerHTML = container.dataset.originalContent;
+            delete container.dataset.originalContent;
+        }
+    }
+
+    function updateNavBadge(sectionName, requiredTier, isEntitled) {
+        const btn = document.querySelector(`.admin-nav-btn[data-section="${sectionName}"]`);
+        if (!btn) return;
+        const existingBadge = btn.querySelector(".plan-gate-badge");
+        if (isEntitled) {
+            if (existingBadge) existingBadge.remove();
+            restorePlanContent(document.getElementById(`section-${sectionName}`));
+        } else {
+            if (!existingBadge) {
+                const badge = document.createElement("span");
+                const badgeColor = requiredTier === "Premium" ? "bg-purple-100 text-purple-800" : "bg-amber-100 text-amber-800";
+                badge.className = `ml-auto text-[9px] px-1.5 py-0.5 rounded ${badgeColor} font-bold uppercase tracking-wider inline-flex items-center gap-0.5 plan-gate-badge`;
+                badge.innerHTML = `<svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg> ${requiredTier}`;
+                btn.appendChild(badge);
+            }
+        }
+    }
+
+    function applyAdminFeatureGating() {
+        updateNavBadge("temp-stop-logs", "Top", hasAdminEntitlement("temporary_stop_change"));
+        updateNavBadge("notifications", "Top", hasAdminEntitlement("admin_broadcasts"));
+        updateNavBadge("messages", "Premium", hasAdminEntitlement("student_to_admin_query"));
+    }
+
+    // =========================================================================
     // NAVIGATION & SECTIONS
     // =========================================================================
 
@@ -264,6 +356,8 @@
         });
 
         closeMobileSidebar();
+        document.querySelectorAll('[data-modal="true"]:not(.hidden)').forEach(m => m.classList.add("hidden"));
+        document.body.style.overflow = "";
 
         // Load section-specific data
         switch (sectionName) {
@@ -295,15 +389,45 @@
                 loadGeofenceLogs();
                 break;
             case "temp-stop-logs":
+                if (!hasAdminEntitlement("temporary_stop_change")) {
+                    renderPlanUpgradeView(
+                        target,
+                        "Temporary Stop Changes",
+                        "Top",
+                        "Allow students to select temporary pickup and dropoff locations along the route, with automatic route check and administrator approval workflows.",
+                        "₹1,300/mo per bus"
+                    );
+                    break;
+                }
                 loadTemporaryStopLogs();
                 break;
             case "live-map":
                 setTimeout(initLiveMap, 100);
                 break;
             case "messages":
+                if (!hasAdminEntitlement("student_to_admin_query")) {
+                    renderPlanUpgradeView(
+                        target,
+                        "Student Messages & Queries",
+                        "Premium",
+                        "Direct communication inbox allowing students to message campus administrators for inquiries, lost property, and transport feedback.",
+                        "₹1,800/mo per bus"
+                    );
+                    break;
+                }
                 loadMessages();
                 break;
             case "notifications":
+                if (!hasAdminEntitlement("admin_broadcasts")) {
+                    renderPlanUpgradeView(
+                        target,
+                        "Announcements & Broadcasts",
+                        "Top",
+                        "Send real-time broadcast push notifications, route updates, and announcements to students, parents, and drivers across your campus fleet.",
+                        "₹1,300/mo per bus"
+                    );
+                    break;
+                }
                 initAnnouncementComposer();
                 loadAnnouncementHistory();
                 loadAdminBusChanges();
@@ -329,6 +453,22 @@
         }
     }
 
+    // =========================================================================
+    // SCROLL LOCK / UNLOCK HELPERS (FIX-2)
+    // =========================================================================
+
+    function lockScroll() {
+        document.body.style.overflow = "hidden";
+    }
+
+    function unlockScroll() {
+        const hasOpenModal = document.querySelector('[data-modal="true"]:not(.hidden)');
+        const sidebarOpen = document.getElementById("adminSidebar")?.classList.contains("open");
+        if (!hasOpenModal && !sidebarOpen) {
+            document.body.style.overflow = "";
+        }
+    }
+
     function toggleMobileSidebar() {
         const sidebar = document.getElementById("adminSidebar");
         const overlay = document.getElementById("sidebarOverlay");
@@ -337,9 +477,11 @@
             if (isOpen) {
                 sidebar.classList.remove("open");
                 overlay.classList.add("hidden");
+                unlockScroll();
             } else {
                 sidebar.classList.add("open");
                 overlay.classList.remove("hidden");
+                lockScroll();
             }
         }
     }
@@ -349,6 +491,7 @@
         const overlay = document.getElementById("sidebarOverlay");
         if (sidebar) sidebar.classList.remove("open");
         if (overlay) overlay.classList.add("hidden");
+        unlockScroll();
     }
 
     // =========================================================================
@@ -1957,7 +2100,8 @@
         if (!editStopPickerMap) {
             editStopPickerMap = L.map("editStopPickerMapContainer").setView([lat, lng], 14);
             L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-                attribution: "&copy; OpenStreetMap contributors"
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                maxZoom: 19
             }).addTo(editStopPickerMap);
 
             editStopPickerMap.on("click", (e) => {
@@ -2121,7 +2265,8 @@
         if (!stopPickerMap) {
             stopPickerMap = L.map("stopPickerMapContainer").setView([lat, lng], 13);
             L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-                attribution: "&copy; OpenStreetMap contributors"
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                maxZoom: 19
             }).addTo(stopPickerMap);
 
             stopPickerMap.on("click", (e) => {
@@ -2393,7 +2538,8 @@
             if (!routeMap) {
                 routeMap = L.map("routePreviewMap").setView(COLLEGE_COORDS, 13);
                 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-                    attribution: "&copy; OpenStreetMap contributors"
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                    maxZoom: 19
                 }).addTo(routeMap);
             } else {
                 routeMap.invalidateSize();
@@ -2859,7 +3005,8 @@
         if (!liveMap) {
             liveMap = L.map("adminLiveMap").setView(COLLEGE_COORDS, 13);
             L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-                attribution: "&copy; OpenStreetMap contributors"
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                maxZoom: 19
             }).addTo(liveMap);
 
             const collegeIcon = L.divIcon({
@@ -3271,7 +3418,7 @@
             if (list.length === 0) {
                 container.innerHTML = `
                     <div class="announcement-empty">
-                        <div class="text-2xl mb-2" aria-hidden="true">📣</div>
+                        <svg class="w-8 h-8 mx-auto text-ink-muted/50 mb-2" aria-hidden="true"><use href="icons.svg#icon-bullhorn"/></svg>
                         <p class="text-xs font-semibold text-navy">Nothing sent yet</p>
                         <p class="text-[11px] mt-1">Your next update will show up here.</p>
                     </div>`;
@@ -3680,6 +3827,9 @@
             document.querySelectorAll(".route-select-dropdown").forEach(s => { s.innerHTML = `<option value="">-- Select Campus First --</option>`; });
             document.querySelectorAll(".stop-select-dropdown").forEach(s => { s.innerHTML = `<option value="">-- Select Campus First --</option>`; });
         }
+
+        // Refresh campus entitlements for newly selected campus context
+        await loadAdminCampusEntitlements(parsedId);
 
         // Refresh whichever section is currently active
         switch (activeSection) {
@@ -4224,6 +4374,7 @@
         if (!checkAuth()) return;
 
         setupSuperAdminNav();
+        loadAdminCampusEntitlements();
         initSuperAdminCampusSelector();
         initAdminWebSocket();
         showSection("dashboard");
@@ -4354,7 +4505,65 @@
         }
     }
 
+    // =========================================================================
+    // GLOBAL MODAL & DRAWER DISMISS LISTENERS (FIX-2)
+    // =========================================================================
+    const activeModalStack = [];
+
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" || e.key === "Esc") {
+            const visibleFromStack = activeModalStack.filter(m => !m.classList.contains("hidden") && document.body.contains(m));
+            const openModals = visibleFromStack.length > 0 ? visibleFromStack : Array.from(document.querySelectorAll('[data-modal="true"]:not(.hidden)'));
+            if (openModals.length > 0) {
+                // Close only the topmost open modal (last opened)
+                const topmost = openModals[openModals.length - 1];
+                const hasCloseBtn = topmost.querySelector('button, [onclick*="hidden"], .close, [aria-label*="Close"]');
+                if (hasCloseBtn) {
+                    topmost.classList.add("hidden");
+                    const idx = activeModalStack.indexOf(topmost);
+                    if (idx !== -1) activeModalStack.splice(idx, 1);
+                    unlockScroll();
+                }
+            } else if (document.getElementById("adminSidebar")?.classList.contains("open")) {
+                closeMobileSidebar();
+            }
+        }
+    });
+
+    document.addEventListener("click", (e) => {
+        // Backdrop click on genuine modal overlay with close button
+        if (e.target && e.target.matches && e.target.matches('[data-modal="true"]')) {
+            const hasCloseBtn = e.target.querySelector('button, [onclick*="hidden"], .close, [aria-label*="Close"]');
+            if (hasCloseBtn) {
+                e.target.classList.add("hidden");
+                const idx = activeModalStack.indexOf(e.target);
+                if (idx !== -1) activeModalStack.splice(idx, 1);
+                unlockScroll();
+            }
+        }
+        // Sync scroll lock with active modals on any button/interactive click
+        setTimeout(() => {
+            document.querySelectorAll('[data-modal="true"]:not(.hidden)').forEach(m => {
+                if (!activeModalStack.includes(m)) activeModalStack.push(m);
+            });
+            for (let i = activeModalStack.length - 1; i >= 0; i--) {
+                if (activeModalStack[i].classList.contains("hidden")) {
+                    activeModalStack.splice(i, 1);
+                }
+            }
+            const hasOpenModal = document.querySelector('[data-modal="true"]:not(.hidden)');
+            const sidebarOpen = document.getElementById("adminSidebar")?.classList.contains("open");
+            if (hasOpenModal || sidebarOpen) {
+                lockScroll();
+            } else {
+                unlockScroll();
+            }
+        }, 15);
+    });
+
     window.KambusAdmin = {
+        lockScroll,
+        unlockScroll,
         showSection,
         toggleMobileSidebar,
         closeMobileSidebar,
@@ -4368,7 +4577,10 @@
         submitUpdateBusGeneralProps,
         deleteBus,
         submitAddBus,
-        openAddDriverModal: () => document.getElementById("addDriverModal")?.classList.remove("hidden"),
+        openAddDriverModal: () => {
+            lockScroll();
+            document.getElementById("addDriverModal")?.classList.remove("hidden");
+        },
         openDriverModal,
         openEditDriverModal,
         deleteDriver,
