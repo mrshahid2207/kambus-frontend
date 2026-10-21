@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>KAMBUS</title>
     <meta name="theme-color" content="#173541">
     <meta name="description" content="KAMBUS, live bus tracking for KITSW.">
@@ -13,10 +13,260 @@
     <link rel="stylesheet" href="kambus.css">
     <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
     <style>
+        :root {
+            --safe-top: env(safe-area-inset-top, 0px);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+            --safe-left: env(safe-area-inset-left, 0px);
+            --safe-right: env(safe-area-inset-right, 0px);
+        }
+        html {
+            font-size: 16px;
+            -webkit-text-size-adjust: 100%;
+            text-size-adjust: 100%;
+        }
+        body {
+            font-size: 16px;
+            line-height: 1.45;
+            -webkit-tap-highlight-color: transparent;
+            overscroll-behavior: none;
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+            padding-left: max(0px, env(safe-area-inset-left, 0px));
+            padding-right: max(0px, env(safe-area-inset-right, 0px));
+        }
+
+        /* -------------------------------------------------------------------------
+           DRIVER DASHBOARD ACCESSIBILITY & IN-CABIN READABILITY SCALE (FIX 1)
+           Baseline enlarged +15-20%, nothing below 14px, minimum 48px touch targets.
+           ------------------------------------------------------------------------- */
+        /* Enlarge utility tokens across driver interface: floor is 14px */
+        .text-\[9px\], .text-\[10px\], .text-\[11px\], .text-xs {
+            font-size: 14px !important;
+            line-height: 1.35 !important;
+        }
+        .text-sm {
+            font-size: 16px !important;
+            line-height: 1.35 !important;
+        }
+        .text-base {
+            font-size: 18px !important;
+            line-height: 1.35 !important;
+        }
+        .text-lg {
+            font-size: 20px !important;
+            line-height: 1.35 !important;
+        }
+        .text-xl {
+            font-size: 22px !important;
+            line-height: 1.3 !important;
+        }
+
+        /* Minimum 48px touch target requirements */
+        #driverLogoutBtn {
+            min-width: 48px !important;
+            min-height: 48px !important;
+        }
+        #languageChipBtn {
+            min-height: 48px !important;
+            min-width: 48px !important;
+            font-size: 14px !important;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .lang-row {
+            min-height: 56px !important;
+        }
+        .lang-row .text-\[18px\] {
+            font-size: 18px !important;
+        }
+        .trip-type-btn {
+            min-height: 48px !important;
+            font-size: 16px !important;
+        }
+        #startTripBtn {
+            min-height: 52px !important;
+            font-size: 18px !important;
+        }
+        #cameraModeToggleBtn, #recenterBtn {
+            min-height: 48px !important;
+            padding: 10px 14px !important;
+            font-size: 14px !important;
+        }
+        #skipWaitBtn, #completeWaitBtn {
+            min-height: 48px !important;
+            padding: 10px 16px !important;
+            font-size: 14px !important;
+        }
+        #endTripBtn {
+            min-height: 48px !important;
+            padding: 10px 18px !important;
+            font-size: 15px !important;
+        }
+        #activeTripView .grid-cols-3 button {
+            min-height: 48px !important;
+            font-size: 14px !important;
+        }
+        #preTripFooter button {
+            min-height: 48px !important;
+            font-size: 16px !important;
+        }
+
+        /* Top Bar single-row layout for mobile viewports (FIX 1B) */
+        #driverAppHeader {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 6px;
+            flex-wrap: nowrap !important;
+            padding-top: calc(0.5rem + max(var(--safe-top, 0px), env(safe-area-inset-top, 0px)));
+            padding-bottom: 0.5rem;
+            padding-left: max(0.5rem, env(safe-area-inset-left, 0.5rem));
+            padding-right: max(0.5rem, env(safe-area-inset-right, 0.5rem));
+            -webkit-user-select: none;
+            user-select: none;
+            box-sizing: border-box;
+            width: 100%;
+        }
+        #headerLeftGroup {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            min-width: 0;
+            flex: 1 1 auto;
+        }
+        #headerRightControls {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+        .lang-sheet-row {
+            min-height: 58px !important;
+            flex-shrink: 0 !important;
+        }
+        .lang-sheet-row .text-\[18px\] {
+            font-size: 18px !important;
+        }
+        @media (max-width: 380px) {
+            #driverAppHeader {
+                padding-left: 6px;
+                padding-right: 6px;
+                gap: 4px;
+                flex-wrap: nowrap !important;
+            }
+            #headerLeftGroup {
+                gap: 5px;
+                flex: 0 1 auto;
+                min-width: 0;
+            }
+            #headerRightControls {
+                gap: 4px;
+                flex-shrink: 0;
+            }
+            #languageChipBtn {
+                padding-left: 6px !important;
+                padding-right: 6px !important;
+            }
+        }
+        /* UI Chrome non-selectable, data copyable */
+        header, nav, button, .trip-type-btn, [role="button"], #mapContainer, .badge, .status-dot {
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        input, textarea, .selectable, .copyable, #headerBusBadge {
+            -webkit-user-select: text;
+            user-select: text;
+        }
+        /* Scrollable container containment */
+        main, .modal-scroll, #kambusNotificationList, #driverRouteStopList, .kambus-sheet {
+            overscroll-behavior: contain;
+            -webkit-overflow-scrolling: touch;
+        }
         #routeMap {
             width: 100%;
             height: 100%;
             background: #FAFAF8;
+        }
+        #mapContainer {
+            width: 100%;
+            transition: height 0.2s ease;
+        }
+        /* Live Active Trip Screen Layout: Map occupies ~55-60% of visible viewport */
+        body.trip-active #mapContainer,
+        body:has(#activeTripView:not(.hidden)) #mapContainer {
+            height: 57vh;
+            height: 57dvh;
+            min-height: 300px;
+            max-height: 60vh;
+            max-height: 60dvh;
+        }
+        /* Compact layout for main container during active trip so End Trip stays visible without scroll */
+        body.trip-active main,
+        body:has(#activeTripView:not(.hidden)) main {
+            padding-top: 0.5rem;
+            padding-bottom: 0.75rem;
+            padding-left: 0.75rem;
+            padding-right: 0.75rem;
+        }
+        body.trip-active main > :not([hidden]) ~ :not([hidden]),
+        body:has(#activeTripView:not(.hidden)) main > :not([hidden]) ~ :not([hidden]) {
+            margin-top: 0.5rem;
+        }
+        /* Native-feeling screen transitions */
+        #preTripView:not(.hidden),
+        #activeTripView:not(.hidden) {
+            animation: kambusViewFade 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+        @keyframes kambusViewFade {
+            from {
+                opacity: 0;
+                transform: translateY(6px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        /* Modal transitions */
+        .fixed.inset-0:not(.hidden) {
+            animation: modalBackdropFade 0.2s ease-out both;
+        }
+        .fixed.inset-0:not(.hidden) > div {
+            animation: modalSheetSlideUp 0.24s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+        @keyframes modalBackdropFade {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes modalSheetSlideUp {
+            from { opacity: 0; transform: translateY(16px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        /* Tactile button press feedback */
+        button:active:not(:disabled),
+        .trip-type-btn:active:not(:disabled),
+        a.button:active,
+        [role="button"]:active:not(:disabled) {
+            transform: scale(0.97);
+        }
+        button, .trip-type-btn, a.button, [role="button"] {
+            transition: transform 0.08s ease, background-color 0.15s ease, opacity 0.15s ease, border-color 0.15s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+        /* Skeleton pulse animation */
+        @keyframes kambusPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.38; }
+        }
+        .kambus-skeleton {
+            background-color: var(--line, #E3E8E8);
+            animation: kambusPulse 1.6s ease-in-out infinite;
+            border-radius: 4px;
+            color: transparent !important;
+            pointer-events: none;
+        }
+        .rotate-180 {
+            transform: rotate(180deg);
         }
         .scanner-laser {
             position: absolute;
@@ -42,12 +292,15 @@
             50% { top: 90%; opacity: 1; }
             100% { top: 10%; opacity: 0.8; }
         }
+        body, button, input, select, textarea {
+            font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans Devanagari', 'Noto Sans Telugu', sans-serif;
+        }
     </style>
 </head>
 <body class="bg-bg text-navy font-sans flex flex-col min-h-screen">
 
-    <header class="bg-surface border-b border-line px-4 py-3 sticky top-0 z-30 flex items-center justify-between">
-        <div class="flex items-center gap-2.5 min-w-0">
+    <header id="driverAppHeader" class="bg-surface border-b border-line px-4 py-3 sticky top-0 z-30 flex items-center justify-between">
+        <div id="headerLeftGroup" class="flex items-center gap-2.5 min-w-0">
             <div class="w-8 h-8 rounded bg-navy flex items-center justify-center shrink-0">
                 <img src="brand/mark-white.svg" alt="KAMBUS" class="w-5 h-5">
             </div>
@@ -64,7 +317,12 @@
             </div>
         </div>
 
-        <div class="flex items-center gap-3 shrink-0">
+        <div id="headerRightControls" class="flex items-center gap-2 sm:gap-3 shrink-0">
+            <!-- Compact Language Selector Chip (FIX 1B) -->
+            <button type="button" id="languageChipBtn" onclick="openLanguageSheet()" class="h-12 px-2.5 rounded-lg border border-line bg-surface hover:bg-bg text-navy font-semibold text-sm flex items-center justify-center shrink-0 transition-colors cursor-pointer" aria-label="Select language" aria-haspopup="dialog" aria-expanded="false">
+                <span id="currentLangLabel" class="font-bold tracking-tight">EN ▾</span>
+            </button>
+
             <div class="text-right">
                 <div class="flex items-center justify-end gap-1.5">
                     <span id="statusDot" class="w-2 h-2 rounded-full bg-line shrink-0"></span>
@@ -77,8 +335,8 @@
                 </p>
             </div>
 
-            <a href="index.html" id="driverLogoutBtn" class="w-8 h-8 rounded border border-line bg-surface hover:bg-bg text-ink-muted hover:text-danger transition-colors flex items-center justify-center" aria-label="Logout" title="Logout">
-                <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-logout"/></svg>
+            <a href="index.html" id="driverLogoutBtn" class="w-12 h-12 rounded border border-line bg-surface hover:bg-bg text-ink-muted hover:text-danger transition-colors flex items-center justify-center shrink-0" aria-label="Logout" title="Logout">
+                <svg class="w-5 h-5 shrink-0" aria-hidden="true"><use href="icons.svg#icon-logout"/></svg>
             </a>
         </div>
     </header>
@@ -86,13 +344,13 @@
     <div id="activeSosBanner" class="hidden bg-danger text-white px-4 py-3 flex items-center justify-between gap-3 text-xs font-semibold border-b border-danger/20">
         <div class="flex items-center gap-2 min-w-0">
             <span class="w-2 h-2 rounded-full bg-white animate-ping shrink-0"></span>
-            <span id="activeSosText" class="truncate">EMERGENCY SOS ACTIVE</span>
+            <span id="activeSosText" class="truncate" data-i18n="emergency_sos_active">EMERGENCY SOS ACTIVE</span>
         </div>
         <div class="flex items-center gap-2 shrink-0">
             <a href="tel:112" class="px-2.5 py-1 bg-white text-danger rounded text-xs font-semibold flex items-center gap-1">
-                <svg class="w-3.5 h-3.5" aria-hidden="true"><use href="icons.svg#icon-phone"/></svg> Call 112
+                <svg class="w-3.5 h-3.5" aria-hidden="true"><use href="icons.svg#icon-phone"/></svg> <span data-i18n="call_112">Call 112</span>
             </a>
-            <button type="button" onclick="cancelEmergencySos()" class="px-2.5 py-1 bg-danger/80 hover:bg-danger text-white rounded text-xs font-semibold border border-white/20">
+            <button type="button" onclick="cancelEmergencySos()" class="px-2.5 py-1 bg-danger/80 hover:bg-danger text-white rounded text-xs font-semibold border border-white/20" data-i18n="clear">
                 Clear
             </button>
         </div>
@@ -101,21 +359,21 @@
     <div id="activeDetourBanner" class="hidden bg-warn text-white px-4 py-3 flex items-center justify-between gap-2 text-xs font-semibold border-b border-warn/20">
         <div class="flex items-center gap-2 min-w-0">
             <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-route"/></svg>
-            <span id="activeDetourText" class="truncate">Active Detour</span>
+            <span id="activeDetourText" class="truncate" data-i18n="active_detour">Active Detour</span>
         </div>
-        <button type="button" onclick="clearDetourReport()" class="px-2.5 py-1 bg-white text-warn rounded text-xs font-semibold shrink-0">
+        <button type="button" onclick="clearDetourReport()" class="px-2.5 py-1 bg-white text-warn rounded text-xs font-semibold shrink-0" data-i18n="clear_detour">
             Clear Detour
         </button>
     </div>
 
     <main class="flex-1 flex flex-col p-4 max-w-lg mx-auto w-full space-y-4 pb-8">
 
-        <section id="waitRequestCard" class="hidden bg-surface border border-warn text-navy rounded p-4 space-y-2">
+        <section id="waitRequestCard" class="hidden kx-card border-warn text-navy p-4 space-y-2">
             <div class="flex items-center justify-between gap-3">
                 <div class="min-w-0 flex-1">
                     <div class="flex items-center gap-1.5">
                         <svg class="w-4 h-4 text-warn animate-spin" aria-hidden="true"><use href="icons.svg#icon-clock"/></svg>
-                        <h2 id="waitStopTitle" class="text-xs font-semibold uppercase tracking-wider text-navy truncate">
+                        <h2 id="waitStopTitle" class="text-xs font-semibold uppercase tracking-wider text-navy truncate" data-i18n="wait_request">
                             Wait Request
                         </h2>
                     </div>
@@ -129,192 +387,237 @@
                     </div>
                 </div>
 
-                <button type="button" id="skipWaitBtn" class="shrink-0 bg-surface border border-line text-navy font-semibold text-xs px-3 py-1.5 rounded hover:bg-bg transition-colors flex items-center gap-1.5">
+                <button type="button" id="skipWaitBtn" class="shrink-0 bg-surface border border-line text-navy font-semibold text-xs px-3 py-1.5 rounded-lg hover:bg-bg transition-colors flex items-center gap-1.5">
                     <svg class="w-3.5 h-3.5" aria-hidden="true"><use href="icons.svg#icon-forward-step"/></svg>
-                    <span>Skip</span>
+                    <span data-i18n="skip">Skip</span>
+                </button>
+                <button type="button" id="completeWaitBtn" class="hidden shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 shadow-sm">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                    <span data-i18n="wait_continue_now">Student Boarded</span>
                 </button>
             </div>
         </section>
 
-        <div class="relative rounded overflow-hidden border border-line bg-surface h-64 sm:h-80 w-full shrink-0">
+        <div id="mapContainer" class="relative rounded-xl overflow-hidden border border-line bg-surface h-64 sm:h-80 w-full shrink-0 shadow-xs">
             <div id="routeMap"></div>
 
             <div id="routeStatusBadge" class="absolute top-3 left-3 z-[400] bg-surface/95 text-navy text-xs font-semibold px-2.5 py-1 rounded border border-line flex items-center gap-1.5 pointer-events-none">
                 <span id="routeStatusDot" class="w-2 h-2 rounded-full bg-brand"></span>
-                <span id="routeStatusText">Route Preview</span>
+                <span id="routeStatusText" data-i18n="route_preview_ready">Route Preview • Ready</span>
             </div>
 
-            <button type="button" id="recenterBtn" class="absolute bottom-3 right-3 z-[400] px-2.5 py-1.5 bg-surface border border-line text-navy font-semibold text-xs rounded flex items-center gap-1.5 hover:bg-bg transition-colors" aria-label="Recenter map">
-                <svg class="w-3.5 h-3.5" aria-hidden="true"><use href="icons.svg#icon-location-crosshairs"/></svg>
-                <span>Recenter</span>
-            </button>
+            <div class="absolute bottom-3 right-3 z-[400] flex items-center gap-2">
+                <button type="button" id="cameraModeToggleBtn" class="px-2.5 py-1.5 bg-navy text-white border border-navy font-semibold text-xs rounded-lg flex items-center gap-1.5 hover:opacity-90 transition-all shadow-sm" aria-label="Toggle camera mode" title="Current: Bearing-Up Nav Camera (Click for Flat Overview)">
+                    <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                        <polygon points="12 2 19 21 12 17 5 21 12 2"/>
+                    </svg>
+                    <span id="cameraModeText" data-i18n="nav_mode">Nav Mode</span>
+                </button>
+                <button type="button" id="recenterBtn" class="px-2.5 py-1.5 bg-surface border border-line text-navy font-semibold text-xs rounded-lg flex items-center gap-1.5 hover:bg-bg transition-colors shadow-sm" aria-label="Recenter map">
+                    <svg class="w-3.5 h-3.5" aria-hidden="true"><use href="icons.svg#icon-location-crosshairs"/></svg>
+                    <span data-i18n="recenter">Recenter</span>
+                </button>
+            </div>
         </div>
 
         <div id="preTripView" class="space-y-4 flex-1 flex flex-col">
-            <div class="bg-surface border border-line rounded p-4 space-y-3">
+            <div class="kx-card p-4 space-y-3">
                 <div class="flex items-center justify-between">
-                    <span class="text-xs font-semibold uppercase tracking-wider text-ink-muted">
+                    <span class="text-xs font-semibold uppercase tracking-wider text-ink-muted" data-i18n="assigned_route">
                         Assigned Route
                     </span>
                     <span id="preTripStopCount" class="text-xs font-mono font-medium text-ink-muted bg-bg border border-line px-2 py-0.5 rounded">
-                        -- stops
+                        <span class="kambus-skeleton inline-block w-12 h-3.5 align-middle"></span>
                     </span>
                 </div>
-                <h2 id="preTripRouteName" class="text-lg font-semibold text-navy truncate">
-                    Loading assigned route...
+                <h2 id="preTripRouteName" class="text-lg font-semibold text-navy truncate" data-i18n="loading_route">
+                    <span class="kambus-skeleton inline-block w-48 h-5 align-middle"></span>
                 </h2>
                 <div class="flex items-center justify-between text-xs text-ink-muted pt-2.5 border-t border-line font-medium">
                     <span class="flex items-center gap-1.5">
                         <svg class="w-3.5 h-3.5 text-navy" aria-hidden="true"><use href="icons.svg#icon-map-pin"/></svg>
-                        First Stop: <strong id="preTripFirstStopName" class="text-navy font-semibold">--</strong>
+                        <span data-i18n="first_stop_label">First Stop:</span> <strong id="preTripFirstStopName" class="text-navy font-semibold"><span class="kambus-skeleton inline-block w-24 h-3.5 align-middle"></span></strong>
                     </span>
-                    <span class="text-ok font-medium bg-ok/10 px-2 py-0.5 rounded border border-ok/20 text-xs">
+                    <span class="text-ok font-medium bg-ok/10 px-2 py-0.5 rounded border border-ok/20 text-xs" data-i18n="ready">
                         Ready
                     </span>
                 </div>
             </div>
 
             <div class="space-y-2" role="group" aria-label="Trip type">
-                <p class="text-xs font-semibold uppercase tracking-wider text-ink-muted">Select trip type</p>
+                <p class="text-xs font-semibold uppercase tracking-wider text-ink-muted" data-i18n="select_trip_type">Select trip type</p>
                 <div class="grid grid-cols-2 gap-2">
-                    <button type="button" id="morningTripTypeBtn" class="trip-type-btn py-2.5 rounded border border-line bg-bg text-navy text-sm font-semibold transition-colors" aria-pressed="false">Morning</button>
-                    <button type="button" id="eveningTripTypeBtn" class="trip-type-btn py-2.5 rounded border border-line bg-bg text-navy text-sm font-semibold transition-colors" aria-pressed="false">Evening</button>
+                    <button type="button" id="morningTripTypeBtn" class="trip-type-btn py-2.5 rounded-lg border border-line bg-bg text-navy text-sm font-semibold transition-colors" aria-pressed="false" data-i18n="morning">Morning</button>
+                    <button type="button" id="eveningTripTypeBtn" class="trip-type-btn py-2.5 rounded-lg border border-line bg-bg text-navy text-sm font-semibold transition-colors" aria-pressed="false" data-i18n="evening">Evening</button>
                 </div>
             </div>
 
-            <button type="button" id="startTripBtn" disabled class="w-full py-3.5 bg-navy hover:bg-brand active:bg-brand disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold text-base rounded transition-colors flex items-center justify-center gap-2">
+            <button type="button" id="startTripBtn" disabled class="w-full py-3.5 bg-navy hover:bg-brand active:bg-brand disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold text-base rounded-xl transition-colors flex items-center justify-center gap-2 shadow-xs">
                 <svg id="startTripIcon" class="w-4 h-4" aria-hidden="true"><use href="icons.svg#icon-play"/></svg>
-                <span id="startTripText" class="tracking-wide uppercase font-semibold">
+                <span id="startTripText" class="tracking-wide uppercase font-semibold" data-i18n="start_trip_select">
                     Select Trip Type
                 </span>
             </button>
 
             <div class="grid grid-cols-2 gap-3">
-                <button type="button" onclick="verifyStudentPass()" class="p-3 bg-surface hover:bg-bg border border-line rounded flex items-center gap-3 text-navy transition-colors text-left">
-                    <div class="w-9 h-9 rounded bg-bg border border-line flex items-center justify-center shrink-0 text-navy">
+                <button type="button" onclick="verifyStudentPass()" class="p-3 bg-surface hover:bg-bg border border-line rounded-xl shadow-xs hover:border-brand/40 flex items-center gap-3 text-navy transition-all text-left">
+                    <div class="w-9 h-9 rounded-lg bg-bg border border-line flex items-center justify-center shrink-0 text-navy">
                         <svg class="w-4 h-4" aria-hidden="true"><use href="icons.svg#icon-qrcode"/></svg>
                     </div>
                     <div class="min-w-0">
-                        <p class="text-xs font-semibold text-navy truncate">Scan Pass</p>
-                        <p class="text-[11px] text-ink-muted truncate">Verify student</p>
+                        <p class="text-xs font-semibold text-navy truncate" data-i18n="scan_pass_title">Scan Pass</p>
+                        <p class="text-[11px] text-ink-muted truncate" data-i18n="verify_student_sub">Verify student</p>
                     </div>
                 </button>
 
-                <button type="button" onclick="reportDetour()" class="p-3 bg-surface hover:bg-bg border border-line rounded flex items-center gap-3 text-navy transition-colors text-left">
-                    <div class="w-9 h-9 rounded bg-bg border border-line flex items-center justify-center shrink-0 text-warn">
+                <button type="button" onclick="reportDetour()" class="p-3 bg-surface hover:bg-bg border border-line rounded-xl shadow-xs hover:border-brand/40 flex items-center gap-3 text-navy transition-all text-left">
+                    <div class="w-9 h-9 rounded-lg bg-bg border border-line flex items-center justify-center shrink-0 text-warn">
                         <svg class="w-4 h-4" aria-hidden="true"><use href="icons.svg#icon-route"/></svg>
                     </div>
                     <div class="min-w-0">
-                        <p class="text-xs font-semibold text-navy truncate">Report Detour</p>
-                        <p class="text-[11px] text-ink-muted truncate">Road diversion</p>
+                        <p class="text-xs font-semibold text-navy truncate" data-i18n="report_detour_title">Report Detour</p>
+                        <p class="text-[11px] text-ink-muted truncate" data-i18n="road_diversion_sub">Road diversion</p>
                     </div>
                 </button>
             </div>
         </div>
 
-        <div id="activeTripView" class="hidden space-y-4 flex-1 flex flex-col">
-            <section class="bg-surface border border-line rounded p-4 space-y-2">
+        <div id="activeTripView" class="hidden space-y-2 flex-1 flex flex-col justify-between">
+            <!-- 1. Next Stop Card (Driver moment-to-moment essential) -->
+            <section class="kx-card p-3 space-y-1.5 shadow-xs">
                 <div class="flex items-center justify-between text-xs uppercase tracking-wider text-ink-muted">
                     <span class="flex items-center gap-1.5 text-navy font-semibold text-xs">
-                        <svg class="w-3.5 h-3.5" aria-hidden="true"><use href="icons.svg#icon-map-pin"/></svg> Next Stop
+                        <svg class="w-3.5 h-3.5 text-brand" aria-hidden="true"><use href="icons.svg#icon-map-pin"/></svg> <span data-i18n="next_stop_header">Next Stop</span>
                     </span>
                     <span id="nextStopDistance" class="text-navy font-semibold font-mono text-sm tabular-nums">
-                        -- m
+                        <span class="kambus-skeleton inline-block w-12 h-3.5 align-middle"></span>
                     </span>
                 </div>
 
-                <div class="flex items-baseline justify-between gap-2 pt-1">
-                    <h2 id="nextStopName" class="text-lg font-semibold text-navy truncate">
-                        Finding next stop...
+                <div class="flex items-baseline justify-between gap-2 pt-0.5">
+                    <h2 id="nextStopName" class="text-base sm:text-lg font-semibold text-navy truncate">
+                        <span class="kambus-skeleton inline-block w-48 h-5 align-middle"></span>
                     </h2>
                     <span id="nextStopOrderBadge" class="text-xs font-mono font-medium text-ink-muted bg-bg border border-line px-2 py-0.5 rounded shrink-0">
-                        Stop --
+                        <span class="kambus-skeleton inline-block w-14 h-3.5 align-middle"></span>
                     </span>
                 </div>
 
-                <div class="flex items-center justify-between text-xs pt-2.5 mt-2 border-t border-line font-medium">
+                <div class="flex items-center justify-between text-xs pt-1.5 border-t border-line font-medium">
                     <div class="flex items-center gap-1.5 text-ok">
-                        <span id="nextStopEta" class="tabular-nums">ETA: ~-- min</span>
+                        <span id="nextStopEta" class="tabular-nums font-mono font-semibold"><span class="kambus-skeleton inline-block w-20 h-3.5 align-middle"></span></span>
                     </div>
                     <div id="nextStopStudentsContainer" class="flex items-center gap-1.5 text-ink-muted">
                         <svg class="w-3.5 h-3.5" aria-hidden="true"><use href="icons.svg#icon-users"/></svg>
-                        <span id="nextStopStudents" class="tabular-nums">-- expected</span>
+                        <span id="nextStopStudents" class="tabular-nums"><span class="kambus-skeleton inline-block w-16 h-3.5 align-middle"></span></span>
                     </div>
                 </div>
             </section>
 
-            <div class="grid grid-cols-2 gap-3">
-                <div class="bg-surface border border-line rounded p-3.5 flex flex-col justify-between">
-                    <div class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-ink-muted">
-                        <span id="collegeEtaLabel">ETA to College</span>
+            <!-- 2. Secondary/Summary Info (Single-line collapsed summary by default, expandable on tap) -->
+            <div id="tripSummaryCollapsible" class="kx-card overflow-hidden shadow-xs">
+                <button type="button" id="summaryToggleBtn" onclick="toggleTripSummary()" class="w-full px-3 py-2 flex items-center justify-between text-xs text-navy hover:bg-bg/60 transition-colors" aria-expanded="false" aria-controls="summaryDetailsContent">
+                    <div class="flex items-center gap-1.5 sm:gap-2 min-w-0 text-[11px] sm:text-xs whitespace-nowrap overflow-hidden">
+                        <span class="font-semibold text-navy flex items-center gap-1 shrink-0">
+                            <svg class="w-3.5 h-3.5 text-brand shrink-0" aria-hidden="true"><use href="icons.svg#icon-clock"/></svg>
+                            <span id="summaryCollegeLabel">College</span>: <span id="summaryCollegeEta" class="tabular-nums font-mono font-semibold text-ok">~-- min</span>
+                        </span>
+                        <span class="text-line shrink-0">•</span>
+                        <span class="text-ink-muted shrink-0 flex items-center gap-1">
+                            <svg class="w-3 h-3 text-ink-muted shrink-0" aria-hidden="true"><use href="icons.svg#icon-users"/></svg>
+                            <span id="summaryTodayStudents" class="font-semibold text-navy tabular-nums">--</span> <span id="summaryExpLabel" data-i18n="expected_abbrev">exp</span>
+                        </span>
+                        <span class="text-line shrink-0">•</span>
+                        <span id="summaryProgressText" class="text-ink-muted truncate font-mono text-[10px] sm:text-[11px]">
+                            <span id="summaryPassedCount">0</span> passed
+                        </span>
                     </div>
-                    <div class="mt-2">
-                        <div id="collegeClockEta" class="text-lg font-semibold text-navy tabular-nums leading-tight">
-                            --:-- AM
-                        </div>
-                        <div id="collegeDurationEta" class="text-xs font-medium text-ok tabular-nums mt-0.5">
-                            ~-- min
-                        </div>
+                    <div class="flex items-center gap-1 shrink-0 ml-1.5 text-ink-muted">
+                        <span class="text-[10px] uppercase font-semibold tracking-wider text-ink-muted" data-i18n="summary_stats">Stats</span>
+                        <svg id="summaryChevronIcon" class="w-3.5 h-3.5 text-ink-muted transition-transform duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
                     </div>
-                </div>
+                </button>
 
-                <div class="bg-surface border border-line rounded p-3.5 flex flex-col justify-between">
-                    <div class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-ink-muted">
-                        <span>Today</span>
-                    </div>
-                    <div class="mt-2">
-                        <div id="todayStudentsCount" class="text-lg font-semibold text-navy tabular-nums leading-tight">
-                            --
+                <!-- Expanded Content (Full Cards & Progress Strip) -->
+                <div id="summaryDetailsContent" class="hidden border-t border-line p-2.5 space-y-2 bg-bg/40">
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="kx-card-sub p-2.5 flex flex-col justify-between">
+                            <div class="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
+                                <span id="collegeEtaLabel">ETA to College</span>
+                            </div>
+                            <div class="mt-1">
+                                <div id="collegeClockEta" class="text-base font-semibold text-navy tabular-nums leading-tight">
+                                    --:-- AM
+                                </div>
+                                <div id="collegeDurationEta" class="text-xs font-medium text-ok tabular-nums mt-0.5">
+                                    ~-- min
+                                </div>
+                            </div>
                         </div>
-                        <div class="text-xs text-ink-muted mt-0.5">
-                            expected
+
+                        <div class="kx-card-sub p-2.5 flex flex-col justify-between">
+                            <div class="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
+                                <span data-i18n="today">Today</span>
+                            </div>
+                            <div class="mt-1">
+                                <div id="todayStudentsCount" class="text-base font-semibold text-navy tabular-nums leading-tight">
+                                    --
+                                </div>
+                                <div class="text-xs text-ink-muted mt-0.5" data-i18n="expected">
+                                    expected
+                                </div>
+                            </div>
                         </div>
                     </div>
+
+                    <section class="kx-card-sub p-2.5">
+                        <div class="flex items-center justify-between text-xs font-medium">
+                            <span id="progressPassedText" class="text-ok flex items-center gap-1">
+                                <svg class="w-3.5 h-3.5" aria-hidden="true"><use href="icons.svg#icon-check"/></svg> 0 passed
+                            </span>
+                            <span id="progressNextText" class="text-navy font-semibold flex items-center gap-1">
+                                Next Stop
+                            </span>
+                            <span id="progressRemainingText" class="text-ink-muted flex items-center gap-1">
+                                0 remaining
+                            </span>
+                        </div>
+                    </section>
                 </div>
             </div>
 
-            <section class="bg-surface border border-line rounded p-3">
-                <div class="flex items-center justify-between text-xs font-medium">
-                    <span id="progressPassedText" class="text-ok flex items-center gap-1">
-                        <svg class="w-3 h-3" aria-hidden="true"><use href="icons.svg#icon-check"/></svg> 0 passed
-                    </span>
-                    <span id="progressNextText" class="text-navy font-semibold flex items-center gap-1">
-                        Next Stop
-                    </span>
-                    <span id="progressRemainingText" class="text-ink-muted flex items-center gap-1">
-                        0 remaining
-                    </span>
-                </div>
-            </section>
-
-            <div class="grid grid-cols-3 gap-2 pt-1">
-                <button type="button" onclick="verifyStudentPass()" class="py-2.5 px-2 bg-surface hover:bg-bg border border-line rounded flex flex-col items-center justify-center gap-1 text-navy text-xs font-semibold transition-colors">
-                    <svg class="w-4 h-4" aria-hidden="true"><use href="icons.svg#icon-qrcode"/></svg>
-                    <span>Scan Pass</span>
+            <!-- 3. Driver Action Row (Scan Pass / Detour / SOS) -->
+            <div class="grid grid-cols-3 gap-2">
+                <button type="button" onclick="verifyStudentPass()" class="py-2.5 px-2 bg-surface hover:bg-bg border border-line rounded-xl flex items-center justify-center gap-1.5 text-navy text-xs font-semibold transition-all shadow-xs">
+                    <svg class="w-4 h-4 shrink-0 text-navy" aria-hidden="true"><use href="icons.svg#icon-qrcode"/></svg>
+                    <span class="truncate" data-i18n="scan_pass_btn">Scan Pass</span>
                 </button>
 
-                <button type="button" onclick="reportDetour()" class="py-2.5 px-2 bg-surface hover:bg-bg border border-line rounded flex flex-col items-center justify-center gap-1 text-navy text-xs font-semibold transition-colors">
-                    <svg class="w-4 h-4 text-warn" aria-hidden="true"><use href="icons.svg#icon-route"/></svg>
-                    <span>Detour</span>
+                <button type="button" onclick="reportDetour()" class="py-2.5 px-2 bg-surface hover:bg-bg border border-line rounded-xl flex items-center justify-center gap-1.5 text-navy text-xs font-semibold transition-all shadow-xs">
+                    <svg class="w-4 h-4 shrink-0 text-warn" aria-hidden="true"><use href="icons.svg#icon-route"/></svg>
+                    <span class="truncate" data-i18n="detour_btn">Detour</span>
                 </button>
 
-                <button type="button" onclick="triggerEmergencySOS()" class="py-2.5 px-2 bg-danger hover:opacity-90 rounded flex flex-col items-center justify-center gap-1 text-white text-xs font-semibold transition-opacity">
+                <button type="button" onclick="triggerEmergencySOS()" class="py-2.5 px-2 bg-danger hover:opacity-90 rounded-xl flex items-center justify-center gap-1.5 text-white text-xs font-semibold transition-all shadow-xs">
                     <svg class="w-4 h-4 shrink-0 text-white" aria-hidden="true"><use href="icons.svg#icon-alert"/></svg>
-                    <span>SOS</span>
+                    <span data-i18n="sos_btn">SOS</span>
                 </button>
             </div>
 
-            <div class="bg-surface border border-line rounded p-3.5 flex items-center justify-between gap-3 mt-auto">
+            <!-- 4. Active Trip Status & End Trip Bar (Visible without scrolling) -->
+            <div class="kx-card p-2.5 sm:p-3 flex items-center justify-between gap-3 mt-auto shadow-xs">
                 <div class="flex items-center gap-2">
-                    <span class="w-2 h-2 bg-ok rounded-full animate-pulse"></span>
-                    <span class="text-xs font-semibold tracking-wider uppercase text-ok">
+                    <span class="w-2.5 h-2.5 bg-ok rounded-full animate-pulse shrink-0"></span>
+                    <span class="text-xs font-bold tracking-wider uppercase text-ok" data-i18n="trip_active">
                         Trip Active
                     </span>
                 </div>
 
-                <button type="button" id="endTripBtn" class="bg-danger hover:opacity-90 text-white text-xs font-semibold px-4 py-2 rounded transition-opacity flex items-center gap-1.5">
-                    <svg class="w-3.5 h-3.5" aria-hidden="true"><use href="icons.svg#icon-stop"/></svg>
-                    <span>End Trip</span>
+                <button type="button" id="endTripBtn" class="bg-danger hover:opacity-90 text-white text-xs font-semibold px-4 py-2 rounded-lg transition-opacity flex items-center gap-1.5 shrink-0">
+                    <svg class="w-3.5 h-3.5 shrink-0" aria-hidden="true"><use href="icons.svg#icon-stop"/></svg>
+                    <span data-i18n="end_trip">End Trip</span>
                 </button>
             </div>
         </div>
@@ -324,186 +627,357 @@
     <footer id="preTripFooter" class="p-4 max-w-lg mx-auto w-full pt-0">
         <button type="button" onclick="triggerEmergencySOS()" class="w-full py-3 bg-danger hover:opacity-90 text-white rounded font-semibold text-xs transition-opacity flex items-center justify-center gap-2">
             <svg class="w-4 h-4 shrink-0 text-white" aria-hidden="true"><use href="icons.svg#icon-alert"/></svg>
-            <span>Emergency SOS / Breakdown</span>
+            <span data-i18n="sos_breakdown_footer">Emergency SOS / Breakdown</span>
         </button>
     </footer>
 
     <div id="passScannerModal" class="hidden fixed inset-0 z-[2000] bg-navy/60 flex items-center justify-center p-4">
-        <div class="w-full max-w-sm rounded bg-surface border border-line p-5 space-y-4 max-h-[92vh] overflow-y-auto">
+        <div class="w-full max-w-sm kx-modal-window p-5 space-y-4 max-h-[92vh] overflow-y-auto">
             <div class="flex items-center justify-between border-b border-line pb-3">
                 <div class="flex items-center gap-2">
                     <svg class="w-4 h-4 text-navy" aria-hidden="true"><use href="icons.svg#icon-qrcode"/></svg>
-                    <h3 class="text-sm font-semibold text-navy">Scan Student Pass</h3>
+                    <h3 class="text-sm font-semibold text-navy" data-i18n="scan_pass_modal_title">Scan Student Pass</h3>
                 </div>
-                <button type="button" onclick="closePassScannerModal()" class="w-7 h-7 rounded border border-line bg-bg text-ink-muted flex items-center justify-center hover:text-navy">
+                <button type="button" onclick="closePassScannerModal()" class="w-7 h-7 rounded-lg border border-line bg-bg text-ink-muted flex items-center justify-center hover:text-navy">
                     <svg class="w-3.5 h-3.5" aria-hidden="true"><use href="icons.svg#icon-xmark"/></svg>
                 </button>
             </div>
 
-            <div class="relative w-full h-48 bg-navy rounded overflow-hidden flex flex-col items-center justify-center text-white text-center p-3 border border-line">
+            <div class="relative w-full h-48 bg-navy rounded-xl overflow-hidden flex flex-col items-center justify-center text-white text-center p-3 border border-line">
                 <video id="scannerVideo" class="hidden absolute inset-0 w-full h-full object-cover" autoplay playsinline muted></video>
                 <div id="quaggaViewport" class="hidden absolute inset-0 w-full h-full overflow-hidden"></div>
                 <div class="scanner-laser hidden" id="scannerLaser"></div>
 
                 <div id="scannerPlaceholder" class="space-y-2 z-10 p-2">
                     <svg class="w-8 h-8 text-tint mx-auto" aria-hidden="true"><use href="icons.svg#icon-camera"/></svg>
-                    <p class="text-xs text-white/80">Position student barcode in front of camera</p>
+                    <p class="text-xs text-white/80" data-i18n="scanner_instruction">Position student barcode in front of camera</p>
                     <div class="flex gap-2 justify-center pt-1">
-                        <button type="button" onclick="startCameraScanner()" class="px-3 py-1 bg-brand text-white text-xs font-semibold rounded transition-colors hover:bg-navy">
+                        <button type="button" onclick="startCameraScanner()" class="px-3 py-1 bg-brand text-white text-xs font-semibold rounded-lg transition-colors hover:bg-navy" data-i18n="start_camera">
                             Start Camera
                         </button>
-                        <label class="px-3 py-1 bg-surface/20 hover:bg-surface/30 text-white text-xs font-semibold rounded cursor-pointer transition-colors">
-                            Upload
+                        <label class="px-3 py-1 bg-surface/20 hover:bg-surface/30 text-white text-xs font-semibold rounded-lg cursor-pointer transition-colors">
+                            <span data-i18n="upload">Upload</span>
                             <input type="file" id="qrFileInput" accept="image/*" class="hidden" onchange="handleQrFileUpload(event)">
                         </label>
                     </div>
                 </div>
 
-                <div class="absolute inset-x-8 inset-y-5 border border-tint/50 border-dashed rounded pointer-events-none"></div>
+                <div class="absolute inset-x-8 inset-y-5 border border-tint/50 border-dashed rounded-lg pointer-events-none"></div>
             </div>
 
             <form onsubmit="handleManualPassLookup(event)" class="space-y-2">
-                <label class="text-[11px] font-semibold text-ink-muted uppercase tracking-wider">Or Enter Roll Number</label>
+                <label class="text-[11px] font-semibold text-ink-muted uppercase tracking-wider" data-i18n="or_enter_roll">Or Enter Roll Number</label>
                 <div class="flex gap-2">
                     <input type="text" id="manualRollInput" placeholder="e.g. 21KIT123"
-                           class="flex-1 px-3 py-2 text-xs font-mono uppercase border border-line rounded bg-bg text-navy focus:border-brand focus:outline-none">
-                    <button type="submit" id="verifyPassSubmitBtn" class="px-4 py-2 bg-navy hover:bg-brand text-white text-xs font-semibold rounded transition-colors">
+                           class="flex-1 px-3 py-2 text-xs font-mono uppercase border border-line rounded-lg bg-bg text-navy focus:border-brand focus:outline-none">
+                    <button type="submit" id="verifyPassSubmitBtn" class="px-4 py-2 bg-navy hover:bg-brand text-white text-xs font-semibold rounded-lg transition-colors" data-i18n="verify">
                         Verify
                     </button>
                 </div>
             </form>
 
-            <div id="passResultCard" class="hidden rounded border border-ok/30 bg-ok/10 p-3.5 space-y-2">
+            <div id="passResultCard" class="hidden rounded-xl border border-ok/30 bg-ok/10 p-3.5 space-y-2 shadow-xs">
                 <div class="flex items-center justify-between">
-                    <span id="passBadgeStatus" class="text-[11px] font-semibold uppercase text-ok bg-ok/10 border border-ok/30 px-2 py-0.5 rounded">
+                    <span id="passBadgeStatus" class="text-[11px] font-semibold uppercase text-ok bg-ok/10 border border-ok/30 px-2 py-0.5 rounded-lg" data-i18n="pass_valid_active">
                         Pass Valid & Active
                     </span>
-                    <span id="passVerifiedTime" class="text-[11px] text-ok tabular-nums">Just now</span>
+                    <span id="passVerifiedTime" class="text-[11px] text-ok tabular-nums" data-i18n="just_now">Just now</span>
                 </div>
                 <div>
                     <h4 id="passStudentName" class="text-sm font-semibold text-navy">Student Name</h4>
                     <p id="passStudentRoll" class="text-xs text-ink-muted font-mono mt-0.5">Roll: 21KIT123</p>
                 </div>
                 <div class="flex justify-between text-xs text-ink-muted pt-2 border-t border-ok/20 font-medium">
-                    <span>Stop: <strong id="passStopName" class="text-navy font-semibold">Stop 1</strong></span>
-                    <span>Bus: <strong id="passBusNum" class="text-navy font-semibold">Bus 4</strong></span>
+                    <span><span data-i18n="stop_label">Stop:</span> <strong id="passStopName" class="text-navy font-semibold">Stop 1</strong></span>
+                    <span><span data-i18n="bus_label">Bus:</span> <strong id="passBusNum" class="text-navy font-semibold">Bus 4</strong></span>
                 </div>
             </div>
 
-            <div id="passErrorCard" class="hidden rounded border border-danger/30 bg-danger/10 p-3.5 space-y-1 text-xs text-danger">
+            <div id="passErrorCard" class="hidden rounded-xl border border-danger/30 bg-danger/10 p-3.5 space-y-1 text-xs text-danger shadow-xs">
                 <div class="flex items-center gap-1.5 font-semibold text-sm">
                     <svg class="w-4 h-4 text-danger" aria-hidden="true"><use href="icons.svg#icon-alert"/></svg>
-                    <span id="passErrorTitle">Invalid Pass</span>
+                    <span id="passErrorTitle" data-i18n="invalid_pass">Invalid Pass</span>
                 </div>
-                <p id="passErrorMessage" class="mt-1">Student not assigned to this bus.</p>
+                <p id="passErrorMessage" class="mt-1" data-i18n="student_not_assigned_bus">Student not assigned to this bus.</p>
             </div>
         </div>
     </div>
 
     <div id="detourModal" class="hidden fixed inset-0 z-[2000] bg-navy/60 flex items-center justify-center p-4">
-        <div class="w-full max-w-sm rounded bg-surface border border-line p-5 space-y-4">
+        <div class="w-full max-w-sm kx-modal-window p-5 space-y-4">
             <div class="flex items-center justify-between border-b border-line pb-3">
                 <div class="flex items-center gap-2">
                     <svg class="w-4 h-4 text-warn" aria-hidden="true"><use href="icons.svg#icon-route"/></svg>
-                    <h3 class="text-sm font-semibold text-navy">Report Route Detour</h3>
+                    <h3 class="text-sm font-semibold text-navy" data-i18n="report_detour_modal_title">Report Route Detour</h3>
                 </div>
-                <button type="button" onclick="closeDetourModal()" class="w-7 h-7 rounded border border-line bg-bg text-ink-muted flex items-center justify-center hover:text-navy">
+                <button type="button" onclick="closeDetourModal()" class="w-7 h-7 rounded-lg border border-line bg-bg text-ink-muted flex items-center justify-center hover:text-navy">
                     <svg class="w-3.5 h-3.5" aria-hidden="true"><use href="icons.svg#icon-xmark"/></svg>
                 </button>
             </div>
 
             <div class="space-y-2">
-                <label class="text-xs font-semibold text-ink-muted uppercase tracking-wider">Reason for Detour</label>
+                <label class="text-xs font-semibold text-ink-muted uppercase tracking-wider" data-i18n="reason_for_detour">Reason for Detour</label>
                 <div class="grid grid-cols-2 gap-2 text-xs">
-                    <button type="button" class="detourReasonBtn py-2 px-2.5 rounded border border-warn bg-warn/10 text-warn font-semibold text-left" onclick="selectDetourReason(this, 'Road Construction')">
+                    <button type="button" class="detourReasonBtn py-2 px-2.5 rounded-lg border border-warn bg-warn/10 text-warn font-semibold text-left" onclick="selectDetourReason(this, 'Road Construction')" data-i18n="detour_road_work">
                         Road Work
                     </button>
-                    <button type="button" class="detourReasonBtn py-2 px-2.5 rounded border border-line bg-bg text-ink-muted font-medium text-left" onclick="selectDetourReason(this, 'Heavy Traffic')">
+                    <button type="button" class="detourReasonBtn py-2 px-2.5 rounded-lg border border-line bg-bg text-ink-muted font-medium text-left" onclick="selectDetourReason(this, 'Heavy Traffic')" data-i18n="detour_traffic_jam">
                         Traffic Jam
                     </button>
-                    <button type="button" class="detourReasonBtn py-2 px-2.5 rounded border border-line bg-bg text-ink-muted font-medium text-left" onclick="selectDetourReason(this, 'Waterlogging')">
+                    <button type="button" class="detourReasonBtn py-2 px-2.5 rounded-lg border border-line bg-bg text-ink-muted font-medium text-left" onclick="selectDetourReason(this, 'Waterlogging')" data-i18n="detour_weather">
                         Weather
                     </button>
-                    <button type="button" class="detourReasonBtn py-2 px-2.5 rounded border border-line bg-bg text-ink-muted font-medium text-left" onclick="selectDetourReason(this, 'Road Blocked')">
+                    <button type="button" class="detourReasonBtn py-2 px-2.5 rounded-lg border border-line bg-bg text-ink-muted font-medium text-left" onclick="selectDetourReason(this, 'Road Blocked')" data-i18n="detour_road_closed">
                         Road Closed
                     </button>
                 </div>
             </div>
 
             <div class="space-y-2">
-                <label class="text-xs font-semibold text-ink-muted uppercase tracking-wider">Estimated Delay</label>
+                <label class="text-xs font-semibold text-ink-muted uppercase tracking-wider" data-i18n="estimated_delay">Estimated Delay</label>
                 <div class="grid grid-cols-4 gap-2 text-xs text-center font-semibold">
-                    <button type="button" class="detourDelayBtn py-1.5 rounded border border-line bg-bg text-ink-muted" onclick="selectDetourDelay(this, 5)">+5m</button>
-                    <button type="button" class="detourDelayBtn py-1.5 rounded border border-warn bg-warn/10 text-warn font-semibold" onclick="selectDetourDelay(this, 10)">+10m</button>
-                    <button type="button" class="detourDelayBtn py-1.5 rounded border border-line bg-bg text-ink-muted" onclick="selectDetourDelay(this, 15)">+15m</button>
-                    <button type="button" class="detourDelayBtn py-1.5 rounded border border-line bg-bg text-ink-muted" onclick="selectDetourDelay(this, 20)">+20m</button>
+                    <button type="button" class="detourDelayBtn py-1.5 rounded-lg border border-line bg-bg text-ink-muted" onclick="selectDetourDelay(this, 5)">+5m</button>
+                    <button type="button" class="detourDelayBtn py-1.5 rounded-lg border border-warn bg-warn/10 text-warn font-semibold" onclick="selectDetourDelay(this, 10)">+10m</button>
+                    <button type="button" class="detourDelayBtn py-1.5 rounded-lg border border-line bg-bg text-ink-muted" onclick="selectDetourDelay(this, 15)">+15m</button>
+                    <button type="button" class="detourDelayBtn py-1.5 rounded-lg border border-line bg-bg text-ink-muted" onclick="selectDetourDelay(this, 20)">+20m</button>
                 </div>
             </div>
 
-            <button type="button" id="submitDetourBtn" onclick="submitDetourReport()" class="w-full py-2.5 bg-navy hover:bg-brand text-white text-xs font-semibold rounded transition-colors">
+            <button type="button" id="submitDetourBtn" onclick="submitDetourReport()" class="w-full py-2.5 bg-navy hover:bg-brand text-white text-xs font-semibold rounded-lg transition-colors shadow-xs" data-i18n="broadcast_detour_btn">
                 Broadcast Detour to Students & Admin
             </button>
         </div>
     </div>
 
     <div id="sosModal" class="hidden fixed inset-0 z-[2100] bg-navy/70 flex items-center justify-center p-4">
-        <div class="w-full max-w-sm rounded bg-surface border border-line p-5 space-y-4">
+        <div class="w-full max-w-sm kx-modal-window p-5 space-y-4">
             <div class="flex items-center justify-between border-b border-line pb-3">
                 <div class="flex items-center gap-2 text-danger">
                     <svg class="w-4 h-4" aria-hidden="true"><use href="icons.svg#icon-alert"/></svg>
-                    <h3 class="text-sm font-semibold">Emergency SOS / Breakdown</h3>
+                    <h3 class="text-sm font-semibold" data-i18n="sos_modal_title">Emergency SOS / Breakdown</h3>
                 </div>
-                <button type="button" onclick="closeSosModal()" class="w-7 h-7 rounded border border-line bg-bg text-ink-muted flex items-center justify-center hover:text-navy">
+                <button type="button" onclick="closeSosModal()" class="w-7 h-7 rounded-lg border border-line bg-bg text-ink-muted flex items-center justify-center hover:text-navy">
                     <svg class="w-3.5 h-3.5" aria-hidden="true"><use href="icons.svg#icon-xmark"/></svg>
                 </button>
             </div>
 
             <div class="space-y-2">
-                <label class="text-xs font-semibold text-ink-muted uppercase tracking-wider">Select Incident Type</label>
+                <label class="text-xs font-semibold text-ink-muted uppercase tracking-wider" data-i18n="select_incident_type">Select Incident Type</label>
                 <div class="grid grid-cols-2 gap-2 text-xs">
-                    <button type="button" class="sosTypeBtn py-2 px-2.5 rounded border border-danger bg-danger/10 text-danger font-semibold text-left" onclick="selectSosType(this, 'Vehicle Breakdown')">
+                    <button type="button" class="sosTypeBtn py-2 px-2.5 rounded-lg border border-danger bg-danger/10 text-danger font-semibold text-left" onclick="selectSosType(this, 'Vehicle Breakdown')" data-i18n="sos_breakdown">
                         Breakdown
                     </button>
-                    <button type="button" class="sosTypeBtn py-2 px-2.5 rounded border border-line bg-bg text-ink-muted font-medium text-left" onclick="selectSosType(this, 'Medical Emergency')">
+                    <button type="button" class="sosTypeBtn py-2 px-2.5 rounded-lg border border-line bg-bg text-ink-muted font-medium text-left" onclick="selectSosType(this, 'Medical Emergency')" data-i18n="sos_medical">
                         Medical
                     </button>
-                    <button type="button" class="sosTypeBtn py-2 px-2.5 rounded border border-line bg-bg text-ink-muted font-medium text-left" onclick="selectSosType(this, 'Accident')">
+                    <button type="button" class="sosTypeBtn py-2 px-2.5 rounded-lg border border-line bg-bg text-ink-muted font-medium text-left" onclick="selectSosType(this, 'Accident')" data-i18n="sos_accident">
                         Accident
                     </button>
-                    <button type="button" class="sosTypeBtn py-2 px-2.5 rounded border border-line bg-bg text-ink-muted font-medium text-left" onclick="selectSosType(this, 'Security Alert')">
+                    <button type="button" class="sosTypeBtn py-2 px-2.5 rounded-lg border border-line bg-bg text-ink-muted font-medium text-left" onclick="selectSosType(this, 'Security Alert')" data-i18n="sos_security">
                         Security
                     </button>
                 </div>
             </div>
 
-            <div class="bg-bg border border-line rounded p-3 space-y-2 text-xs">
+            <div class="kx-card-sub p-3 space-y-2 text-xs">
                 <div class="flex items-center justify-between">
-                    <span class="text-ink-muted">College Transport Cell</span>
+                    <span class="text-ink-muted" data-i18n="college_transport_cell">College Transport Cell</span>
                     <a href="tel:08702564888" class="font-mono font-semibold text-navy flex items-center gap-1">
                         <svg class="w-3 h-3" aria-hidden="true"><use href="icons.svg#icon-phone"/></svg> 0870-2564888
                     </a>
                 </div>
                 <div class="flex items-center justify-between border-t border-line pt-2">
-                    <span class="text-ink-muted">Police / Emergency</span>
+                    <span class="text-ink-muted" data-i18n="police_emergency">Police / Emergency</span>
                     <a href="tel:112" class="font-mono font-semibold text-danger flex items-center gap-1">
                         <svg class="w-3 h-3" aria-hidden="true"><use href="icons.svg#icon-phone"/></svg> 112
                     </a>
                 </div>
             </div>
 
-            <button type="button" id="submitSosBtn" onclick="submitEmergencySos()" class="w-full py-3 bg-danger hover:opacity-90 text-white text-xs font-semibold rounded transition-opacity flex items-center justify-center gap-2">
+            <button type="button" id="submitSosBtn" onclick="submitEmergencySos()" class="w-full py-3 bg-danger hover:opacity-90 text-white text-xs font-semibold rounded-lg transition-opacity flex items-center justify-center gap-2 shadow-xs">
                 <svg class="w-4 h-4" aria-hidden="true"><use href="icons.svg#icon-alert"/></svg>
-                <span>Transmit Emergency SOS</span>
+                <span data-i18n="transmit_sos_btn">Transmit Emergency SOS</span>
             </button>
         </div>
     </div>
 
+    <!-- Language Selection Bottom Sheet (FIX 1B) -->
+    <div id="languageSheetBackdrop" class="hidden fixed inset-0 z-[2200] bg-navy/60 backdrop-blur-xs flex flex-col justify-end transition-opacity duration-200" onclick="handleLanguageBackdropClick(event)" role="dialog" aria-modal="true" aria-labelledby="langSheetTitle">
+        <div id="languageSheetPanel" class="w-full max-w-lg mx-auto bg-surface border-t border-line rounded-t-2xl p-5 shadow-2xl space-y-4" onclick="event.stopPropagation()">
+            <div class="flex items-center justify-between border-b border-line pb-3">
+                <div class="flex items-center gap-2">
+                    <svg class="w-5 h-5 text-navy" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"/></svg>
+                    <h3 id="langSheetTitle" class="text-lg font-bold text-navy">Select Language</h3>
+                </div>
+                <button type="button" onclick="closeLanguageSheet()" class="w-10 h-10 rounded-full border border-line bg-bg text-ink-muted hover:text-navy flex items-center justify-center transition-colors cursor-pointer" aria-label="Close language selector">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            <div class="space-y-2 pb-2">
+                <!-- English Row -->
+                <button type="button" onclick="selectLanguageFromSheet('en')" class="lang-sheet-row w-full min-h-[56px] px-4 py-3 rounded-xl border border-line hover:border-navy/40 bg-bg hover:bg-surface text-left flex items-center justify-between transition-all cursor-pointer" data-lang="en">
+                    <div class="flex items-center gap-3">
+                        <span class="text-[18px] font-semibold text-navy leading-normal">English</span>
+                        <span class="text-xs px-2 py-0.5 rounded bg-surface border border-line text-ink-muted font-medium">Default</span>
+                    </div>
+                    <svg class="lang-check w-6 h-6 text-brand-emerald hidden shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                </button>
+
+                <!-- Hindi Row -->
+                <button type="button" onclick="selectLanguageFromSheet('hi')" class="lang-sheet-row w-full min-h-[56px] px-4 py-3 rounded-xl border border-line hover:border-navy/40 bg-bg hover:bg-surface text-left flex items-center justify-between transition-all cursor-pointer" data-lang="hi">
+                    <span class="text-[18px] font-semibold text-navy leading-normal">हिन्दी</span>
+                    <svg class="lang-check w-6 h-6 text-brand-emerald hidden shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                </button>
+
+                <!-- Telugu Row -->
+                <button type="button" onclick="selectLanguageFromSheet('te')" class="lang-sheet-row w-full min-h-[56px] px-4 py-3 rounded-xl border border-line hover:border-navy/40 bg-bg hover:bg-surface text-left flex items-center justify-between transition-all cursor-pointer" data-lang="te">
+                    <span class="text-[18px] font-semibold text-navy leading-normal">తెలుగు</span>
+                    <svg class="lang-check w-6 h-6 text-brand-emerald hidden shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script src="vendor/leaflet/leaflet.js"></script>
+    <script src="vendor/leaflet/leaflet-rotate.js"></script>
     <script src="kambus-ui.js"></script>
     <script src="notification-center.js"></script>
     <script src="voiceAnnouncements.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/quagga@0.12.1/dist/quagga.min.js"></script>
     <script src="driver.js"></script>
+
+    <!-- Language Sheet Interaction Script (FIX 1B) -->
+    <script>
+        (function() {
+            const LANG_CHIP_LABELS = {
+                en: "EN ▾",
+                hi: "हिं ▾",
+                te: "తె ▾"
+            };
+
+            function getCurrentLang() {
+                if (typeof currentLanguage !== "undefined" && currentLanguage) {
+                    return currentLanguage;
+                }
+                try {
+                    return localStorage.getItem("kambus_driver_lang") || "en";
+                } catch (_) {
+                    return "en";
+                }
+            }
+
+            function syncLanguageSheetUI(lang) {
+                const current = lang || getCurrentLang();
+
+                // Update chip label
+                const labelEl = document.getElementById("currentLangLabel");
+                if (labelEl) {
+                    labelEl.textContent = LANG_CHIP_LABELS[current] || "EN ▾";
+                }
+
+                // Update active row checkmark and styling in sheet
+                document.querySelectorAll(".lang-sheet-row").forEach(row => {
+                    const rowLang = row.getAttribute("data-lang");
+                    const isActive = rowLang === current;
+                    const check = row.querySelector(".lang-check");
+                    if (check) {
+                        check.classList.toggle("hidden", !isActive);
+                    }
+                    row.classList.toggle("border-navy", isActive);
+                    row.classList.toggle("bg-navy/5", isActive);
+                    row.classList.toggle("border-line", !isActive);
+                    row.classList.toggle("bg-bg", !isActive);
+                    row.setAttribute("aria-selected", String(isActive));
+                });
+            }
+
+            window.openLanguageSheet = function() {
+                const backdrop = document.getElementById("languageSheetBackdrop");
+                if (!backdrop) return;
+                syncLanguageSheetUI();
+                backdrop.classList.remove("hidden");
+                const chipBtn = document.getElementById("languageChipBtn");
+                if (chipBtn) chipBtn.setAttribute("aria-expanded", "true");
+                document.body.style.overflow = "hidden";
+                try {
+                    window.history.pushState({ kambus_sheet: "language" }, "");
+                } catch (_) {}
+            };
+
+            window.closeLanguageSheet = function(fromPopState) {
+                const backdrop = document.getElementById("languageSheetBackdrop");
+                if (!backdrop || backdrop.classList.contains("hidden")) return;
+                backdrop.classList.add("hidden");
+                const chipBtn = document.getElementById("languageChipBtn");
+                if (chipBtn) chipBtn.setAttribute("aria-expanded", "false");
+                document.body.style.overflow = "";
+                if (!fromPopState) {
+                    try {
+                        if (window.history.state && window.history.state.kambus_sheet === "language") {
+                            window.history.back();
+                        }
+                    } catch (_) {}
+                }
+            };
+
+            window.handleLanguageBackdropClick = function(event) {
+                if (event.target === document.getElementById("languageSheetBackdrop")) {
+                    window.closeLanguageSheet();
+                }
+            };
+
+            window.selectLanguageFromSheet = function(lang) {
+                if (typeof window.setLanguage === "function") {
+                    window.setLanguage(lang);
+                } else {
+                    try {
+                        localStorage.setItem("kambus_driver_lang", lang);
+                    } catch (_) {}
+                }
+                syncLanguageSheetUI(lang);
+                window.closeLanguageSheet();
+            };
+
+            // Keyboard Escape handling
+            window.addEventListener("keydown", function(e) {
+                if (e.key === "Escape" || e.key === "Esc") {
+                    const backdrop = document.getElementById("languageSheetBackdrop");
+                    if (backdrop && !backdrop.classList.contains("hidden")) {
+                        window.closeLanguageSheet();
+                    }
+                }
+            });
+
+            // Android Hardware / Browser Back button handling
+            window.addEventListener("popstate", function(e) {
+                const backdrop = document.getElementById("languageSheetBackdrop");
+                if (backdrop && !backdrop.classList.contains("hidden")) {
+                    window.closeLanguageSheet(true);
+                }
+            });
+
+            // Wrap window.setLanguage to keep chip label and sheet state synced
+            function hookSetLanguage() {
+                const orig = window.setLanguage;
+                if (typeof orig === "function" && !orig._langHooked) {
+                    const hooked = function(lang) {
+                        orig(lang);
+                        syncLanguageSheetUI(lang);
+                    };
+                    hooked._langHooked = true;
+                    window.setLanguage = hooked;
+                }
+                syncLanguageSheetUI();
+            }
+
+            hookSetLanguage();
+            if (document.readyState === "loading") {
+                document.addEventListener("DOMContentLoaded", hookSetLanguage);
+            }
+            window.addEventListener("load", hookSetLanguage);
+        })();
+    </script>
 
 </body>
 </html>

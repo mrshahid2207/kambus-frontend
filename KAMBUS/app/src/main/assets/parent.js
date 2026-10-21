@@ -120,6 +120,7 @@
     let historyFilterChildId = "all";
     let pollTimer = null;
     let expandedChildIds = new Set();
+    let selectedChildIndex = null;
 
     // Leaflet map objects
     let map = null;
@@ -146,6 +147,12 @@
             '"': "&quot;",
             "'": "&#39;"
         })[c]);
+    }
+
+    function formatBusLabel(busNumberOrId) {
+        if (!busNumberOrId || busNumberOrId === "Unassigned") return "Bus Unassigned";
+        const str = String(busNumberOrId).trim();
+        return str.toLowerCase().startsWith("bus") ? str : `Bus ${str}`;
     }
 
     function distanceInMetres(lat1, lon1, lat2, lon2) {
@@ -249,13 +256,12 @@
         }
 
         try {
-            const res = await fetch(`${API_BASE}/auth/login`, {
+            const res = await fetch(`${API_BASE}/auth/login/rider`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     identifier: phoneOrId,
-                    password: password,
-                    role: "parent"
+                    password: password
                 })
             });
 
@@ -364,11 +370,12 @@
 
         // Default center Warangal / Telangana area
         map = L.map("map", {
-            zoomControl: true,
+            zoomControl: false,
             attributionControl: false
         }).setView([17.51, 78.52], 13);
 
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
             maxZoom: 19
         }).addTo(map);
     }
@@ -399,6 +406,8 @@
     }
 
     function focusChildOnMap(childIndex) {
+        selectedChildIndex = childIndex;
+        document.querySelectorAll(".pd-card").forEach((el, i) => el.classList.toggle("sel", i === childIndex));
         if (!map) return;
         const child = linkedChildren[childIndex];
         if (!child) return;
@@ -634,12 +643,18 @@
             if (!res.ok) throw new Error(data.detail || "Failed to load linked children.");
 
             parentData = data.parent || {};
-            linkedChildren = Array.isArray(data.children) ? data.children : [];
+            linkedChildren = (Array.isArray(data.children) ? data.children : []).map(child => ({
+                ...child,
+                id: child.student_id || child.id,
+                bus_id: child.bus_id || child.bus_status?.bus_id || null,
+                bus_number: child.bus_number || child.bus_status?.bus_number || null,
+                route_name: child.route_name || child.bus_status?.route_name || null
+            }));
 
             // Update header info
             const headerName = document.getElementById("headerParentName");
             if (headerName) {
-                headerName.textContent = parentData.name ? `Parent: ${parentData.name}` : "Parent Portal";
+                headerName.textContent = parentData.name ? parentData.name : "Parent Portal";
             }
             const countBadge = document.getElementById("childrenCountBadge");
             if (countBadge) countBadge.textContent = String(linkedChildren.length);
@@ -715,138 +730,56 @@
     // --------------------------------------------------------------------
     // Rendering: Multi-Child Cards
     // --------------------------------------------------------------------
+    function statusPill(child, isOff) {
+        const s = child.live_status;
+        if (s === "on_bus") return ["on", "On the bus"];
+        if (s === "dropped" || s === "dropped_off") return ["drop", "Dropped off"];
+        if (isOff) return ["off", "Not travelling"];
+        if (s === "bus_en_route") return ["way", "Bus on the way"];
+        return ["idle", child.live_status_label || "Scheduled"];
+    }
+
     function renderChildrenCards() {
         const container = document.getElementById("childrenCardsContainer");
         if (!container) return;
-
         if (linkedChildren.length === 0) {
-            container.innerHTML = `<div class="p-4 text-center text-xs text-ink-muted">No linked children.</div>`;
+            container.innerHTML = `<div class="pd-empty"><b>No linked children</b>Ask the transport office to link your child.</div>`;
             return;
         }
-
         container.innerHTML = linkedChildren.map((child, index) => {
             const cardKey = String(child.id || index);
-            const isExpanded = expandedChildIds.has(cardKey);
             const color = getChildColor(index);
             const busLoc = child.bus_id ? busLocations[child.bus_id] : null;
             const eta = calculateEta(busLoc, child);
             const gps = getGpsStatus(busLoc, child);
-
-            // Travel-status pill (right)
-            let statusBadgeHtml = "";
-            if (child.live_status === "on_bus") {
-                statusBadgeHtml = `
-                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 live-pulse-dot"></span>
-                        <span>On Bus</span>
-                    </span>
-                `;
-            } else if (child.live_status === "dropped") {
-                statusBadgeHtml = `
-                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-                        <svg class="w-3.5 h-3.5 text-blue-600" aria-hidden="true"><use href="icons.svg#icon-check"/></svg>
-                        <span>Dropped Off</span>
-                    </span>
-                `;
-            } else {
-                statusBadgeHtml = `
-                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
-                        <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
-                        <span>Not Travelling</span>
-                    </span>
-                `;
-            }
-
+            const isOff = child.is_travelling_today === false || child.live_status === "not_travelling";
+            const [pillCls, pillText] = statusPill(child, isOff);
+            const etaBlock = isOff
+                ? `<div class="pd-eta idle"><b>Skipping today's trip</b></div>`
+                : eta.isLive
+                    ? `<div class="pd-eta"><b>${escapeHtml(eta.etaText)}</b><small>${escapeHtml(eta.subText)}</small></div>`
+                    : `<div class="pd-eta idle"><b>${escapeHtml(eta.etaText)}</b><small>${escapeHtml(eta.subText)}</small></div>`;
             return `
-                <article class="child-card cursor-pointer select-none transition-all duration-200 ${isExpanded ? 'expanded' : ''}"
-                         id="childCard-${cardKey}"
-                         data-child-id="${cardKey}"
-                         onclick="window.parentApp?.toggleCard?.('${cardKey}')"
-                         role="button"
-                         tabindex="0"
-                         aria-expanded="${isExpanded ? 'true' : 'false'}"
-                         onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();window.parentApp?.toggleCard?.('${cardKey}');}"
-                         style="border-left: 5px solid ${color.primary};">
-                    <div class="p-3.5 sm:p-4">
-                        <!-- Collapsed Row: Avatar + Name + Roll (left) & Travel-status pill + Chevron (right) -->
-                        <div class="flex items-center justify-between gap-3">
-                            <!-- Left: Avatar + Name + Roll Number -->
-                            <div class="flex items-center gap-2.5 min-w-0">
-                                <div class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shrink-0 shadow-xs"
-                                     style="background:${color.bgLight};color:${color.text};border:2px solid ${color.border};">
-                                    ${escapeHtml((child.name || "C").charAt(0).toUpperCase())}
-                                </div>
-                                <div class="min-w-0">
-                                    <h3 class="text-sm font-bold text-navy truncate">
-                                        ${escapeHtml(child.name)}
-                                    </h3>
-                                    <p class="text-xs text-ink-muted truncate font-mono mt-0.5">
-                                        <span>${escapeHtml(child.roll_number || 'No Roll #')}</span>
-                                        <span class="font-sans font-semibold ml-1.5" style="color:${color.text};">&middot; Bus ${escapeHtml(child.bus_number || child.bus_id || 'Unassigned')}</span>
-                                    </p>
-                                </div>
-                            </div>
-
-                            <!-- Right: Travel-status pill + Chevron (⌄) -->
-                            <div class="flex items-center gap-2 shrink-0">
-                                ${statusBadgeHtml}
-                                <div class="child-card-chevron-wrapper w-6 h-6 flex items-center justify-center text-ink-muted" title="Toggle card details">
-                                    <svg class="w-4 h-4 transition-transform duration-200 child-card-chevron ${isExpanded ? 'rotate-180' : ''}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
-                                    </svg>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Status line below with colored dot: 🟢 live GPS / 🔴 unavailable / 🟡 stale signal -->
-                        <div class="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
-                            <div class="flex items-center gap-1.5 min-w-0">
-                                <span class="gps-dot ${gps.dotClass}"></span>
-                                <span class="${gps.textClass}">${escapeHtml(gps.label)}</span>
-                                <span class="text-slate-300">&middot;</span>
-                                <span class="text-ink-muted truncate">${escapeHtml(gps.subText)}</span>
-                            </div>
-                        </div>
-
-                        <!-- Expanded (on tap): Reveals ROUTE / ASSIGNED STOP two-column block + “Focus Map” button below a divider -->
-                        <div class="child-card-expandable ${isExpanded ? 'expanded' : ''}">
-                            <div class="child-card-expandable-inner">
-                                <div class="pt-3 mt-2.5 border-t border-slate-100 flex flex-col gap-2.5">
-                                    <!-- Reveals ROUTE / ASSIGNED STOP two-column block -->
-                                    <div class="bg-slate-50 border border-line rounded-lg p-2.5 text-xs grid grid-cols-2 gap-2">
-                                        <div>
-                                            <span class="text-[10px] uppercase font-bold text-ink-muted block">Route</span>
-                                            <span class="font-semibold text-navy truncate block">
-                                                ${escapeHtml(child.route_name || 'Standard Route')}
-                                            </span>
-                                        </div>
-                                        <div>
-                                            <span class="text-[10px] uppercase font-bold text-ink-muted block">Assigned Stop</span>
-                                            <span class="font-semibold text-navy truncate block">
-                                                ${escapeHtml(child.stop_name || 'School Stop')}
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    <!-- “Focus Map” button below a divider -->
-                                    <div class="flex items-center justify-between gap-2 pt-0.5">
-                                        <div class="text-[11px] text-ink-muted truncate">
-                                            ${escapeHtml(eta.subText)}
-                                        </div>
-                                        <button type="button"
-                                                onclick="event.stopPropagation(); window.parentApp?.focusChild?.(${index})"
-                                                class="shrink-0 text-xs font-semibold px-3 py-1.5 rounded-lg border transition flex items-center gap-1.5 shadow-2xs hover:opacity-90 cursor-pointer"
-                                                style="background:${color.bgLight};color:${color.text};border-color:${color.border};">
-                                            <svg class="w-3.5 h-3.5" aria-hidden="true"><use href="icons.svg#icon-map-pin"/></svg>
-                                            <span>Focus Map</span>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </article>
-            `;
+            <article class="pd-card ${selectedChildIndex === index ? "sel" : ""} ${isOff ? "off" : ""}" id="childCard-${cardKey}"
+                     data-child-id="${cardKey}" style="--c:${color.primary}" tabindex="0"
+                     onclick="window.parentApp?.focusChild?.(${index})"
+                     onkeydown="if(event.key==='Enter'){window.parentApp?.focusChild?.(${index});}">
+                <div class="pd-top">
+                    <div class="pd-av">${escapeHtml((child.name || "C").charAt(0).toUpperCase())}</div>
+                    <div class="pd-who"><b>${escapeHtml(child.name)}</b><span>${escapeHtml(formatBusLabel(child.bus_number || child.bus_id))}${child.roll_number ? ", Roll " + escapeHtml(child.roll_number) : ""}</span></div>
+                    <span class="pd-pill ${pillCls}">${escapeHtml(pillText)}</span>
+                </div>
+                ${etaBlock}
+                <div class="pd-gps"><span class="gps-dot ${gps.dotClass}"></span><span class="${gps.textClass}">${escapeHtml(gps.label)}</span></div>
+                <div class="pd-facts">
+                    <div><span>Route</span><b>${escapeHtml(child.route_name || "Standard route")}</b></div>
+                    <div><span>Pickup stop</span><b>${escapeHtml(child.stop_name || "Not assigned")}</b></div>
+                </div>
+                <div class="pd-acts" onclick="event.stopPropagation()">
+                    <button type="button" class="pd-btn" ${isOff ? "disabled" : ""} onclick="window.parentApp?.toggleNotTravelling?.(${index})">${isOff ? "Skipping today" : "Not travelling today"}</button>
+                    <button type="button" class="pd-btn pri" onclick="window.parentApp?.openTemporaryStop?.(${index})">Change stop</button>
+                </div>
+            </article>`;
         }).join("");
     }
 
@@ -856,24 +789,10 @@
     function renderMapLegend() {
         const list = document.getElementById("legendItemsList");
         if (!list) return;
-
-        if (linkedChildren.length === 0) {
-            list.innerHTML = "";
-            return;
-        }
-
         list.innerHTML = linkedChildren.map((child, index) => {
             const color = getChildColor(index);
-            return `
-                <button type="button" onclick="window.parentApp?.focusChild?.(${index})"
-                        class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold transition border hover:opacity-90 cursor-pointer shadow-2xs"
-                        style="background:${color.bgLight};color:${color.text};border-color:${color.border};"
-                        title="Click to zoom to ${escapeHtml(child.name)}">
-                    <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background:${color.primary};"></span>
-                    <span class="truncate max-w-[120px]">${escapeHtml(child.name)}</span>
-                    <span class="text-[10px] opacity-75 font-mono">(Bus ${escapeHtml(child.bus_number || child.bus_id || '')})</span>
-                </button>
-            `;
+            return `<button type="button" class="pd-chip" onclick="window.parentApp?.focusChild?.(${index})" title="Show ${escapeHtml(child.name)} on the map">
+                <i style="background:${color.primary}">${escapeHtml((child.name || "C").charAt(0).toUpperCase())}</i>${escapeHtml(child.name)}</button>`;
         }).join("");
     }
 
@@ -1043,121 +962,31 @@
     function renderTripHistory() {
         const container = document.getElementById("historyContentContainer");
         if (!container || !tripHistoryData) return;
-
-        const historyItems = tripHistoryData.history || [];
-        if (historyItems.length === 0) {
-            container.innerHTML = `
-                <div class="py-12 text-center text-xs text-ink-muted">
-                    <p class="font-semibold text-navy">No trip records found.</p>
-                    <p class="mt-1">Scanned boarding and drop events from the last 30 days will appear here.</p>
-                </div>
-            `;
+        const items = (tripHistoryData.history || []).filter(it => historyFilterChildId === "all" || String(it.child?.id) === String(historyFilterChildId));
+        if (items.length === 0) {
+            container.innerHTML = `<div class="pd-empty"><b>No trip records yet</b>Boarding and drop-off scans from the last 30 days will show up here.</div>`;
             return;
         }
-
-        // Apply filter if selected
-        const filtered = historyFilterChildId === "all"
-            ? historyItems
-            : historyItems.filter(item => String(item.child.id) === String(historyFilterChildId));
-
-        if (filtered.length === 0) {
-            container.innerHTML = `
-                <div class="py-8 text-center text-xs text-ink-muted">
-                    No records found for the selected child.
-                </div>
-            `;
-            return;
-        }
-
-        container.innerHTML = filtered.map((item, index) => {
+        container.innerHTML = items.map((item, index) => {
             const child = item.child || {};
-            // Match color with linkedChildren index if possible
-            const childIdx = linkedChildren.findIndex(c => c.id === child.id);
-            const color = getChildColor(childIdx >= 0 ? childIdx : index);
+            const idx = linkedChildren.findIndex(c => c.id === child.id);
+            const color = getChildColor(idx >= 0 ? idx : index);
             const events = Array.isArray(item.events) ? item.events : [];
-
-            let eventsHtml = "";
-            if (events.length === 0) {
-                eventsHtml = `
-                    <div class="py-6 text-center text-xs text-ink-muted">
-                        No scan events recorded for ${escapeHtml(child.name)} in the last 30 days.
-                    </div>
-                `;
-            } else {
-                eventsHtml = `
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left text-xs">
-                            <thead class="bg-slate-50 border-b border-line text-[11px] font-semibold text-ink-muted uppercase tracking-wider">
-                                <tr>
-                                    <th class="py-2.5 px-3">Date</th>
-                                    <th class="py-2.5 px-3">Time</th>
-                                    <th class="py-2.5 px-3">Direction</th>
-                                    <th class="py-2.5 px-3">Bus</th>
-                                    <th class="py-2.5 px-3">Verification</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100">
-                                ${events.map(ev => {
-                                    const isBoarding = ev.direction === "boarding";
-                                    const dirBadge = isBoarding
-                                        ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                               <svg class="w-3 h-3" aria-hidden="true"><use href="icons.svg#icon-arrow-right"/></svg>
-                                               <span>Boarding</span>
-                                           </span>`
-                                        : `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-                                               <svg class="w-3 h-3" aria-hidden="true"><use href="icons.svg#icon-check"/></svg>
-                                               <span>Drop Off</span>
-                                           </span>`;
-
-                                    return `
-                                        <tr class="hover:bg-slate-50/60 transition">
-                                            <td class="py-2.5 px-3 font-medium text-navy whitespace-nowrap">
-                                                ${escapeHtml(formatDate(ev.date || ev.timestamp))}
-                                            </td>
-                                            <td class="py-2.5 px-3 font-mono text-ink-muted whitespace-nowrap">
-                                                ${escapeHtml(ev.time || formatTime(ev.timestamp))}
-                                            </td>
-                                            <td class="py-2.5 px-3 whitespace-nowrap">
-                                                ${dirBadge}
-                                            </td>
-                                            <td class="py-2.5 px-3 font-semibold text-navy whitespace-nowrap">
-                                                Bus ${escapeHtml(ev.bus_id || child.bus_number || '--')}
-                                            </td>
-                                            <td class="py-2.5 px-3 text-ink-muted whitespace-nowrap">
-                                                <span class="text-[11px] text-emerald-700 font-medium">QR Verified</span>
-                                            </td>
-                                        </tr>
-                                    `;
-                                }).join("")}
-                            </tbody>
-                        </table>
-                    </div>
-                `;
-            }
-
-            return `
-                <div class="border border-line rounded-xl overflow-hidden bg-surface shadow-2xs">
-                    <!-- Child Header -->
-                    <div class="p-3.5 sm:px-4 bg-slate-50/80 border-b border-line flex items-center justify-between gap-3">
-                        <div class="flex items-center gap-2.5 min-w-0">
-                            <span class="w-3 h-3 rounded-full shrink-0" style="background:${color.primary};"></span>
-                            <div class="min-w-0">
-                                <h3 class="text-sm font-bold text-navy truncate">${escapeHtml(child.name)}</h3>
-                                <p class="text-[11px] text-ink-muted font-mono">
-                                    Roll: ${escapeHtml(child.roll_number || '--')} &middot; Assigned Bus: ${escapeHtml(child.bus_number || child.bus_id || '--')}
-                                </p>
-                            </div>
-                        </div>
-
-                        <span class="text-xs font-semibold px-2 py-0.5 rounded bg-white border border-line text-ink-muted shrink-0">
-                            ${events.length} scan${events.length === 1 ? '' : 's'}
-                        </span>
-                    </div>
-
-                    <!-- Events Table -->
-                    ${eventsHtml}
-                </div>
-            `;
+            const boards = events.filter(e => e.direction === "boarding").length;
+            const byDay = {};
+            events.forEach(ev => { const k = formatDate(ev.date || ev.timestamp); (byDay[k] = byDay[k] || []).push(ev); });
+            const days = Object.keys(byDay).map(day => `
+                <div class="pd-day"><h4>${escapeHtml(day)}</h4>${byDay[day].map(ev => `
+                    <div class="pd-ev"><time>${escapeHtml(ev.time || formatTime(ev.timestamp))}</time>
+                        <span class="tag ${ev.direction === "boarding" ? "b" : "d"}">${ev.direction === "boarding" ? "Boarded" : "Dropped off"}</span>
+                        <span class="bus">${escapeHtml(formatBusLabel(ev.bus_id || child.bus_number))}</span></div>`).join("")}
+                </div>`).join("");
+            return `<div class="pd-hcard" style="--c:${color.primary}">
+                <header><div class="pd-av" style="width:40px;height:40px;font-size:16px">${escapeHtml((child.name || "C").charAt(0).toUpperCase())}</div>
+                    <div class="pd-who"><b>${escapeHtml(child.name)}</b><span>${escapeHtml(child.roll_number ? "Roll " + child.roll_number : "")}</span></div>
+                    <em>${boards} boarded<br>${events.length - boards} dropped off</em></header>
+                ${days || `<div class="pd-empty">No scans for ${escapeHtml(child.name)} in the last 30 days.</div>`}
+            </div>`;
         }).join("");
     }
 
@@ -1277,6 +1106,50 @@
         registerDeviceToken();
     });
 
+    async function toggleNotTravelling(index) {
+        const child = linkedChildren[index];
+        if (!child) return;
+        if (typeof window.markStudentNotTravelling === "function") {
+            try {
+                await window.markStudentNotTravelling({
+                    studentId: child.student_id || child.id,
+                    studentName: child.name,
+                    onSuccess: async () => {
+                        await fetchMyChildren();
+                    }
+                });
+            } catch (err) {
+                console.error("toggleNotTravelling error:", err);
+            }
+        }
+    }
+
+    async function openTemporaryStop(index) {
+        const child = linkedChildren[index];
+        if (!child) return;
+        if (typeof window.openTemporaryStopModal === "function") {
+            try {
+                await window.openTemporaryStopModal({
+                    studentId: child.student_id || child.id,
+                    studentName: child.name,
+                    assignedStop: child.stop_id ? {
+                        stop_id: child.stop_id,
+                        name: child.stop_name,
+                        latitude: child.stop_latitude,
+                        longitude: child.stop_longitude
+                    } : null,
+                    busId: child.bus_id || child.bus_status?.bus_id || null,
+                    busNumber: child.bus_number || child.bus_status?.bus_number || null,
+                    onSuccess: async () => {
+                        await fetchMyChildren();
+                    }
+                });
+            } catch (err) {
+                console.error("openTemporaryStop error:", err);
+            }
+        }
+    }
+
     window.parentApp = {
         initApp: initApp,
         switchTab: switchTab,
@@ -1287,6 +1160,8 @@
         handleLoginForm: handleLoginForm,
         togglePasswordVisible: togglePasswordVisible,
         toggleCard: toggleCard,
+        toggleNotTravelling: toggleNotTravelling,
+        openTemporaryStop: openTemporaryStop,
         logout: logout
     };
 

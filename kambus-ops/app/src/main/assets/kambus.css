@@ -58,7 +58,9 @@ a.button:active,
 .pd-submit:active {
   transform: scale(0.97);
 }
-button, [role="button"], a.button, .btn, .action-btn, .admin-nav-btn, .trip-type-btn, .pd-btn, .pd-ibtn, .pd-chip, .pd-submit {
+button, [role="button"], a.button, .btn, .action-btn, .admin-nav-btn, .trip-type-btn, .pd-btn, .pd-ibtn, .pd-chip, .pd-submit, .role-btn {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
   transition: transform 0.08s ease, background-color 0.15s ease, opacity 0.15s ease, border-color 0.15s ease;
 }
 
@@ -87,4 +89,80 @@ button, [role="button"], a.button, .btn, .action-btn, .admin-nav-btn, .trip-type
 @keyframes modalSheetSlideUp {
   from { opacity: 0; transform: translateY(16px) scale(0.98); }
   to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ========================================================
+   CANONICAL KAMBUS CARD SYSTEM (.kx-card, .card)
+   Harmonized standard across all 4 screens (Driver, Admin, Student, Parent)
+   ======================================================== */
+.kx-card, .card {
+  background: var(--surface, #ffffff);
+  border: 1px solid var(--line, #e3e8e8);
+  border-radius: 14px !important;
+  box-shadow: 0 1px 3px rgba(23, 53, 65, 0.05), 0 4px 12px rgba(23, 53, 65, 0.04);
+}
+
+/* Interactive card (clickable items in grids and lists) */
+.kx-card-interactive {
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.kx-card-interactive:hover {
+  border-color: rgba(74, 111, 121, 0.45);
+  box-shadow: 0 4px 16px rgba(23, 53, 65, 0.08);
+}
+.kx-card-interactive:active {
+  transform: scale(0.985);
+}
+
+/* Secondary / nested sub-card (compact cards inside panels/drawers) */
+.kx-card-sub {
+  background: var(--bg, #fafaf8);
+  border: 1px solid var(--line, #e3e8e8);
+  border-radius: 10px !important;
+}
+
+/* Dialog / Modal window card (desktop and centered floating dialogs) */
+.kx-modal-window {
+  background: var(--surface, #ffffff);
+  border: 1px solid var(--line, #e3e8e8);
+  border-radius: 16px !important;
+  box-shadow: 0 16px 40px -8px rgba(23, 53, 65, 0.22);
+}
+
+/* Empty state card */
+.kx-empty-card {
+  background: var(--surface, #ffffff);
+  border: 1.5px dashed var(--line, #e3e8e8);
+  border-radius: 14px !important;
+  padding: 32px 16px;
+  text-align: center;
+}
+
+/* Border radius utility harmonization (ensures Tailwind tokens function properly) */
+.rounded-xl {
+  border-radius: 14px !important;
+}
+.rounded-2xl {
+  border-radius: 16px !important;
+}
+.rounded-lg {
+  border-radius: 10px !important;
+}
+
+/* Elevation tokens */
+.shadow-xs, .shadow-2xs {
+  box-shadow: 0 1px 2px rgba(23, 53, 65, 0.05), 0 2px 6px rgba(23, 53, 65, 0.03) !important;
+}
+.shadow-sm {
+  box-shadow: 0 1px 3px rgba(23, 53, 65, 0.06), 0 4px 12px rgba(23, 53, 65, 0.04) !important;
+}
+.shadow-md {
+  box-shadow: 0 4px 16px rgba(23, 53, 65, 0.08) !important;
+}
+.shadow-lg {
+  box-shadow: 0 10px 25px -5px rgba(23, 53, 65, 0.12) !important;
+}
+.shadow-xl {
+  box-shadow: 0 20px 40px -10px rgba(23, 53, 65, 0.18) !important;
 }

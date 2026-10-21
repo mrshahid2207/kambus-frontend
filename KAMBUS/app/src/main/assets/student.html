@@ -2,13 +2,13 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>KAMBUS - Student Live Tracking</title>
     <meta name="theme-color" content="#173541">
     <meta name="description" content="KAMBUS, live bus tracking for KITSW.">
-    <link rel="icon" href="favicon.svg" type="image/svg+xml">
-    <link rel="icon" href="favicon.ico" sizes="48x48">
-    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="icon" href="favicon.svg?v=2" type="image/svg+xml">
+    <link rel="icon" href="favicon.ico?v=2" sizes="48x48">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2">
     <link rel="manifest" href="site.webmanifest">
     <link rel="stylesheet" href="kambus.css">
     <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
@@ -17,6 +17,10 @@
            KAMBUS STUDENT UI - ULTRA-CLEAR, BABY-SIMPLE & VIBRANT
            ======================================================== */
         :root {
+            --safe-top: 40px;
+            --safe-right: 0px;
+            --safe-bottom: 0px;
+            --safe-left: 0px;
             --navy: #173541;
             --navy-dark: #0f242d;
             --navy-light: #204856;
@@ -24,6 +28,138 @@
             --bg: #f8fafc;
             --text-main: #0f172a;
             --text-sub: #475569;
+        }
+
+        @supports (padding-top: env(safe-area-inset-top)) {
+            :root {
+                --safe-top: env(safe-area-inset-top, 40px);
+                --safe-right: env(safe-area-inset-right, 0px);
+                --safe-bottom: env(safe-area-inset-bottom, 0px);
+                --safe-left: env(safe-area-inset-left, 0px);
+            }
+        }
+
+        @media (min-width: 768px) {
+            :root {
+                --safe-top: 0px;
+            }
+        }
+
+        /* Top App Header (Clean Edge-to-Edge with Safe-Area Descent) */
+        #studentAppHeader {
+            background: #ffffff !important;
+            border-bottom: 1px solid #e2e8f0 !important;
+            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05) !important;
+            position: sticky !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            width: 100% !important;
+            z-index: 50 !important;
+            margin: 0 !important;
+            /* Header content descends safely below Android status bar / notch */
+            padding-top: max(var(--safe-top, 0px), env(safe-area-inset-top, 0px), 38px) !important;
+            padding-bottom: 9px !important;
+            padding-left: max(14px, var(--safe-left, 0px)) !important;
+            padding-right: max(14px, var(--safe-right, 0px)) !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            box-sizing: border-box !important;
+            -webkit-user-select: none !important;
+            user-select: none !important;
+        }
+
+        @media (min-width: 768px) {
+            #studentAppHeader {
+                padding-top: max(var(--safe-top, 0px), 10px) !important;
+                padding-bottom: 10px !important;
+            }
+        }
+
+        /* Bottom Action Bar Safe Area Padding */
+        #actionFooter {
+            padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px)) !important;
+            padding-left: max(0.75rem, env(safe-area-inset-left, 0.75rem)) !important;
+            padding-right: max(0.75rem, env(safe-area-inset-right, 0.75rem)) !important;
+            -webkit-user-select: none !important;
+            user-select: none !important;
+        }
+
+        /* Non-selectable UI Chrome, copyable data */
+        header, nav, button, .action-btn, .btn-bell, .btn-logout, .btn-pass, .modal-box, .badge, .status-dot {
+            -webkit-user-select: none !important;
+            user-select: none !important;
+        }
+        input, textarea, .copyable, .selectable, #passStudentName, #passStudentDetails, #studentBusRoute, #myStopName {
+            -webkit-user-select: text !important;
+            user-select: text !important;
+        }
+
+        /* Scrollable container bounce kill */
+        #studentDrawer, .kambus-modal-window, .modal-scroll, #kambusNotificationList, #stopListContainer {
+            overscroll-behavior: contain !important;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* Consistent thin scrollbars */
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(23, 53, 65, 0.2) transparent;
+        }
+        *::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        *::-webkit-scrollbar-thumb {
+            background: rgba(23, 53, 65, 0.2);
+            border-radius: 4px;
+        }
+        *::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        #actionGrid {
+            scrollbar-width: none !important;
+        }
+        #actionGrid::-webkit-scrollbar {
+            display: none !important;
+        }
+
+        /* Modal transitions */
+        .kambus-modal-backdrop:not(.hidden) {
+            animation: modalBackdropFade 0.2s ease-out both !important;
+        }
+        .kambus-modal-backdrop:not(.hidden) > div,
+        .kambus-modal-backdrop:not(.hidden) .kambus-modal-window {
+            animation: modalSheetSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) both !important;
+        }
+
+        /* Tactile button press feedback */
+        button:active:not(:disabled),
+        .action-btn:active:not(:disabled),
+        .btn-action:active:not(:disabled),
+        .btn-bell:active,
+        .btn-logout:active,
+        .btn-pass:active {
+            transform: scale(0.96) !important;
+        }
+        button, .action-btn, .btn-action, .btn-pass, .btn-bell, .btn-logout {
+            transition: transform 0.08s ease, background-color 0.15s ease, opacity 0.15s ease !important;
+            -webkit-tap-highlight-color: transparent !important;
+        }
+
+        /* Pulsing skeleton loaders */
+        @keyframes kambusPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.38; }
+        }
+        .k-skel, .kambus-skeleton {
+            background: rgba(226, 232, 240, 0.85) !important;
+            animation: kambusPulse 1.6s ease-in-out infinite !important;
+            border-radius: 4px;
+            display: inline-block;
+            color: transparent !important;
+            pointer-events: none;
         }
 
         /* Typography & Layout */
@@ -39,6 +175,8 @@
             max-height: 100dvh;
             overflow-x: hidden;
             -webkit-font-smoothing: antialiased;
+            -webkit-tap-highlight-color: transparent !important;
+            overscroll-behavior: none !important;
         }
 
         /* Smooth rounded geometry */
@@ -90,13 +228,14 @@
 
         /* Top Blue Hero Section (Ultra-Compact, Sleek & Fully Aligned) */
         #navyHero {
-            background: linear-gradient(180deg, #173541 0%, #1a3e4c 100%) !important;
+            background: linear-gradient(145deg, #132b35 0%, #173541 50%, #1c4555 100%) !important;
+            border: 1px solid rgba(255, 255, 255, 0.12) !important;
             border-bottom: 2px solid #235265 !important;
-            padding: 5px 12px !important;
-            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12) !important;
-            border-radius: 14px !important;
+            padding: 8px 12px !important;
+            box-shadow: 0 6px 18px rgba(15, 23, 42, 0.16) !important;
+            border-radius: 16px !important;
             overflow: hidden !important;
-            margin: 2px 4px !important;
+            margin: 8px 10px 6px 10px !important;
         }
         #etaValue {
             font-size: 1.15rem !important;
@@ -112,64 +251,77 @@
             }
         }
 
-        /* Header Buttons */
-        .btn-bell {
-            position: relative;
+        /* Header Action Buttons - Standardized 36px Height & Pixel-Perfect Alignment */
+        .btn-bell, .btn-logout {
             width: 36px !important;
             height: 36px !important;
-            border-radius: 10px !important;
-            background: #f8fafc !important;
-            border: 1.5px solid #cbd5e1 !important;
-            display: flex !important;
+            min-height: 36px !important;
+            max-height: 36px !important;
+            border-radius: 11px !important;
+            display: inline-flex !important;
             align-items: center !important;
             justify-content: center !important;
             cursor: pointer;
             padding: 0 !important;
+            margin: 0 !important;
+            box-sizing: border-box !important;
+            transition: transform 0.12s ease, background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease !important;
+        }
+        .btn-bell {
+            position: relative;
+            background: #f8fafc !important;
+            border: 1px solid #cbd5e1 !important;
             color: #334155 !important;
-            transition: background-color 0.15s ease;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04) !important;
         }
         .btn-bell:hover {
             background: #f1f5f9 !important;
+            border-color: #94a3b8 !important;
+        }
+        .btn-bell:active, .btn-logout:active {
+            transform: scale(0.93) !important;
         }
         .btn-pass {
-            height: 34px !important;
-            margin: 2px 3px 0 !important;
-            padding: 0 10px !important;
-            border-radius: 10px !important;
-            background: #059669 !important;
+            height: 36px !important;
+            min-height: 36px !important;
+            max-height: 36px !important;
+            margin: 0 !important;
+            padding: 0 12px !important;
+            border-radius: 11px !important;
+            background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
             color: #ffffff !important;
             font-weight: 800 !important;
             font-size: 12px !important;
+            letter-spacing: 0.01em;
             display: inline-flex !important;
             align-items: center !important;
             justify-content: center !important;
             gap: 6px !important;
             line-height: 1 !important;
             white-space: nowrap;
-            border: none !important;
-            box-shadow: 0 2px 5px rgba(5, 150, 105, 0.24) !important;
+            border: 1px solid rgba(255, 255, 255, 0.18) !important;
+            box-shadow: 0 2px 6px rgba(5, 150, 105, 0.28) !important;
             cursor: pointer;
-            transition: background-color 0.15s ease;
+            box-sizing: border-box !important;
+            transition: transform 0.12s ease, box-shadow 0.15s ease !important;
         }
         .btn-pass:hover {
-            background: #047857 !important;
+            background: linear-gradient(135deg, #047857 0%, #065f46 100%) !important;
+            box-shadow: 0 3px 8px rgba(5, 150, 105, 0.35) !important;
+        }
+        .btn-pass:active {
+            transform: scale(0.94) !important;
         }
         .btn-logout {
-            width: 36px !important;
-            height: 36px !important;
-            border-radius: 10px !important;
             background: #fff1f2 !important;
-            border: 1.5px solid #fecdd3 !important;
+            border: 1px solid #fecdd3 !important;
             color: #e11d48 !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
             text-decoration: none !important;
-            padding: 0 !important;
-            transition: background-color 0.15s ease;
+            box-shadow: 0 1px 2px rgba(225, 29, 72, 0.06) !important;
         }
         .btn-logout:hover {
             background: #ffe4e6 !important;
+            border-color: #fda4af !important;
         }
 
         /* 4 Action Buttons Grid (Uniform, Horizontal & Streamlined) */
@@ -396,7 +548,7 @@
             display: flex;
             flex-direction: column;
             gap: 10px;
-            padding: 12px 14px calc(16px + env(safe-area-inset-bottom, 0px)) !important;
+            padding: 12px 14px calc(16px + var(--safe-bottom, 0px)) !important;
             background: #ffffff !important;
             border-top: 1px solid #e2e8f0 !important;
         }
@@ -785,19 +937,27 @@
             z-index: 2000;
             background: rgba(15, 23, 42, 0.7);
             backdrop-filter: blur(6px);
-            align-items: center;
+            align-items: flex-start;
             justify-content: center;
             padding: 16px;
+            padding-top: max(16px, env(safe-area-inset-top, 16px));
+            overflow-y: auto;
         }
         #driverComplaintAlert.show {
             display: flex !important;
         }
+        #driverComplaintAlert .kambus-modal-window {
+            max-height: calc(100dvh - 32px - var(--safe-bottom, 0px));
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            flex-shrink: 0;
+        }
 
         .kambus-modal-window {
             background: #ffffff;
-            border-radius: 26px !important;
-            border: 2px solid #e2e8f0;
-            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.3);
+            border-radius: 16px !important;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 16px 40px -8px rgba(23, 53, 65, 0.22);
             width: 100%;
             max-width: 380px;
             padding: 24px;
@@ -831,6 +991,8 @@
         select,
         textarea {
             font: inherit;
+        }
+
         #actionGrid {
             align-items: stretch;
         }
@@ -943,7 +1105,9 @@
             }
         }
 
-        header { background: rgba(255,255,255,.94) !important; backdrop-filter: blur(14px); box-shadow: 0 1px 0 rgba(23,53,65,.08),0 8px 20px rgba(23,53,65,.04) !important; }
+        .kambus-modal-backdrop, #driverComplaintAlert { padding-bottom: calc(16px + var(--safe-bottom, 0px)); }
+        .kambus-sheet { padding-bottom: calc(16px + var(--safe-bottom, 0px)); }
+        #kambusToastRegion { bottom: calc(16px + var(--safe-bottom, 0px)) !important; }
         #actionFooter { box-shadow: 0 -10px 28px rgba(23,53,65,.07) !important; }
         #driverRow { box-shadow: 0 7px 18px rgba(23,53,65,.05); }
         #actionGrid .action-btn { box-shadow: 0 5px 13px rgba(23,53,65,.045); transition: transform .16s ease, box-shadow .16s ease; }
@@ -1070,26 +1234,645 @@
         #driverComplaintModal .kx-btn--ghost:hover:not(:disabled) {
             background: #f1f5f9 !important;
         }
+
+        /* ========================================================
+           FIXED SLIDE-IN DRAWER & BACKDROP (AMBER / NAVY THEME)
+           ======================================================== */
+        #studentMenuDrawer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1999;
+        }
+        #studentMenuDrawer.hidden {
+            display: none !important;
+        }
+
+        #studentMenuBackdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(15, 23, 42, 0.5);
+            z-index: 1999;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 250ms ease;
+            margin: 0;
+            padding: 0;
+        }
+        #studentMenuBackdrop.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        #studentMenuPanel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100%;
+            height: 100vh;
+            height: 100dvh;
+            width: 80%;
+            max-width: 320px;
+            background: #ffffff;
+            border-top-right-radius: 20px;
+            border-bottom-right-radius: 20px;
+            box-shadow: 4px 0 24px rgba(15, 23, 42, 0.25), 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+            transform: translateX(-100%);
+            transition: transform 250ms cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-sizing: border-box;
+            pointer-events: auto;
+        }
+        #studentMenuPanel.open {
+            transform: translateX(0);
+        }
+
+        /* Drawer Header */
+        .drawer-header {
+            padding: max(20px, calc(16px + var(--safe-top, 0px))) 16px 14px 16px;
+            background: linear-gradient(145deg, #132b35 0%, #173541 65%, #1f4b5c 100%);
+            color: #ffffff;
+            border-top-right-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.15);
+            flex-shrink: 0;
+        }
+        .drawer-header-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .drawer-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .drawer-logo-wrap {
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .drawer-logo-img {
+            width: 20px;
+            height: 20px;
+            object-fit: contain;
+        }
+        .drawer-brand-title {
+            font-size: 15px;
+            font-weight: 900;
+            letter-spacing: 0.02em;
+            color: #ffffff;
+        }
+        .drawer-close-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: rgba(255, 255, 255, 0.85);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+        }
+        .drawer-close-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+        }
+        .drawer-student-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .drawer-student-name {
+            font-size: 16px;
+            font-weight: 800;
+            color: #ffffff;
+            margin: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            line-height: 1.2;
+        }
+        .drawer-bus-stop-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 3px 10px;
+            border-radius: 9999px;
+            background: rgba(245, 158, 11, 0.18);
+            border: 1px solid rgba(245, 158, 11, 0.38);
+            color: #fbbf24;
+            font-size: 11.5px;
+            font-weight: 700;
+            max-width: 100%;
+            box-sizing: border-box;
+            align-self: flex-start;
+        }
+        .drawer-bus-stop-badge span {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Drawer Nav List & 56px Rows (Amber/Navy Theme) */
+        .drawer-nav {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .drawer-menu-item {
+            height: 56px !important;
+            min-height: 56px !important;
+            max-height: 56px !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 14px !important;
+            padding: 0 14px !important;
+            width: 100% !important;
+            background: transparent !important;
+            border: 1px solid transparent !important;
+            border-radius: 14px !important;
+            cursor: pointer !important;
+            text-align: left !important;
+            color: #173541 !important;
+            font-family: inherit !important;
+            font-weight: 700 !important;
+            font-size: 14px !important;
+            transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease !important;
+            box-sizing: border-box !important;
+            -webkit-tap-highlight-color: transparent !important;
+        }
+        .drawer-menu-item:hover {
+            background: #f8fafc !important;
+            border-color: #f1f5f9 !important;
+        }
+        .drawer-menu-item:active {
+            background: #f1f5f9 !important;
+            transform: scale(0.98) !important;
+        }
+        .drawer-item-icon {
+            width: 38px !important;
+            height: 38px !important;
+            border-radius: 11px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            flex-shrink: 0 !important;
+            background: #fffbeb !important;
+            color: #d97706 !important;
+            border: 1px solid #fde68a !important;
+            transition: transform 0.15s ease !important;
+        }
+        .drawer-menu-item:hover .drawer-item-icon {
+            transform: scale(1.05) !important;
+            background: #fef3c7 !important;
+        }
+        .drawer-item-label {
+            color: #173541 !important;
+            font-weight: 700 !important;
+            font-size: 14px !important;
+            flex: 1 !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+        }
+        .drawer-item-arrow {
+            color: #94a3b8;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+        }
+
+        /* Drawer Footer & Logout */
+        .drawer-footer {
+            flex-shrink: 0;
+            padding: 8px 10px;
+            padding-bottom: max(16px, calc(12px + var(--safe-bottom, 0px)));
+            background: #ffffff;
+            border-bottom-right-radius: 20px;
+        }
+        .drawer-divider {
+            height: 1px;
+            background: #e2e8f0;
+            margin: 4px 6px 10px 6px;
+        }
+        .drawer-logout-item {
+            height: 56px !important;
+            min-height: 56px !important;
+            max-height: 56px !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 14px !important;
+            padding: 0 14px !important;
+            width: 100% !important;
+            background: #fff1f2 !important;
+            border: 1px solid #fecdd3 !important;
+            border-radius: 14px !important;
+            cursor: pointer !important;
+            text-align: left !important;
+            color: #DC2626 !important;
+            font-family: inherit !important;
+            font-weight: 700 !important;
+            font-size: 14px !important;
+            transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease !important;
+            box-sizing: border-box !important;
+            -webkit-tap-highlight-color: transparent !important;
+        }
+        .drawer-logout-item:hover {
+            background: #ffe4e6 !important;
+            border-color: #fda4af !important;
+        }
+        .drawer-logout-item:active {
+            background: #fecdd3 !important;
+            transform: scale(0.98) !important;
+        }
+        .drawer-logout-icon {
+            width: 38px !important;
+            height: 38px !important;
+            border-radius: 11px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            flex-shrink: 0 !important;
+            background: #fee2e2 !important;
+            color: #DC2626 !important;
+            border: 1px solid #fca5a5 !important;
+        }
+        .drawer-logout-label {
+            color: #DC2626 !important;
+            font-weight: 800 !important;
+            font-size: 14px !important;
+            flex: 1 !important;
+        }
+
+        /* ========================================================
+           STUDENT PROFILE & PERMANENT STOP MODALS (KAMBUS THEME)
+           ======================================================== */
+        .student-modal-card {
+            background: #ffffff;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 440px;
+            max-height: min(90vh, 760px);
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 16px 40px -8px rgba(23, 53, 65, 0.22);
+            border: 1px solid #e2e8f0;
+            overflow: hidden;
+            color: #0f172a;
+            animation: modalFadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: scale(0.96) translateY(6px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .student-modal-form {
+            display: flex;
+            flex-direction: column;
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow: hidden;
+            margin: 0;
+        }
+        .student-modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 16px 20px;
+            background: linear-gradient(180deg, #f0f6f8 0%, #ffffff 100%);
+            border-bottom: 1px solid #e2e8f0;
+            flex-shrink: 0;
+        }
+        .student-modal-header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 0;
+        }
+        .student-modal-header-icon {
+            width: 40px;
+            height: 40px;
+            flex: 0 0 40px;
+            border-radius: 12px;
+            background: #eef5f8;
+            border: 1.5px solid #d0e1e7;
+            color: var(--navy, #173541);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 6px rgba(23, 53, 65, 0.06);
+        }
+        .student-modal-header-icon svg {
+            width: 20px;
+            height: 20px;
+        }
+        .student-modal-title {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 800;
+            color: var(--navy, #173541);
+            letter-spacing: -0.01em;
+            line-height: 1.25;
+        }
+        .student-modal-sub {
+            margin: 2px 0 0;
+            font-size: 11.5px;
+            font-weight: 500;
+            color: #64748b;
+            line-height: 1.35;
+        }
+        .student-modal-close {
+            width: 32px;
+            height: 32px;
+            flex: 0 0 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            border-radius: 9999px;
+            background: #f1f5f9;
+            color: #64748b;
+            cursor: pointer;
+            padding: 0;
+            font-size: 20px;
+            line-height: 1;
+            transition: background-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
+        }
+        .student-modal-close:hover {
+            background: #e2e8f0;
+            color: var(--navy, #173541);
+        }
+        .student-modal-close:active {
+            transform: scale(0.92);
+        }
+        .student-modal-body {
+            padding: 18px 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            flex: 1 1 auto;
+            min-height: 0;
+            -webkit-overflow-scrolling: touch;
+        }
+        .student-modal-footer {
+            display: flex;
+            gap: 10px;
+            padding: 14px 20px 18px;
+            border-top: 1px solid #eef2f6;
+            background: #ffffff;
+            flex-shrink: 0;
+        }
+        .student-info-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 12px 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .student-info-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .student-info-card-title {
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: #64748b;
+        }
+        .student-info-badge {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px;
+            font-weight: 700;
+            background: #e2e8f0;
+            color: var(--navy, #173541);
+            padding: 2px 8px;
+            border-radius: 6px;
+        }
+        .student-info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            padding-top: 2px;
+        }
+        .student-info-label {
+            font-size: 10.5px;
+            font-weight: 600;
+            color: #64748b;
+        }
+        .student-info-value {
+            font-size: 13px;
+            font-weight: 800;
+            color: var(--navy, #173541);
+            margin: 1px 0 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .student-form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .student-form-label {
+            font-size: 11.5px;
+            font-weight: 700;
+            color: #334155;
+            margin: 0;
+        }
+        .student-form-label .helper {
+            font-size: 10.5px;
+            font-weight: 500;
+            color: #64748b;
+        }
+        .student-form-input,
+        .student-form-select,
+        .student-form-textarea {
+            width: 100%;
+            min-height: 42px;
+            padding: 9px 13px;
+            background: #f8fafc;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #0f172a;
+            font-family: inherit;
+            box-sizing: border-box;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+        }
+        .student-form-input::placeholder,
+        .student-form-textarea::placeholder {
+            color: #94a3b8;
+            font-weight: 400;
+        }
+        .student-form-input:focus,
+        .student-form-select:focus,
+        .student-form-textarea:focus {
+            outline: none;
+            background: #ffffff;
+            border-color: var(--navy, #173541);
+            box-shadow: 0 0 0 3px rgba(23, 53, 65, 0.14);
+        }
+        .student-form-select:disabled,
+        .student-form-input:disabled {
+            background: #f1f5f9;
+            color: #94a3b8;
+            cursor: not-allowed;
+        }
+        .student-form-textarea {
+            min-height: 64px;
+            resize: none;
+            line-height: 1.4;
+        }
+        .student-form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .student-note-card {
+            font-size: 11px;
+            line-height: 1.45;
+            color: #78350f;
+            background: #fefce8;
+            border: 1px solid #fef08a;
+            border-radius: 10px;
+            padding: 10px 12px;
+        }
+        .student-note-card strong {
+            color: #92400e;
+            font-weight: 800;
+        }
+        .student-modal-actions {
+            display: flex;
+            gap: 10px;
+            padding-top: 6px;
+            margin-top: 2px;
+        }
+        .student-btn-cancel {
+            flex: 1 1 0;
+            min-height: 44px;
+            padding: 0 16px;
+            background: #f8fafc;
+            color: #475569;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+        }
+        .student-btn-cancel:hover {
+            background: #f1f5f9;
+            color: var(--navy, #173541);
+            border-color: #cbd5e1;
+        }
+        .student-btn-cancel:active {
+            transform: scale(0.98);
+        }
+        .student-btn-primary {
+            flex: 1 1 0;
+            min-height: 44px;
+            padding: 0 16px;
+            background: var(--navy, #173541) !important;
+            color: #ffffff !important;
+            border: 1.5px solid var(--navy, #173541) !important;
+            border-radius: 12px;
+            font-size: 13.5px;
+            font-weight: 800;
+            font-family: inherit;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            box-shadow: 0 4px 12px rgba(23, 53, 65, 0.22);
+            transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+        }
+        .student-btn-primary:hover:not(:disabled) {
+            background: var(--navy-light, #204856) !important;
+            border-color: var(--navy-light, #204856) !important;
+            box-shadow: 0 6px 16px rgba(23, 53, 65, 0.32);
+        }
+        .student-btn-primary:active:not(:disabled) {
+            background: var(--navy-dark, #0f242d) !important;
+            border-color: var(--navy-dark, #0f242d) !important;
+            transform: scale(0.98);
+        }
+        .student-btn-primary:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        /* Dynamic alert utilities */
+        .bg-rose-50 { background-color: #fef2f2 !important; }
+        .border-rose-200 { border-color: #fecaca !important; }
+        .text-rose-700 { color: #b91c1c !important; }
+        .bg-emerald-50 { background-color: #f0fdf4 !important; }
+        .border-emerald-200 { border-color: #bbf7d0 !important; }
+        .text-emerald-800 { color: #166534 !important; }
     </style>
 </head>
 <body class="bg-bg text-navy min-h-screen flex flex-col font-sans">
-    <p id="missedBusStatus" role="status" class="hidden" style="position:fixed;top:calc(env(safe-area-inset-top, 0px) + 8px);left:12px;right:12px;z-index:3000;padding:12px;background:#ecfdf5;color:#14532d;border:1px solid #86efac;border-radius:6px;font-size:12px;box-shadow:0 2px 8px #0002;"></p>
-<!-- TOP HEADER -->
-<header class="bg-white border-b border-slate-200 px-3.5 py-2.5 sticky top-0 z-50 flex items-center justify-between shadow-xs">
-    <!-- Logo & Title -->
-    <div class="flex items-center gap-2.5 min-w-0">
-        <div class="w-8 h-8 rounded-lg bg-navy flex items-center justify-center shrink-0 shadow-xs">
-            <img src="brand/mark-white.svg" alt="KAMBUS" class="w-4 h-4">
+    <p id="missedBusStatus" role="status" class="hidden" style="position:fixed;top:calc(var(--safe-top, 40px) + 8px);left:12px;right:12px;z-index:3000;padding:12px;background:#ecfdf5;color:#14532d;border:1px solid #86efac;border-radius:6px;font-size:12px;box-shadow:0 2px 8px #0002;"></p>
+<!-- TOP HEADER (Edge-to-Edge with Safe-Area Descent) -->
+<header id="studentAppHeader">
+    <!-- Left: Hamburger Button + Logo & Title -->
+    <div class="flex items-center gap-2 min-w-0">
+        <button id="studentMenuBtn" type="button" onclick="openStudentMenuDrawer()" class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 flex items-center justify-center shrink-0 border border-slate-200/80 transition active:scale-95" aria-label="Open menu" title="Menu">
+            <svg class="w-5 h-5 text-slate-700" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                <line x1="4" y1="6" x2="20" y2="6"/>
+                <line x1="4" y1="12" x2="20" y2="12"/>
+                <line x1="4" y1="18" x2="20" y2="18"/>
+            </svg>
+        </button>
+        <div class="w-9 h-9 rounded-xl bg-[#173541] flex items-center justify-center shrink-0 shadow-sm border border-[#234e5f]/30">
+            <img src="kambus_logo.png?v=2" alt="KAMBUS" class="w-4.5 h-4.5">
         </div>
-        <div class="min-w-0">
-            <div class="flex items-center gap-1.5">
-                <span class="text-sm font-extrabold tracking-tight text-slate-900 leading-none">KAMBUS</span>
-                <span class="bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider">
-                        Student
-                    </span>
+        <div class="min-w-0 flex flex-col justify-center flex-1">
+            <div class="flex items-center gap-1.5 leading-none shrink-0">
+                <span class="text-[15px] font-black tracking-tight text-slate-900 leading-none shrink-0">KAMBUS</span>
+                <span id="headerStudentBadge" class="inline-flex items-center shrink-0 whitespace-nowrap bg-emerald-50 text-emerald-700 border border-emerald-300/80 text-[10px] font-extrabold px-1.5 py-0.5 rounded-full uppercase tracking-wider leading-none shadow-2xs">
+                    Student
+                </span>
             </div>
-            <p id="studentBusRoute" class="text-xs text-slate-500 font-medium truncate mt-0.5">
-                Loading assigned bus...
+            <p id="studentBusRoute" class="text-xs text-slate-500 font-semibold truncate mt-1 leading-tight flex items-center gap-1">
+                <span class="k-skel inline-block w-28 h-3.5">Loading assigned bus...</span>
             </p>
         </div>
     </div>
@@ -1098,26 +1881,15 @@
     <div class="flex items-center gap-2 shrink-0">
         <!-- Notification Bell -->
         <button id="notificationBell" type="button" class="btn-bell" aria-label="Notifications" title="Notifications">
-            <svg class="w-4 h-4 text-slate-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-            <span id="notificationBadge" class="hidden absolute top-1 right-1 w-2 h-2 rounded-full bg-rose-500 border border-white"></span>
-        </button>
-
-        <!-- Message Admin Button -->
-        <button type="button" onclick="openMessageAdminModal()" class="btn-pass" aria-label="Message Admin" title="Message Admin">
-            <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-            <span>Admin</span>
+            <svg class="w-4 h-4 text-slate-700" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            <span id="notificationBadge" class="hidden absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-rose-500 border-2 border-white"></span>
         </button>
 
         <!-- My Pass Button -->
         <button type="button" onclick="togglePassModal()" class="btn-pass" aria-label="My Pass">
-            <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><line x1="6" y1="15" x2="10" y2="15"/></svg>
             <span>My Pass</span>
         </button>
-
-        <!-- Logout Link -->
-        <a href="index.html" class="btn-logout" aria-label="Logout" title="Log out">
-            <svg class="w-4 h-4 text-rose-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-        </a>
     </div>
 </header>
 
@@ -1155,14 +1927,14 @@
                 <span id="etaStatus" class="text-[11px] font-bold bg-white/15 px-2 py-0.5 rounded-full text-sky-200 truncate">Approaching</span>
             </div>
 
-            <button id="viewStopOnMap" type="button" aria-label="Show my stop on the map" class="px-2.5 py-0.5 rounded-full bg-sky-500/30 hover:bg-sky-500/40 border border-sky-400/30 text-sky-100 text-[11px] font-bold flex items-center gap-1 shadow-xs transition-transform active:scale-95 shrink-0">
+            <button id="viewStopOnMap" type="button" aria-label="Show my stop on the map" class="px-3 py-1 rounded-full bg-white/15 hover:bg-white/25 active:scale-95 border border-white/20 text-sky-100 text-[11px] font-bold flex items-center gap-1.5 shadow-xs transition-all shrink-0">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
                 <span>Show on Map</span>
             </button>
         </div>
 
         <!-- Row 2: ETA & Stop Info Card -->
-        <div class="bg-white/10 rounded-xl p-2.5 border border-white/10 flex items-center justify-between gap-3">
+        <div class="bg-white/10 rounded-xl p-2.5 border border-white/12 flex items-center justify-between gap-3">
             <div class="min-w-0 flex-1">
                 <span class="text-[10px] font-extrabold uppercase tracking-wider text-sky-200/80 block leading-tight">Estimated Arrival</span>
                 <div id="etaValue" class="tabular-nums truncate mt-0.5">-- min</div>
@@ -1172,10 +1944,10 @@
             <div class="w-px h-9 bg-white/15 shrink-0"></div>
 
             <div class="text-right min-w-0 flex-1">
-                    <span class="text-[10px] font-extrabold uppercase tracking-wider text-sky-200/80 flex items-center justify-end gap-0.5 leading-tight">
-                        <span class="text-xs">📍</span> Pickup Stop
+                    <span class="text-[10px] font-extrabold uppercase tracking-wider text-sky-200/80 flex items-center justify-end gap-1 leading-tight">
+                        <svg class="w-3 h-3 text-sky-200" aria-hidden="true"><use href="icons.svg#icon-map-pin"/></svg> Pickup Stop
                     </span>
-                <div id="myStopName" class="text-xs sm:text-sm font-bold text-white truncate mt-0.5 leading-tight">Loading stop...</div>
+                <div id="myStopName" class="text-xs sm:text-sm font-bold text-white truncate mt-0.5 leading-tight"><span class="k-skel inline-block w-24 h-4">Loading stop...</span></div>
                 <div id="myStopDistance" class="text-[11px] font-semibold text-sky-200 truncate mt-0.5 leading-tight">Distance: calculating...</div>
                 <div id="myStopRetryRow" class="hidden mt-1 text-right">
                     <button id="retryMyStop" type="button" class="px-2 py-0.5 rounded-full bg-rose-500 text-white font-bold text-[10px]">Retry</button>
@@ -1207,7 +1979,7 @@
 <!-- BOTTOM ACTION BAR -->
 <footer id="actionFooter" class="bg-white border-t border-slate-200 p-2.5 sm:p-3.5 space-y-2.5 z-40 shadow-lg">
     <!-- DRIVER CARD -->
-    <div id="driverRow" class="flex items-center justify-between gap-3 bg-slate-50 border border-slate-200/90 rounded-xl px-3 py-2">
+    <div id="driverRow" class="flex items-center justify-between gap-3 bg-slate-50 border border-slate-200/90 rounded-xl px-3 py-2 shadow-xs">
         <div class="flex items-center gap-2.5 min-w-0">
             <div class="w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-700 flex items-center justify-center shrink-0">
                 <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -1217,17 +1989,17 @@
             </div>
             <div class="min-w-0">
                 <h2 id="driverName" class="text-xs sm:text-sm font-extrabold text-slate-900 truncate leading-tight">Driver unavailable</h2>
-                <p id="driverDetails" class="text-[11px] text-slate-500 font-medium truncate leading-tight mt-0.5">Loading assignment...</p>
+                <p id="driverDetails" class="text-[11px] text-slate-500 font-medium truncate leading-tight mt-0.5"><span class="k-skel inline-block w-28 h-3">Loading assignment...</span></p>
             </div>
 
-            <button id="driverComplaintButton" type="button" onclick="openDriverComplaintModal()" aria-label="Report a problem with the driver" title="Report driver">
-                <span>⚠️</span>
+            <button id="driverComplaintButton" type="button" onclick="openDriverComplaintModal()" aria-label="Report a problem with the driver" title="Report driver" class="p-1.5 rounded-lg hover:bg-slate-200/60 transition-colors">
+                <svg class="w-4 h-4 text-amber-500" aria-hidden="true"><use href="icons.svg#icon-alert"/></svg>
             </button>
         </div>
 
         <div class="flex items-center gap-2 shrink-0">
-            <a id="driverPhoneLink" href="#" aria-label="Call driver">
-                <span>📞</span>
+            <a id="driverPhoneLink" href="#" aria-label="Call driver" class="inline-flex items-center gap-1 px-2.5 py-1.5 bg-slate-200/70 hover:bg-slate-200 rounded-lg text-xs font-bold text-slate-700">
+                <svg class="w-3.5 h-3.5 text-slate-700" aria-hidden="true"><use href="icons.svg#icon-phone"/></svg>
                 <span>Call</span>
             </a>
         </div>
@@ -1243,7 +2015,7 @@
 
         <!-- 2. Not Travelling: Neutral Slate -->
         <button id="btnNotTravelling" type="button" onclick="openNotTravellingModal()" class="action-btn">
-            <i id="btnIcon" class="not-italic shrink-0 text-sm">🚫</i>
+            <svg id="btnIcon" class="w-4 h-4 shrink-0 text-slate-700" aria-hidden="true"><use href="icons.svg#icon-user-slash"/></svg>
             <span id="btnText" class="truncate">Not Travelling</span>
         </button>
 
@@ -1255,7 +2027,7 @@
 
         <!-- 4. Temporary Stop: Sky Blue (Single text span to avoid student.js dual-line bug!) -->
         <button id="btnTemporaryStop" type="button" onclick="openTemporaryStopModal()" class="action-btn">
-            <i class="not-italic shrink-0 text-sm">📍</i>
+            <svg class="w-4 h-4 shrink-0 text-sky-600" aria-hidden="true"><use href="icons.svg#icon-map-pin"/></svg>
             <span class="truncate">Change Stop</span>
         </button>
     </div>
@@ -1324,6 +2096,7 @@
                     <p id="waitRequestStateTitle" class="kx-callout-text">Wait request created</p>
                     <p id="waitRequestStateMessage" class="kx-note" style="margin-top:2px">Waiting for decision window...</p>
                     <button type="button" id="waitBoardedBtn" onclick="confirmWaitBoarded()" class="hidden mt-3 w-full px-3 py-2 bg-brand text-white text-xs font-semibold rounded transition-colors hover:bg-navy">I've boarded</button>
+                    <button type="button" id="waitCancelBtn" onclick="cancelStudentWaitRequest()" class="hidden mt-2 w-full px-3 py-2 border border-rose-300 text-rose-700 bg-rose-50 hover:bg-rose-100 text-xs font-semibold rounded transition-colors">Cancel wait request</button>
                 </div>
             </div>
         </div>
@@ -1333,17 +2106,18 @@
 <!-- DIGITAL PASS MODAL -->
 <div id="passModal" class="kambus-modal-backdrop hidden">
     <div class="kambus-modal-window text-center space-y-4 border-2 border-emerald-300">
-        <button type="button" onclick="togglePassModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 text-slate-500 font-bold hover:bg-slate-200 flex items-center justify-center" aria-label="Close pass">
-            ✕
+        <button type="button" onclick="togglePassModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 text-slate-500 font-bold hover:bg-slate-200 flex items-center justify-center transition-colors" aria-label="Close pass">
+            <svg class="w-4 h-4 text-slate-600" aria-hidden="true"><use href="icons.svg#icon-xmark"/></svg>
         </button>
 
-        <span class="inline-block px-3 py-1 bg-emerald-100 border-2 border-emerald-300 text-emerald-800 text-xs font-black rounded-full uppercase tracking-wider">
-                ✅ PASS ACTIVE
-            </span>
+        <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-100 border-2 border-emerald-300 text-emerald-800 text-xs font-black rounded-full uppercase tracking-wider">
+            <svg class="w-3.5 h-3.5 text-emerald-700" aria-hidden="true"><use href="icons.svg#icon-check"/></svg>
+            <span>PASS ACTIVE</span>
+        </span>
 
         <div>
             <h3 id="passStudentName" class="text-xl font-black text-slate-900">Student</h3>
-            <p id="passStudentDetails" class="text-xs text-slate-500 font-semibold">Loading profile...</p>
+            <p id="passStudentDetails" class="text-xs text-slate-500 font-semibold"><span class="k-skel inline-block w-32 h-3">Loading profile...</span></p>
         </div>
 
         <!-- QR Box -->
@@ -1416,11 +2190,6 @@
                 </select>
             </div>
 
-            <div class="kx-seg" aria-label="Stop change type" style="margin-bottom: 8px;">
-                <button id="temporaryChangeTypeBtn" type="button" onclick="setStopChangeType('temporary')" class="kx-seg-btn is-active">Temporary (Date range)</button>
-                <button id="permanentChangeTypeBtn" type="button" onclick="setStopChangeType('permanent')" class="kx-seg-btn">Permanent (Update registered)</button>
-            </div>
-
             <div class="kx-seg" aria-label="Temporary stop direction">
                 <button id="temporaryMorningDirectionBtn" type="button" onclick="setTemporaryStopDirection('morning')" class="kx-seg-btn is-active">Morning pickup</button>
                 <button id="temporaryEveningDirectionBtn" type="button" onclick="setTemporaryStopDirection('evening')" class="kx-seg-btn">Evening drop-off</button>
@@ -1487,52 +2256,63 @@
 
 <!-- DRIVER COMPLAINT POLL ALERT -->
 <div id="driverComplaintAlert">
-    <div class="kambus-modal-window text-center space-y-4">
-        <div class="w-14 h-14 mx-auto rounded-2xl bg-amber-100 text-amber-700 border-2 border-amber-300 text-3xl flex items-center justify-center">
-            ⚠️
-        </div>
+    <div class="kambus-modal-window" style="padding:0;overflow:hidden;text-align:left;">
 
-        <h2 class="text-base font-black text-slate-900">Driver Complaint Poll</h2>
-        <p class="text-xs text-slate-600">A student reported an issue with your bus driver.</p>
-
-        <div class="bg-slate-50 border-2 border-slate-200 rounded-2xl p-3 text-left">
-            <p class="text-[10px] text-slate-500 uppercase font-black">Reported Issue</p>
-            <p id="complaintReason" class="text-xs font-black text-slate-900 mt-0.5">--</p>
-        </div>
-
-        <p class="text-xs font-black text-slate-900">Have you faced the same problem?</p>
-
-        <div class="grid grid-cols-2 gap-2.5">
-            <button id="complaintYesBtn" type="button" class="py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-black shadow-sm" onclick="answerDriverComplaintPoll('yes')">
-                Yes
-            </button>
-            <button id="complaintNoBtn" type="button" class="py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black shadow-sm" onclick="answerDriverComplaintPoll('no')">
-                No
-            </button>
-        </div>
-    </div>
-</div>
-
-<!-- GENDER BACKFILL MODAL -->
-<div id="genderPromptModal" class="hidden kambus-modal-backdrop" style="z-index: 2200;">
-    <div class="kx-sheet" style="max-width: 380px; margin: auto;">
-        <div class="kx-head">
-            <div class="kx-head-icon" style="background:#e0e7ff; color:#3730a3;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
-            <div class="kx-head-text">
-                <h3 class="kx-title">Complete Your Profile</h3>
-                <p class="kx-sub">Please select your gender</p>
+        <!-- Amber header band -->
+        <div style="background:linear-gradient(135deg,#92400e 0%,#b45309 100%);padding:18px 20px 16px;display:flex;align-items:center;gap:12px;">
+            <div style="flex:0 0 auto;width:40px;height:40px;border-radius:12px;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px;" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </div>
+            <div style="min-width:0;">
+                <p style="margin:0;font-size:15px;font-weight:800;color:#ffffff;line-height:1.2;">Driver Complaint Poll</p>
+                <p style="margin:3px 0 0;font-size:11px;font-weight:500;color:rgba(255,255,255,0.8);line-height:1.3;">A fellow student reported an issue</p>
             </div>
         </div>
-        <div class="kx-body" style="padding: 16px;">
-            <div class="kx-list" style="gap: 10px;">
-                <button type="button" onclick="submitStudentGender('male')" class="kx-option" style="justify-content: center; font-weight: 600; color: #1e3a8a; background: #eff6ff;">
-                    Male
+
+        <!-- Body -->
+        <div style="padding:16px 20px 20px;display:flex;flex-direction:column;gap:14px;">
+
+            <!-- Driver / Bus row -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                <div style="padding:10px 12px;border-radius:12px;background:#f8fafc;border:1.5px solid #e2e8f0;">
+                    <p style="margin:0 0 2px;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em;display:flex;align-items:center;gap:4px;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:10px;height:10px;" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        Driver
+                    </p>
+                    <p id="complaintDriverName" style="margin:0;font-size:13px;font-weight:800;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">--</p>
+                </div>
+                <div style="padding:10px 12px;border-radius:12px;background:#f8fafc;border:1.5px solid #e2e8f0;">
+                    <p style="margin:0 0 2px;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em;display:flex;align-items:center;gap:4px;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:10px;height:10px;" aria-hidden="true"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                        Bus
+                    </p>
+                    <p id="complaintBusNumber" style="margin:0;font-size:13px;font-weight:800;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">--</p>
+                </div>
+            </div>
+
+            <!-- Reported issue badge -->
+            <div style="border-radius:12px;border:1.5px solid #fde68a;background:#fffbeb;padding:10px 14px;">
+                <p style="margin:0 0 4px;font-size:10px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:.05em;">Reported Issue</p>
+                <p id="complaintReason" style="margin:0;font-size:13px;font-weight:800;color:#78350f;line-height:1.35;">--</p>
+                <p id="complaintDetails" class="hidden" style="margin:6px 0 0;font-size:11px;font-weight:500;color:#92400e;line-height:1.4;"></p>
+            </div>
+
+            <!-- Question -->
+            <p style="margin:0;font-size:13px;font-weight:700;color:#0f172a;text-align:center;">Have you faced the same problem?</p>
+
+            <!-- Yes / No buttons -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                <button id="complaintYesBtn" type="button"
+                    style="padding:12px 0;border:none;border-radius:12px;background:#be123c;color:#ffffff;font-family:inherit;font-size:13px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 4px 12px rgba(190,18,60,0.30);transition:opacity .15s ease;"
+                    onclick="answerDriverComplaintPoll('yes')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+                    Yes
                 </button>
-                <button type="button" onclick="submitStudentGender('female')" class="kx-option" style="justify-content: center; font-weight: 600; color: #831843; background: #fdf2f8;">
-                    Female
-                </button>
-                <button type="button" onclick="submitStudentGender('other')" class="kx-option" style="justify-content: center; font-weight: 600; color: #334155; background: #f1f5f9;">
-                    Other
+                <button id="complaintNoBtn" type="button"
+                    style="padding:12px 0;border:none;border-radius:12px;background:#173541;color:#ffffff;font-family:inherit;font-size:13px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 4px 12px rgba(23,53,65,0.25);transition:opacity .15s ease;"
+                    onclick="answerDriverComplaintPoll('no')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    No
                 </button>
             </div>
         </div>
@@ -1582,7 +2362,7 @@
                     </select>
                 </div>
 
-                <div>
+                <div id="studentComplaintAudienceGroup">
                     <label for="studentComplaintAudienceSelect" class="kx-label">Poll Audience (Who verifies this?)</label>
                     <select id="studentComplaintAudienceSelect" class="w-full px-3 py-2.5 border border-slate-300 rounded-lg text-xs font-semibold text-slate-800 bg-white">
                         <option value="both">Both (All bus students)</option>
@@ -1660,6 +2440,254 @@
     </div>
 </div>
 
+<!-- NAVIGATION DRAWER BACKDROP & PANEL -->
+<div id="studentMenuDrawer" class="hidden">
+    <!-- Overlay backdrop -->
+    <div id="studentMenuBackdrop" onclick="closeStudentMenuDrawer()"></div>
+
+    <!-- Drawer Panel -->
+    <aside id="studentMenuPanel" role="dialog" aria-modal="true" aria-label="Student Navigation Menu">
+        <!-- Drawer Header -->
+        <div class="drawer-header">
+            <div class="drawer-header-top">
+                <div class="drawer-brand">
+                    <div class="drawer-logo-wrap">
+                        <img src="kambus_logo.png?v=2" alt="KAMBUS" class="drawer-logo-img">
+                    </div>
+                    <span class="drawer-brand-title">KAMBUS</span>
+                </div>
+                <button type="button" onclick="closeStudentMenuDrawer()" class="drawer-close-btn" aria-label="Close menu">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <div class="drawer-student-info">
+                <h3 id="drawerStudentName" class="drawer-student-name">Student</h3>
+                <div class="drawer-bus-stop-badge">
+                    <svg class="w-3.5 h-3.5 text-amber-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 16h16M4 16a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2M4 16v2a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-2m10 0v2a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-2"/></svg>
+                    <span id="drawerBusStop">Loading bus & stop...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation Menu Items (56px tall rows, amber/navy theme) -->
+        <nav class="drawer-nav">
+            <!-- Edit Profile -->
+            <button type="button" onclick="closeStudentMenuDrawer(); openStudentProfileModal();" class="drawer-menu-item">
+                <div class="drawer-item-icon">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                </div>
+                <span class="drawer-item-label">Edit Profile</span>
+                <span class="drawer-item-arrow"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span>
+            </button>
+
+            <!-- Permanent Stop Change -->
+            <button type="button" onclick="closeStudentMenuDrawer(); openPermanentStopModal();" class="drawer-menu-item">
+                <div class="drawer-item-icon">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                </div>
+                <span class="drawer-item-label">Permanent Stop Change</span>
+                <span class="drawer-item-arrow"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span>
+            </button>
+
+            <!-- Request to Admin -->
+            <button type="button" onclick="closeStudentMenuDrawer(); openMessageAdminModal();" class="drawer-menu-item">
+                <div class="drawer-item-icon">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                </div>
+                <span class="drawer-item-label">Request to Admin</span>
+                <span class="drawer-item-arrow"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span>
+            </button>
+        </nav>
+
+        <!-- Drawer Footer & Logout -->
+        <div class="drawer-footer">
+            <div class="drawer-divider"></div>
+            <button type="button" onclick="closeStudentMenuDrawer(); openLogoutConfirmModal();" class="drawer-logout-item">
+                <div class="drawer-logout-icon">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                </div>
+                <span class="drawer-logout-label">Log Out</span>
+            </button>
+        </div>
+    </aside>
+</div>
+
+<!-- LOGOUT CONFIRMATION MODAL -->
+<div id="logoutConfirmModal" class="hidden kambus-modal-backdrop" style="z-index: 2200;">
+    <div class="kx-sheet" style="max-width: 320px; text-align: center; padding: 24px 20px; border-radius: 16px;">
+        <div style="width: 48px; height: 48px; border-radius: 14px; background: #fee2e2; color: #dc2626; display: flex; align-items: center; justify-content: center; margin: 0 auto 14px auto;">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        </div>
+        <h3 style="font-size: 16px; font-weight: 800; color: #0f172a; margin: 0 0 6px 0;">Log Out</h3>
+        <p style="font-size: 13px; color: #64748b; margin: 0 0 20px 0; line-height: 1.4;">Are you sure you want to log out of your Kambus account?</p>
+        <div style="display: flex; gap: 10px;">
+            <button type="button" onclick="closeLogoutConfirmModal()" style="flex: 1; height: 44px; border-radius: 12px; background: #f1f5f9; color: #334155; font-weight: 700; font-size: 13px; border: none; cursor: pointer; transition: background 0.15s;">Cancel</button>
+            <button type="button" onclick="handleStudentLogout()" style="flex: 1; height: 44px; border-radius: 12px; background: #dc2626; color: #ffffff; font-weight: 700; font-size: 13px; border: none; cursor: pointer; box-shadow: 0 2px 6px rgba(220, 38, 38, 0.35); transition: background 0.15s;">Log Out</button>
+        </div>
+    </div>
+</div>
+
+<!-- STUDENT PROFILE MODAL (View & Edit Details) -->
+<div id="studentProfileModal" class="kambus-modal-backdrop hidden" style="z-index: 2100;">
+    <div class="student-modal-card">
+        <!-- Header -->
+        <div class="student-modal-header">
+            <div class="student-modal-header-left">
+                <div class="student-modal-header-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                </div>
+                <div>
+                    <h3 class="student-modal-title">Student Profile</h3>
+                    <p class="student-modal-sub">View and edit your personal details</p>
+                </div>
+            </div>
+            <button type="button" onclick="closeStudentProfileModal()" class="student-modal-close" aria-label="Close modal">&times;</button>
+        </div>
+
+        <form id="studentProfileForm" onsubmit="submitStudentProfile(event)" class="student-modal-form">
+            <!-- Body -->
+            <div class="student-modal-body">
+                <div id="profileAlert" class="hidden student-modal-alert"></div>
+
+                <!-- Bus & Stop Card (Read-only status) -->
+                <div class="student-info-card">
+                    <div class="student-info-card-header">
+                        <span class="student-info-card-title">Registered Route Assignment</span>
+                        <span id="profileRollBadge" class="student-info-badge">--</span>
+                    </div>
+                    <div class="student-info-grid">
+                        <div>
+                            <span class="student-info-label">Assigned Bus:</span>
+                            <p id="profileAssignedBus" class="student-info-value">--</p>
+                        </div>
+                        <div>
+                            <span class="student-info-label">Registered Stop:</span>
+                            <p id="profileAssignedStop" class="student-info-value">--</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="student-form-group">
+                    <label for="profileName" class="student-form-label">Full Name *</label>
+                    <input type="text" id="profileName" required class="student-form-input">
+                </div>
+
+                <div class="student-form-row">
+                    <div class="student-form-group">
+                        <label for="profilePhone" class="student-form-label">Phone Number *</label>
+                        <input type="tel" id="profilePhone" required class="student-form-input">
+                    </div>
+                    <div class="student-form-group">
+                        <label for="profileGender" class="student-form-label">Gender</label>
+                        <select id="profileGender" class="student-form-select">
+                            <option value="">Select Gender</option>
+                            <option value="male">Male</option>
+                            <option value="female">Female</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="student-form-group">
+                    <label for="profileEmail" class="student-form-label">Email Address</label>
+                    <input type="email" id="profileEmail" placeholder="student@example.com" class="student-form-input">
+                </div>
+
+                <div class="student-form-group">
+                    <label for="profileDepartment" class="student-form-label">Department</label>
+                    <input type="text" id="profileDepartment" placeholder="e.g. CSE / ECE" class="student-form-input">
+                </div>
+
+                <div class="student-form-group" style="padding-top: 6px; border-top: 1px solid #e2e8f0;">
+                    <label for="profilePassword" class="student-form-label">Change Password <span class="helper">(Leave blank to keep unchanged)</span></label>
+                    <input type="password" id="profilePassword" placeholder="••••••••" minlength="6" class="student-form-input">
+                </div>
+            </div>
+
+            <!-- Footer / Actions -->
+            <div class="student-modal-footer">
+                <button type="button" onclick="closeStudentProfileModal()" class="student-btn-cancel">Cancel</button>
+                <button type="submit" id="btnSaveProfile" class="student-btn-primary">
+                    <span>Save Changes</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- PERMANENT STOP CHANGE MODAL -->
+<div id="permanentStopModal" class="kambus-modal-backdrop hidden" style="z-index: 2100;">
+    <div class="student-modal-card">
+        <!-- Header -->
+        <div class="student-modal-header">
+            <div class="student-modal-header-left">
+                <div class="student-modal-header-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                </div>
+                <div>
+                    <h3 class="student-modal-title">Permanent Stop Change</h3>
+                    <p class="student-modal-sub">Request a permanent change to your assigned pickup stop</p>
+                </div>
+            </div>
+            <button type="button" onclick="closePermanentStopModal()" class="student-modal-close" aria-label="Close modal">&times;</button>
+        </div>
+
+        <form id="permanentStopForm" onsubmit="submitPermanentStopChange(event)" class="student-modal-form">
+            <!-- Content -->
+            <div class="student-modal-body">
+                <div id="permanentStopAlert" class="hidden student-modal-alert"></div>
+
+                <!-- Current stop display -->
+                <div class="student-info-card">
+                    <span class="student-info-card-title">Current Assigned Stop</span>
+                    <p id="permCurrentStopDisplay" class="student-info-value" style="font-size: 14px; margin-top: 2px;">--</p>
+                    <p id="permCurrentBusDisplay" style="margin: 2px 0 0; font-size: 11.5px; font-weight: 600; color: #52707a;">Assigned Bus: --</p>
+                </div>
+
+                <!-- Select Bus / Route -->
+                <div class="student-form-group">
+                    <label for="permBusSelect" class="student-form-label">Select Bus Route *</label>
+                    <select id="permBusSelect" onchange="onPermanentBusChanged()" class="student-form-select" required>
+                        <option value="">Loading routes...</option>
+                    </select>
+                </div>
+
+                <!-- Select Stop -->
+                <div class="student-form-group">
+                    <label for="permStopSelect" class="student-form-label">Select New Permanent Stop *</label>
+                    <select id="permStopSelect" class="student-form-select" required disabled>
+                        <option value="">Select bus route first</option>
+                    </select>
+                </div>
+
+                <!-- Effective Date -->
+                <div class="student-form-group">
+                    <label for="permEffectiveDate" class="student-form-label">Effective From *</label>
+                    <input type="date" id="permEffectiveDate" required class="student-form-input">
+                </div>
+
+                <!-- Reason / Notes -->
+                <div class="student-form-group">
+                    <label for="permReasonNotes" class="student-form-label">Reason for Change <span class="helper">(Optional)</span></label>
+                    <textarea id="permReasonNotes" rows="2" placeholder="e.g. Relocated residence to Subedari" class="student-form-textarea"></textarea>
+                </div>
+
+                <div class="student-note-card">
+                    <strong>Note:</strong> Permanent stop changes are reviewed and approved by the transport administrator. Once approved, your daily bus pass and regular route will automatically update.
+                </div>
+            </div>
+
+            <!-- Footer / Actions -->
+            <div class="student-modal-footer">
+                <button type="button" onclick="closePermanentStopModal()" class="student-btn-cancel">Cancel</button>
+                <button type="submit" id="btnSubmitPermStop" class="student-btn-primary">
+                    <span>Submit Request</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <!-- MESSAGE ADMIN MODAL -->
 <div id="messageAdminModal" class="hidden kambus-modal-backdrop" style="z-index: 2100;">
     <div class="kx-sheet">
@@ -1701,6 +2729,7 @@
 <script src="vendor/leaflet/leaflet-rotate.js"></script>
 <script src="kambus-ui.js"></script>
 <script src="notification-center.js"></script>
+<script src="temporary-stop.js"></script>
 <script src="student.js"></script>
 
 <script>
@@ -1739,6 +2768,12 @@
     let waitRequestLastStatus = null;
 
     async function openWaitModal() {
+        if (typeof window.hasEntitlement === "function" && !window.hasEntitlement("wait_request")) {
+            if (typeof window.showPlanUpgradePrompt === "function") {
+                window.showPlanUpgradePrompt("Wait Request", "Top", "Allow students to request short delays when running late.");
+            }
+            return;
+        }
         if (typeof travelStatusKnown !== "undefined" && (!travelStatusKnown || !studentTravellingToday)) {
             KambusNotify.notify({ type: "info", title: "Wait request unavailable", message: "You are marked as not travelling today." });
             return;
@@ -1750,6 +2785,13 @@
         const eligibilityText = document.getElementById("waitEligibilityText");
         const waitOptions = document.getElementById("waitOptions");
         const waitState = document.getElementById("waitRequestState");
+
+        if (waitRequestActiveId) {
+            if (waitOptions) waitOptions.classList.add("hidden");
+            if (waitState) waitState.classList.remove("hidden");
+            if (eligibilityText) eligibilityText.textContent = "Your wait request is currently active.";
+            return;
+        }
 
         if (waitOptions) waitOptions.classList.remove("hidden");
         if (waitState) waitState.classList.add("hidden");
@@ -1838,8 +2880,9 @@
     function showWaitRequestBanner(data) {
         const button = document.getElementById("btnWaitRequest");
         if (!button) return;
-        button.disabled = true;
-        button.className = "action-btn opacity-75 cursor-not-allowed";
+        button.disabled = false;
+        button.className = "action-btn border border-amber-300 bg-amber-50 text-amber-800";
+        button.onclick = openWaitModal;
         button.innerHTML = `<svg class="w-4 h-4 text-amber-700 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>Wait Active</span>`;
     }
 
@@ -1850,6 +2893,10 @@
     }
 
     async function loadWaitRequestStatus() {
+        if (typeof window.hasEntitlement === "function" && !window.hasEntitlement("wait_request")) {
+            stopWaitRequestStatusPolling();
+            return;
+        }
         const token = getToken();
         if (!token) return;
         try {
@@ -1868,8 +2915,13 @@
             if (data.status === "completed") {
                 stopWaitRequestStatusPolling();
                 document.getElementById("waitBoardedBtn")?.classList.add("hidden");
+                document.getElementById("waitCancelBtn")?.classList.add("hidden");
                 updateWaitRequestStateUI("completed", data);
-                KambusNotify.notify({ type: "ok", title: "Wait completed", message: "The bus has finished waiting." });
+                if (data.boarding_confirmed) {
+                    KambusNotify.notify({ type: "ok", title: "Boarding confirmed", message: "Your boarding was confirmed." });
+                } else {
+                    KambusNotify.notify({ type: "warn", title: "Wait time ended", message: "The wait period has elapsed. Please check if the bus is still at your stop." });
+                }
                 waitRequestActiveId = null;
                 restoreWaitRequestButton(true);
                 return;
@@ -1915,6 +2967,7 @@
         waitOptions?.classList.add("hidden");
         waitState?.classList.remove("hidden");
         boardedButton?.classList.remove("hidden");
+        document.getElementById("waitCancelBtn")?.classList.add("hidden");
 
         if (waitCountdownTimer) clearInterval(waitCountdownTimer);
         let fallbackSeconds = Math.max(0, Number(data.wait_remaining_seconds) || 0);
@@ -1962,6 +3015,7 @@
             document.getElementById("waitModal")?.classList.add("hidden");
             document.getElementById("waitRequestState")?.classList.add("hidden");
             boardedButton?.classList.add("hidden");
+            document.getElementById("waitCancelBtn")?.classList.add("hidden");
             waitRequestActiveId = null;
             restoreWaitRequestButton(true);
             KambusNotify.notify({ type: "ok", title: "Boarding confirmed", message: "The driver can continue the trip." });
@@ -1974,29 +3028,86 @@
         }
     }
 
+    async function cancelStudentWaitRequest() {
+        if (waitRequestActiveId === null) return;
+
+        const token = getToken();
+        if (!token) return;
+
+        const cancelBtn = document.getElementById("waitCancelBtn");
+        if (cancelBtn) {
+            cancelBtn.disabled = true;
+            cancelBtn.textContent = "Cancelling…";
+        }
+
+        try {
+            const response = await fetch(`${API_BASE}/student/wait-request/${waitRequestActiveId}/cancel`, {
+                method: "POST",
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.detail || "Unable to cancel wait request.");
+
+            stopWaitRequestStatusPolling();
+            document.getElementById("waitModal")?.classList.add("hidden");
+            document.getElementById("waitRequestState")?.classList.add("hidden");
+            cancelBtn?.classList.add("hidden");
+            document.getElementById("waitBoardedBtn")?.classList.add("hidden");
+            waitRequestActiveId = null;
+            waitRequestLastStatus = null;
+            restoreWaitRequestButton(true);
+            KambusNotify.notify({ type: "info", title: "Wait request cancelled", message: "Your wait request has been cancelled." });
+        } catch (error) {
+            KambusNotify.notify({ type: "warn", title: "Unable to cancel", message: error.message || "Please try again." });
+            if (cancelBtn) {
+                cancelBtn.disabled = false;
+                cancelBtn.textContent = "Cancel wait request";
+            }
+        }
+    }
+    window.cancelStudentWaitRequest = cancelStudentWaitRequest;
+
     function updateWaitRequestStateUI(status, data) {
         const title = document.getElementById("waitRequestStateTitle");
         const message = document.getElementById("waitRequestStateMessage");
+        const cancelBtn = document.getElementById("waitCancelBtn");
+        const boardedBtn = document.getElementById("waitBoardedBtn");
         if (!title || !message) return;
         const minutes = Number(data.minutes || 0);
+
         if (status === "pending") {
             title.textContent = "Wait request active";
             message.textContent = `Your ${minutes}-minute request is pending.`;
+            cancelBtn?.classList.remove("hidden");
+            boardedBtn?.classList.add("hidden");
         } else if (status === "accepted") {
             title.textContent = "Wait accepted";
             message.textContent = `The bus will wait approximately ${minutes} minute(s).`;
+            cancelBtn?.classList.remove("hidden");
+            boardedBtn?.classList.add("hidden");
         } else if (status === "waiting") {
             const remainingSeconds = Math.max(0, Number(data.wait_remaining_seconds) || 0);
             const remainingMinutes = Math.floor(remainingSeconds / 60);
             const remainingSecondsText = String(remainingSeconds % 60).padStart(2, "0");
             title.textContent = "Bus waiting";
             message.textContent = `Bus waiting — ${remainingMinutes}:${remainingSecondsText} remaining`;
+            cancelBtn?.classList.add("hidden");
+            boardedBtn?.classList.remove("hidden");
         } else if (status === "rejected") {
             title.textContent = "Wait skipped";
             message.textContent = "The driver skipped this wait request.";
+            cancelBtn?.classList.add("hidden");
+            boardedBtn?.classList.add("hidden");
         } else if (status === "completed") {
-            title.textContent = "Wait completed";
-            message.textContent = "The bus has finished waiting and resumed travel.";
+            cancelBtn?.classList.add("hidden");
+            boardedBtn?.classList.add("hidden");
+            if (data.boarding_confirmed) {
+                title.textContent = "Boarding confirmed";
+                message.textContent = "The bus has finished waiting and resumed travel with you on board.";
+            } else {
+                title.textContent = "Wait time ended";
+                message.textContent = "The wait window has closed. Please check if the bus is still at your stop.";
+            }
         }
     }
 
@@ -2095,10 +3206,16 @@
         const passModal = document.getElementById("passModal");
         const complaintModal = document.getElementById("driverComplaintModal");
         const messageModal = document.getElementById("messageAdminModal");
+        const profileModal = document.getElementById("studentProfileModal");
+        const permModal = document.getElementById("permanentStopModal");
+        const logoutModal = document.getElementById("logoutConfirmModal");
         if (event.target === waitModal) closeWaitModal();
         if (event.target === passModal) togglePassModal();
         if (event.target === complaintModal) closeDriverComplaintModal();
         if (event.target === messageModal && typeof closeMessageAdminModal === "function") closeMessageAdminModal();
+        if (event.target === profileModal && typeof closeStudentProfileModal === "function") closeStudentProfileModal();
+        if (event.target === permModal && typeof closePermanentStopModal === "function") closePermanentStopModal();
+        if (event.target === logoutModal && typeof closeLogoutConfirmModal === "function") closeLogoutConfirmModal();
     });
 
     document.addEventListener("keydown", event => {
@@ -2110,6 +3227,14 @@
         if (complaintModal && !complaintModal.classList.contains("hidden")) closeDriverComplaintModal();
         const messageModal = document.getElementById("messageAdminModal");
         if (messageModal && !messageModal.classList.contains("hidden") && typeof closeMessageAdminModal === "function") closeMessageAdminModal();
+        const profileModal = document.getElementById("studentProfileModal");
+        if (profileModal && !profileModal.classList.contains("hidden") && typeof closeStudentProfileModal === "function") closeStudentProfileModal();
+        const permModal = document.getElementById("permanentStopModal");
+        if (permModal && !permModal.classList.contains("hidden") && typeof closePermanentStopModal === "function") closePermanentStopModal();
+        const menuDrawer = document.getElementById("studentMenuDrawer");
+        if (menuDrawer && !menuDrawer.classList.contains("hidden") && typeof closeStudentMenuDrawer === "function") closeStudentMenuDrawer();
+        const logoutModal = document.getElementById("logoutConfirmModal");
+        if (logoutModal && !logoutModal.classList.contains("hidden") && typeof closeLogoutConfirmModal === "function") closeLogoutConfirmModal();
     });
 </script>
 </body>

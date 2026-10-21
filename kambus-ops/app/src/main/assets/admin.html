@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
         <title>KAMBUS</title>
-    <meta name="theme-color" content="#173541">
+    <meta name="theme-color" content="#0B1F3A">
     <meta name="description" content="KAMBUS, live bus tracking for KITSW.">
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
     <link rel="icon" href="favicon.ico" sizes="48x48">
@@ -14,12 +14,45 @@
     <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
     <script src="vendor/leaflet/leaflet.js"></script>
 
-        <style>
+    <style>
         :root {
             --safe-top: env(safe-area-inset-top, 0px);
             --safe-bottom: env(safe-area-inset-bottom, 0px);
             --safe-left: env(safe-area-inset-left, 0px);
             --safe-right: env(safe-area-inset-right, 0px);
+
+            /* ========================================================
+               KAMBUS ADMIN DESIGN TOKENS
+               ======================================================== */
+            --navy-900: #0B1F3A;   /* sidebar / top bar */
+            --navy-700: #16315A;
+            --amber-500: #F5A623;  /* primary accent, active states, key buttons */
+            --amber-100: #FFF4DC;  /* soft amber tint */
+            --bg: #F3F5F9;         /* page background, soft cool grey, NOT white */
+            --surface: #FFFFFF;    /* cards */
+            --border: #E3E8F0;
+            --text: #14213D;
+            --text-muted: #5B6B82;
+            --success: #1F9D6B;
+            --success-bg: #E6F6EF;
+            --danger: #D64545;
+            --danger-bg: #FDECEC;
+            --info: #2F6FED;
+            --info-bg: #E8F0FE;
+            --warning: #C98400;
+            --warning-bg: #FFF4DC;
+
+            /* Compatibility mappings for existing utility classes */
+            --navy: var(--navy-900);
+            --ink: var(--text);
+            --ink-muted: var(--text-muted);
+            --brand: var(--navy-700);
+            --brandDark: var(--navy-900);
+            --line: var(--border);
+            --ok: var(--success);
+            --ok-bg: var(--success-bg);
+            --warn: var(--warning);
+            --warn-bg: var(--warning-bg);
         }
 
         html, body {
@@ -27,7 +60,8 @@
             max-width: 100%;
             overflow-x: clip;
             overscroll-behavior-y: auto;
-            background-color: #FAFAF8;
+            background-color: var(--bg);
+            color: var(--text);
             -webkit-tap-highlight-color: transparent;
             font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans Devanagari', 'Noto Sans Telugu', sans-serif;
         }
@@ -53,7 +87,7 @@
             left: 0;
             right: 0;
             height: max(var(--safe-top, 0px), env(safe-area-inset-top, 0px));
-            background-color: #FFFFFF;
+            background-color: var(--navy-900);
             z-index: 45;
             pointer-events: none;
         }
@@ -98,18 +132,116 @@
         /* Consistent thin scrollbars */
         * {
             scrollbar-width: thin;
-            scrollbar-color: rgba(23, 53, 65, 0.2) transparent;
+            scrollbar-color: rgba(11, 31, 58, 0.2) transparent;
         }
         *::-webkit-scrollbar {
             width: 5px;
             height: 5px;
         }
         *::-webkit-scrollbar-thumb {
-            background: rgba(23, 53, 65, 0.2);
+            background: rgba(11, 31, 58, 0.2);
             border-radius: 4px;
         }
         *::-webkit-scrollbar-track {
             background: transparent;
+        }
+
+        /* ========================================================
+           HEADER & NAVIGATION STYLING
+           ======================================================== */
+        .admin-top-header {
+            background-color: var(--navy-900) !important;
+            border-bottom: 1px solid var(--navy-700) !important;
+            color: #FFFFFF;
+        }
+        .admin-top-header h1 {
+            color: #FFFFFF !important;
+        }
+        .admin-top-header p {
+            color: rgba(255, 255, 255, 0.65) !important;
+        }
+
+        .header-action-btn {
+            background: rgba(255, 255, 255, 0.08) !important;
+            border: 1px solid rgba(255, 255, 255, 0.12) !important;
+            color: rgba(255, 255, 255, 0.82) !important;
+            border-radius: 8px !important;
+            transition: all 0.15s ease;
+        }
+        .header-action-btn:hover {
+            background: rgba(255, 255, 255, 0.16) !important;
+            color: #FFFFFF !important;
+        }
+
+        .header-refresh-btn {
+            background: var(--amber-500) !important;
+            color: var(--navy-900) !important;
+            font-weight: 700 !important;
+            border: 1px solid var(--amber-500) !important;
+            border-radius: 8px !important;
+            transition: all 0.15s ease;
+        }
+        .header-refresh-btn:hover {
+            background: #E59516 !important;
+            border-color: #E59516 !important;
+            color: var(--navy-900) !important;
+        }
+
+        .header-logout-btn {
+            background: rgba(255, 255, 255, 0.08) !important;
+            border: 1px solid rgba(255, 255, 255, 0.12) !important;
+            color: rgba(255, 255, 255, 0.75) !important;
+            border-radius: 8px !important;
+            transition: all 0.15s ease;
+        }
+        .header-logout-btn:hover {
+            background: var(--danger-bg) !important;
+            color: var(--danger) !important;
+            border-color: var(--danger) !important;
+        }
+
+        .super-admin-context-box {
+            background: var(--navy-700) !important;
+            border: 1px solid rgba(255, 255, 255, 0.15) !important;
+            border-radius: 8px !important;
+        }
+        .super-admin-select {
+            background-color: var(--navy-900) !important;
+            color: #FFFFFF !important;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+            border-radius: 6px !important;
+        }
+        .super-admin-select:focus {
+            border-color: var(--amber-500) !important;
+            box-shadow: 0 0 0 2px rgba(245, 166, 35, 0.3) !important;
+        }
+
+        /* Sidebar */
+        #adminSidebar {
+            background-color: var(--navy-900) !important;
+            border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+            border-top: none !important;
+            border-bottom: none !important;
+            border-left: none !important;
+            transition: transform 0.2s ease-in-out;
+        }
+        .sidebar-section-title {
+            color: rgba(255, 255, 255, 0.45) !important;
+            font-size: 10px !important;
+            font-weight: 700 !important;
+            letter-spacing: 0.08em !important;
+            text-transform: uppercase !important;
+            padding: 0 12px;
+            margin-top: 18px;
+            margin-bottom: 6px;
+        }
+        .admin-sidebar-footer {
+            border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+            color: rgba(255, 255, 255, 0.45) !important;
+        }
+        .admin-sidebar-footer p:first-child {
+            color: rgba(255, 255, 255, 0.85) !important;
+            font-weight: 600;
         }
 
         .admin-nav-btn {
@@ -118,24 +250,35 @@
             gap: 10px;
             width: 100%;
             padding: 9px 12px;
-            border-radius: 4px;
+            border-radius: 8px;
             font-size: 13px;
-            font-weight: 600;
-            color: #52707A;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.72);
             background: transparent;
             transition: all 0.15s ease, transform 0.08s ease;
             text-align: left;
             border: 1px solid transparent;
+            border-left: 3px solid transparent;
         }
-
+        .admin-nav-btn svg {
+            color: rgba(255, 255, 255, 0.55);
+            transition: color 0.15s ease;
+        }
         .admin-nav-btn:hover {
-            background: #E3E8E8;
-            color: #173541;
-        }
-
-        .admin-nav-btn.active {
-            background: #173541;
+            background: var(--navy-700);
             color: #FFFFFF;
+        }
+        .admin-nav-btn:hover svg {
+            color: #FFFFFF;
+        }
+        .admin-nav-btn.active {
+            background: var(--navy-700);
+            color: #FFFFFF;
+            font-weight: 600;
+            border-left: 3px solid var(--amber-500);
+        }
+        .admin-nav-btn.active svg {
+            color: var(--amber-500);
         }
 
         /* Tactile button press feedback */
@@ -148,6 +291,262 @@
         button, a.button, [role="button"] {
             transition: transform 0.08s ease, background-color 0.15s ease, opacity 0.15s ease, border-color 0.15s ease;
             -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Dimmed Navy Backdrop for Mobile Sidebar & Modals */
+        #sidebarOverlay,
+        .fixed.inset-0:not(.hidden) {
+            background-color: rgba(11, 31, 58, 0.6) !important;
+            backdrop-filter: blur(2px);
+        }
+
+        /* ========================================================
+           CARDS & CONTAINERS
+           ======================================================== */
+        .kx-card, .card {
+            background: var(--surface) !important;
+            border: 1px solid var(--border) !important;
+            border-radius: 12px !important;
+            box-shadow: 0 1px 3px rgba(11, 31, 58, 0.06), 0 4px 12px rgba(11, 31, 58, 0.04) !important;
+        }
+        .kx-card-sub {
+            background: var(--bg) !important;
+            border: 1px solid var(--border) !important;
+            border-radius: 8px !important;
+        }
+
+        /* Stat / Summary Cards */
+        .stat-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(11, 31, 58, 0.06), 0 4px 12px rgba(11, 31, 58, 0.04);
+            padding: 16px 18px;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(11, 31, 58, 0.08);
+        }
+        .stat-card::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            width: 3.5px;
+            background: var(--stat-accent, var(--navy-700));
+        }
+        .stat-card--info::before { background: var(--info); }
+        .stat-card--success::before { background: var(--success); }
+        .stat-card--amber::before { background: var(--amber-500); }
+        .stat-card--muted::before { background: var(--text-muted); }
+        .stat-card--warning::before { background: var(--warning); }
+
+        .stat-icon-chip {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .chip-info { background: var(--info-bg); color: var(--info); }
+        .chip-success { background: var(--success-bg); color: var(--success); }
+        .chip-amber { background: var(--amber-100); color: var(--warning); }
+        .chip-muted { background: #EDF2F7; color: var(--text-muted); }
+        .chip-warning { background: var(--warning-bg); color: var(--warning); }
+
+        .stat-number {
+            font-size: 26px;
+            font-weight: 700;
+            color: var(--navy-900);
+            line-height: 1.1;
+        }
+        .stat-label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--text-muted);
+        }
+
+        .card-header-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-bottom: 12px;
+            margin-bottom: 14px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        /* ========================================================
+           TABLES SYSTEM
+           ======================================================== */
+        .kx-table-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(11, 31, 58, 0.06), 0 4px 12px rgba(11, 31, 58, 0.04);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        table thead tr {
+            background-color: #F7F9FC !important;
+            border-bottom: 1px solid var(--border) !important;
+        }
+        table thead th {
+            font-size: 11px !important;
+            font-weight: 700 !important;
+            color: var(--text-muted) !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.05em !important;
+            padding: 12px 14px !important;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background-color: #F7F9FC;
+        }
+        table tbody tr {
+            border-bottom: 1px solid var(--border) !important;
+            transition: background-color 0.12s ease;
+        }
+        table tbody tr:hover {
+            background-color: rgba(47, 111, 237, 0.035) !important;
+        }
+        table tbody td {
+            padding: 12px 14px !important;
+            color: var(--text);
+            font-size: 13px;
+            vertical-align: middle;
+        }
+
+        /* ========================================================
+           STATUS BADGES (Pills)
+           ======================================================== */
+        .badge-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2.5px 8px;
+            border-radius: 9999px;
+            font-size: 10.5px;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            text-transform: uppercase;
+            line-height: 1.3;
+        }
+        .badge-pill-success { background: var(--success-bg); color: var(--success); }
+        .badge-pill-danger { background: var(--danger-bg); color: var(--danger); }
+        .badge-pill-info { background: var(--info-bg); color: var(--info); }
+        .badge-pill-warning { background: var(--warning-bg); color: var(--warning); }
+        .badge-pill-amber { background: var(--amber-100); color: #946300; }
+        .badge-pill-neutral { background: #EDF2F7; color: var(--text-muted); }
+
+        /* ========================================================
+           BUTTONS & FORM INPUTS
+           ======================================================== */
+        .btn-navy {
+            background-color: var(--navy-900) !important;
+            color: #FFFFFF !important;
+            border: 1px solid var(--navy-900) !important;
+            border-radius: 8px !important;
+            padding: 8px 14px !important;
+            font-size: 12px !important;
+            font-weight: 600 !important;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.15s ease;
+            cursor: pointer;
+        }
+        .btn-navy:hover {
+            background-color: var(--navy-700) !important;
+            border-color: var(--navy-700) !important;
+        }
+
+        .btn-amber {
+            background-color: var(--amber-500) !important;
+            color: var(--navy-900) !important;
+            border: 1px solid var(--amber-500) !important;
+            border-radius: 8px !important;
+            padding: 8px 14px !important;
+            font-size: 12px !important;
+            font-weight: 700 !important;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.15s ease;
+            cursor: pointer;
+        }
+        .btn-amber:hover {
+            background-color: #E59516 !important;
+            border-color: #E59516 !important;
+        }
+
+        .btn-secondary {
+            background-color: #FFFFFF !important;
+            color: var(--text) !important;
+            border: 1px solid var(--border) !important;
+            border-radius: 8px !important;
+            padding: 8px 14px !important;
+            font-size: 12px !important;
+            font-weight: 600 !important;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.15s ease;
+            cursor: pointer;
+        }
+        .btn-secondary:hover {
+            background-color: #F8FAFC !important;
+            border-color: #CBD5E1 !important;
+        }
+
+        .btn-outline-danger {
+            background-color: transparent !important;
+            color: var(--danger) !important;
+            border: 1px solid var(--danger) !important;
+            border-radius: 8px !important;
+            padding: 6px 12px !important;
+            font-size: 12px !important;
+            font-weight: 600 !important;
+            transition: all 0.15s ease;
+            cursor: pointer;
+        }
+        .btn-outline-danger:hover {
+            background-color: var(--danger) !important;
+            color: #FFFFFF !important;
+        }
+
+        /* Form Controls */
+        input[type="text"], input[type="search"], input[type="email"], input[type="password"], input[type="number"], input[type="tel"], select, textarea {
+            background-color: #FFFFFF !important;
+            border: 1px solid var(--border) !important;
+            border-radius: 8px !important;
+            color: var(--text) !important;
+            font-size: 13px !important;
+            padding: 8px 12px !important;
+            outline: none !important;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+        input:focus, select:focus, textarea:focus {
+            border-color: var(--amber-500) !important;
+            box-shadow: 0 0 0 3px rgba(245, 166, 35, 0.22) !important;
+        }
+
+        /* Modals */
+        .kx-modal-window {
+            background-color: var(--surface) !important;
+            border: 1px solid var(--border) !important;
+            border-radius: 12px !important;
+            box-shadow: 0 20px 48px -12px rgba(11, 31, 58, 0.25) !important;
         }
 
         .admin-section {
@@ -184,7 +583,7 @@
             50% { opacity: 0.38; }
         }
         .kambus-skeleton {
-            background-color: var(--line, #E3E8E8);
+            background-color: var(--border, #E3E8F0);
             animation: kambusPulse 1.6s ease-in-out infinite;
             border-radius: 4px;
             color: transparent !important;
@@ -194,7 +593,7 @@
         .announcement-card {
             position: relative;
             overflow: hidden;
-            border: 1px solid rgba(23, 53, 65, 0.10);
+            border: 1px solid var(--border);
             border-radius: 8px;
             padding: 14px 14px 14px 18px;
             animation: announcement-card-in 240ms ease-out both;
@@ -206,7 +605,7 @@
             inset: 0 auto 0 0;
             width: 4px;
             border-radius: 8px 0 0 8px;
-            background: #D9922E;
+            background: var(--amber-500);
         }
 
         .announcement-card--general {
@@ -225,18 +624,18 @@
             background: linear-gradient(135deg, #EEF4FF 0%, #FBFCFF 70%);
         }
 
-        .announcement-card--general::before { background: #D9922E; }
-        .announcement-card--bus::before { background: #173541; }
-        .announcement-card--urgent::before { background: #C43A3A; }
-        .announcement-card--stop::before { background: #426B9A; }
+        .announcement-card--general::before { background: var(--amber-500); }
+        .announcement-card--bus::before { background: var(--navy-900); }
+        .announcement-card--urgent::before { background: var(--danger); }
+        .announcement-card--stop::before { background: var(--info); }
 
         .announcement-empty {
-            border: 1px dashed rgba(23, 53, 65, 0.18);
-            border-radius: 16px;
+            border: 1.5px dashed var(--border);
+            border-radius: 12px;
             padding: 28px 18px;
-            background: linear-gradient(135deg, #FFFBF3, #F6FAFB);
+            background: var(--surface);
             text-align: center;
-            color: #52707A;
+            color: var(--text-muted);
         }
 
         #notificationBadge:not(.hidden) {
@@ -249,12 +648,8 @@
         }
 
         @keyframes notification-badge-pulse {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(196, 58, 58, 0.34); }
-            55% { box-shadow: 0 0 0 6px rgba(196, 58, 58, 0); }
-        }
-
-        #adminSidebar {
-            transition: transform 0.2s ease-in-out;
+            0%, 100% { box-shadow: 0 0 0 0 rgba(214, 69, 69, 0.35); }
+            55% { box-shadow: 0 0 0 6px rgba(214, 69, 69, 0); }
         }
 
         @media (max-width: 1023px) {
@@ -276,78 +671,78 @@
     </style>
 </head>
 
-<body class="text-navy min-h-screen flex flex-col font-sans pb-16 lg:pb-0">
+<body class="min-h-screen flex flex-col font-sans pb-16 lg:pb-0" style="background-color: var(--bg); color: var(--text);">
 
     <!-- ========================================================= -->
     <!-- TOP HEADER -->
     <!-- ========================================================= -->
-    <header class="bg-surface border-b border-line sticky top-0 z-40 px-4 sm:px-6 py-3 flex items-center justify-between border border-line">
+    <header class="admin-top-header sticky top-0 z-40 px-4 sm:px-6 py-3 flex items-center justify-between border-b" style="background-color: var(--navy-900); border-color: rgba(255, 255, 255, 0.1);">
         <div class="flex items-center gap-3">
-            <button type="button" onclick="window.KambusAdmin.toggleMobileSidebar()" class="lg:hidden w-9 h-9 rounded bg-bg text-navy flex items-center justify-center text-base" aria-label="Toggle Navigation">
+            <button type="button" onclick="window.KambusAdmin.toggleMobileSidebar()" class="lg:hidden w-9 h-9 rounded-lg header-action-btn flex items-center justify-center text-base" aria-label="Toggle Navigation">
                 <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-bars"/></svg>
             </button>
-            <div class="w-9 h-9 bg-navy rounded flex items-center justify-center shrink-0">
+            <div class="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style="background-color: var(--amber-500);">
                 <img src="brand/mark-white.svg" alt="KAMBUS" class="w-5 h-5">
             </div>
             <div>
-                <h1 class="text-sm sm:text-base font-semibold tracking-tight text-navy leading-tight">KAMBUS Admin Desk</h1>
-                <p class="text-[10px] sm:text-[11px] text-ink-muted font-semibold leading-tight">Fleet Control & Transport Management</p>
+                <h1 class="text-sm sm:text-base font-semibold tracking-tight text-white leading-tight">KAMBUS Admin Desk</h1>
+                <p class="text-[10px] sm:text-[11px] font-medium leading-tight" style="color: rgba(255, 255, 255, 0.65);">Fleet Control & Transport Management</p>
             </div>
         </div>
 
         <!-- Super-Admin Campus Context Switcher (Desktop: >= lg) -->
-        <div id="superAdminCampusSelectorContainer" class="hidden lg:flex items-center gap-2 px-2.5 py-1 bg-surface border border-line rounded-lg shadow-2xs max-w-xs xl:max-w-md shrink min-w-0">
-            <div class="flex items-center gap-1.5 text-xs text-brand font-semibold shrink-0">
-                <svg class="w-4 h-4 text-brand shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M9 9h1M9 13h1M9 17h1M14 9h1M14 13h1M14 17h1"/></svg>
-                <span class="hidden md:inline font-bold text-navy">Campus:</span>
+        <div id="superAdminCampusSelectorContainer" class="hidden lg:flex items-center gap-2 px-2.5 py-1.5 super-admin-context-box max-w-xs xl:max-w-md shrink min-w-0">
+            <div class="flex items-center gap-1.5 text-xs font-semibold shrink-0" style="color: var(--amber-500);">
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M9 9h1M9 13h1M9 17h1M14 9h1M14 13h1M14 17h1"/></svg>
+                <span class="hidden md:inline font-bold text-white">Campus:</span>
             </div>
-            <select id="superAdminCampusSelect" onchange="window.KambusAdmin.handleCampusContextChange(this.value)" class="flex-1 min-w-0 max-w-[170px] xl:max-w-[220px] text-xs font-semibold text-navy bg-white border border-line rounded px-2.5 py-1 focus:outline-none focus:ring-1 focus:ring-brand cursor-pointer truncate">
+            <select id="superAdminCampusSelect" onchange="window.KambusAdmin.handleCampusContextChange(this.value)" class="flex-1 min-w-0 max-w-[170px] xl:max-w-[220px] text-xs font-semibold super-admin-select px-2.5 py-1 focus:outline-none cursor-pointer truncate">
                 <option value="">-- Select Campus --</option>
             </select>
-            <span id="superAdminActiveCampusBadge" class="hidden xl:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs shrink-0">
-                <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>No Campus Selected
+            <span id="superAdminActiveCampusBadge" class="hidden xl:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold shadow-2xs shrink-0" style="background-color: var(--amber-100); color: var(--navy-900); border: 1px solid var(--amber-500);">
+                <span class="w-2 h-2 rounded-full animate-pulse" style="background-color: var(--amber-500);"></span>No Campus Selected
             </span>
         </div>
 
         <div class="flex items-center gap-2 shrink-0 ml-2">
             <!-- Global Search Quick Trigger -->
-            <button type="button" onclick="window.KambusAdmin.showSection('search')" class="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-bg hover:bg-slate-200/80 rounded text-xs font-semibold text-ink-muted transition shrink-0">
-                <svg class="w-4 h-4 shrink-0 text-ink-muted" aria-hidden="true"><use href="icons.svg#icon-search"/></svg>
+            <button type="button" onclick="window.KambusAdmin.showSection('search')" class="hidden sm:flex items-center gap-2 px-3 py-1.5 header-action-btn text-xs font-semibold transition shrink-0">
+                <svg class="w-4 h-4 shrink-0" style="color: rgba(255, 255, 255, 0.7);" aria-hidden="true"><use href="icons.svg#icon-search"/></svg>
                 <span>Search...</span>
             </button>
 
             <!-- Notifications Bell -->
-            <button id="notificationBell" type="button" class="relative w-9 h-9 rounded bg-bg hover:bg-bg text-ink-muted border border-line flex items-center justify-center transition shrink-0" aria-label="Notifications">
+            <button id="notificationBell" type="button" class="relative w-9 h-9 rounded-lg header-action-btn flex items-center justify-center transition shrink-0" aria-label="Notifications">
                 <svg class="w-4 h-4 shrink-0 text-sm" aria-hidden="true"><use href="icons.svg#icon-bell"/></svg>
-                <span id="notificationBadge" class="hidden absolute -top-1 -right-1 min-w-[17px] h-[17px] px-1 rounded-full bg-danger text-white text-[9px] font-semibold flex items-center justify-center">0</span>
+                <span id="notificationBadge" class="hidden absolute -top-1 -right-1 min-w-[17px] h-[17px] px-1 rounded-full text-white text-[9px] font-bold flex items-center justify-center" style="background-color: var(--danger);">0</span>
             </button>
 
             <!-- Refresh Button -->
-            <button type="button" onclick="window.location.reload()" class="w-9 h-9 sm:w-auto sm:px-3 sm:py-1.5 bg-ok hover:opacity-90 text-white font-semibold text-xs rounded border border-line flex items-center justify-center gap-1.5 transition shrink-0" title="Refresh Dashboard">
+            <button type="button" onclick="window.location.reload()" class="w-9 h-9 sm:w-auto sm:px-3.5 sm:py-1.5 header-refresh-btn text-xs flex items-center justify-center gap-1.5 transition shrink-0" title="Refresh Dashboard">
                 <svg class="w-4 h-4 shrink-0 text-xs" aria-hidden="true"><use href="icons.svg#icon-refresh"/></svg>
                 <span class="hidden sm:inline">Refresh</span>
             </button>
 
             <!-- Logout -->
-            <a href="index.html" onclick="window.KambusAdmin.handleAdminLogout(event)" class="w-9 h-9 rounded bg-bg hover:bg-danger/10 text-ink-muted hover:text-danger flex items-center justify-center transition border border-line shrink-0" aria-label="Logout" title="Logout">
+            <a href="index.html" onclick="window.KambusAdmin.handleAdminLogout(event)" class="w-9 h-9 rounded-lg header-logout-btn flex items-center justify-center transition shrink-0" aria-label="Logout" title="Logout">
                 <svg class="w-4 h-4 shrink-0 text-sm" aria-hidden="true"><use href="icons.svg#icon-logout"/></svg>
             </a>
         </div>
     </header>
 
     <!-- Super-Admin Mobile Campus Sub-Bar (< lg) -->
-    <div id="superAdminMobileCampusBar" class="hidden lg:hidden bg-surface border-b border-line px-4 py-2 items-center justify-between gap-2 shadow-2xs">
-        <div class="flex items-center gap-1.5 text-xs text-brand font-semibold shrink-0">
-            <svg class="w-4 h-4 text-brand shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M9 9h1M9 13h1M9 17h1M14 9h1M14 13h1M14 17h1"/></svg>
-            <span class="font-bold text-navy">Campus:</span>
+    <div id="superAdminMobileCampusBar" class="hidden lg:hidden px-4 py-2 items-center justify-between gap-2 shadow-2xs" style="background-color: var(--navy-700); border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
+        <div class="flex items-center gap-1.5 text-xs font-semibold shrink-0" style="color: var(--amber-500);">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M9 9h1M9 13h1M9 17h1M14 9h1M14 13h1M14 17h1"/></svg>
+            <span class="font-bold text-white">Campus:</span>
         </div>
-        <select id="superAdminMobileCampusSelect" onchange="window.KambusAdmin.handleCampusContextChange(this.value)" class="flex-1 min-w-0 text-xs font-semibold text-navy bg-white border border-line rounded px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand cursor-pointer truncate">
+        <select id="superAdminMobileCampusSelect" onchange="window.KambusAdmin.handleCampusContextChange(this.value)" class="flex-1 min-w-0 text-xs font-semibold super-admin-select px-2.5 py-1.5 focus:outline-none cursor-pointer truncate">
             <option value="">-- Select Campus --</option>
         </select>
     </div>
 
     <!-- SIDEBAR OVERLAY FOR MOBILE -->
-    <div id="sidebarOverlay" onclick="window.KambusAdmin.closeMobileSidebar()" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-90 hidden lg:hidden"></div>
+    <div id="sidebarOverlay" onclick="window.KambusAdmin.closeMobileSidebar()" class="fixed inset-0 z-90 hidden lg:hidden"></div>
 
     <!-- MAIN APP LAYOUT -->
     <div class="flex-1 flex max-w-7xl w-full mx-auto">
@@ -355,9 +750,9 @@
         <!-- ========================================================= -->
         <!-- SIDEBAR NAVIGATION -->
         <!-- ========================================================= -->
-        <aside id="adminSidebar" class="w-64 bg-surface border-r border-line/90 p-4 flex flex-col justify-between shrink-0 border border-line lg:shadow-none">
+        <aside id="adminSidebar" class="w-64 p-4 flex flex-col justify-between shrink-0 lg:shadow-none">
             <div class="space-y-1 overflow-y-auto">
-                <p class="text-[10px] font-semibold tracking-wider uppercase text-ink-muted px-3 mb-2">Overview</p>
+                <p class="sidebar-section-title">Overview</p>
                 <button type="button" data-section="dashboard" onclick="window.KambusAdmin.showSection('dashboard')" class="admin-nav-btn active">
                     <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-chart-pie"/></svg> <span>Dashboard</span>
                 </button>
@@ -368,7 +763,7 @@
                     <svg class="w-4 h-4 shrink-0 text-ok" aria-hidden="true"><use href="icons.svg#icon-route"/></svg> <span>Live Fleet Map</span>
                 </button>
 
-                <p class="text-[10px] font-semibold tracking-wider uppercase text-ink-muted px-3 mt-4 mb-2">Fleet & Students</p>
+                <p class="sidebar-section-title">Fleet & Students</p>
                 <button type="button" data-section="buses" onclick="window.KambusAdmin.showSection('buses')" class="admin-nav-btn">
                     <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-bus"/></svg> <span>Buses</span>
                 </button>
@@ -381,7 +776,7 @@
                 <button type="button" id="navBtnParents" data-section="parents" onclick="window.KambusAdmin.showSection('parents')" class="admin-nav-btn">
                     <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-users"/></svg>
                     <span>Parents</span>
-                    <span class="text-[9px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 ml-auto font-bold uppercase tracking-wider">School</span>
+                    <span class="text-[9px] px-1.5 py-0.5 rounded ml-auto font-bold uppercase tracking-wider" style="background-color: var(--amber-100); color: var(--navy-900);">School</span>
                 </button>
                 <button type="button" data-section="routes" onclick="window.KambusAdmin.showSection('routes')" class="admin-nav-btn">
                     <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-route"/></svg> <span>Routes</span>
@@ -393,7 +788,7 @@
                     <svg class="w-4 h-4 shrink-0 text-warn" aria-hidden="true"><use href="icons.svg#icon-clipboard-question"/></svg> <span>Complaints</span>
                 </button>
 
-                <p class="text-[10px] font-semibold tracking-wider uppercase text-ink-muted px-3 mt-4 mb-2">Logs</p>
+                <p class="sidebar-section-title">Logs</p>
                 <button type="button" data-section="geofence-logs" onclick="window.KambusAdmin.showSection('geofence-logs')" class="admin-nav-btn">
                     <svg class="w-4 h-4 shrink-0 text-ok" aria-hidden="true"><use href="icons.svg#icon-logout"/></svg> <span>Geofence Entry Log</span>
                 </button>
@@ -401,7 +796,7 @@
                     <svg class="w-4 h-4 shrink-0 text-brand" aria-hidden="true"><use href="icons.svg#icon-map-pin"/></svg> <span>Temporary Stop Log</span>
                 </button>
 
-                <p class="text-[10px] font-semibold tracking-wider uppercase text-ink-muted px-3 mt-4 mb-2">Communications</p>
+                <p class="sidebar-section-title">Communications</p>
                 <button type="button" data-section="messages" onclick="window.KambusAdmin.showSection('messages')" class="admin-nav-btn">
                     <svg class="w-4 h-4 shrink-0 text-brand" aria-hidden="true"><use href="icons.svg#icon-clipboard-question"/></svg> <span>Student Messages</span>
                 </button>
@@ -413,16 +808,16 @@
                 </button>
 
                 <div id="superAdminNavGroup" class="hidden">
-                    <p class="text-[10px] font-semibold tracking-wider uppercase text-ink-muted px-3 mt-4 mb-2">Super Admin</p>
+                    <p class="sidebar-section-title">Super Admin</p>
                     <button type="button" data-section="campuses" onclick="window.KambusAdmin.showSection('campuses')" class="admin-nav-btn">
-                        <svg class="w-4 h-4 shrink-0 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M9 9h1M9 13h1M9 17h1M14 9h1M14 13h1M14 17h1"/></svg> <span>Campuses</span>
+                        <svg class="w-4 h-4 shrink-0 text-emerald-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M9 9h1M9 13h1M9 17h1M14 9h1M14 13h1M14 17h1"/></svg> <span>Campuses</span>
                     </button>
                     <button type="button" data-section="admins" onclick="window.KambusAdmin.showSection('admins')" class="admin-nav-btn">
-                        <svg class="w-4 h-4 shrink-0 text-brand" aria-hidden="true"><use href="icons.svg#icon-user-shield"/></svg> <span>Admin Accounts</span>
+                        <svg class="w-4 h-4 shrink-0 text-amber-400" aria-hidden="true"><use href="icons.svg#icon-user-shield"/></svg> <span>Admin Accounts</span>
                     </button>
                 </div>
 
-                <p class="text-[10px] font-semibold tracking-wider uppercase text-ink-muted px-3 mt-4 mb-2">System</p>
+                <p class="sidebar-section-title">System</p>
                 <button type="button" data-section="search" onclick="window.KambusAdmin.showSection('search')" class="admin-nav-btn">
                     <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-search"/></svg> <span>Global Search</span>
                 </button>
@@ -431,8 +826,8 @@
                 </button>
             </div>
 
-            <div class="pt-4 border-t border-slate-100 text-[11px] text-ink-muted">
-                <p class="font-semibold text-ink-muted">KITSW Campus Transport</p>
+            <div class="pt-4 admin-sidebar-footer text-[11px]">
+                <p class="font-semibold">KITSW Campus Transport</p>
                 <p>v2.4.0 &bull; Control Desk</p>
             </div>
         </aside>
@@ -446,75 +841,107 @@
             <section id="section-dashboard" class="admin-section active space-y-6">
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div>
-                        <h2 class="text-xl font-semibold text-navy tracking-tight">System Overview</h2>
-                        <p class="text-xs text-ink-muted">Real-time status of campus fleet, routes, and active trips.</p>
+                        <h2 class="text-xl font-bold tracking-tight" style="color: var(--navy-900);">System Overview</h2>
+                        <p class="text-xs" style="color: var(--text-muted);">Real-time status of campus fleet, routes, and active trips.</p>
                     </div>
                     <div id="dashboardCampusContextBanner" class="hidden"></div>
                 </div>
 
                 <!-- KPI Cards Grid -->
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
-                    <div class="bg-surface border border-line/90 rounded p-4 border border-line">
-                        <span class="text-[11px] font-semibold text-ink-muted uppercase">Total Buses</span>
-                        <div class="flex items-baseline justify-between mt-1">
-                            <span id="statTotalBuses" class="text-2xl font-semibold text-navy">0</span>
-                            <span class="text-xs font-semibold text-brand"></span>
+                    <div class="stat-card stat-card--info">
+                        <div class="flex items-center justify-between">
+                            <span class="stat-label">Total Buses</span>
+                            <div class="stat-icon-chip chip-info">
+                                <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-bus"/></svg>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <span id="statTotalBuses" class="stat-number">0</span>
                         </div>
                     </div>
 
-                    <div class="bg-surface border border-line/90 rounded p-4 border border-line">
-                        <span class="text-[11px] font-semibold text-ink-muted uppercase">Active Buses</span>
-                        <div class="flex items-baseline justify-between mt-1">
-                            <span id="statActiveBuses" class="text-2xl font-semibold text-ok">0</span>
-                            <span class="text-xs font-semibold text-ok"></span>
+                    <div class="stat-card stat-card--success">
+                        <div class="flex items-center justify-between">
+                            <span class="stat-label">Active Buses</span>
+                            <div class="stat-icon-chip chip-success">
+                                <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-route"/></svg>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <span id="statActiveBuses" class="stat-number" style="color: var(--success);">0</span>
                         </div>
                     </div>
 
-                    <div class="bg-surface border border-line/90 rounded p-4 border border-line">
-                        <span class="text-[11px] font-semibold text-ink-muted uppercase">Offline Buses</span>
-                        <div class="flex items-baseline justify-between mt-1">
-                            <span id="statOfflineBuses" class="text-2xl font-semibold text-ink-muted">0</span>
-                            <span class="text-xs font-semibold text-ink-muted"></span>
+                    <div class="stat-card stat-card--muted">
+                        <div class="flex items-center justify-between">
+                            <span class="stat-label">Offline Buses</span>
+                            <div class="stat-icon-chip chip-muted">
+                                <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-bus"/></svg>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <span id="statOfflineBuses" class="stat-number" style="color: var(--text-muted);">0</span>
                         </div>
                     </div>
 
-                    <div class="bg-surface border border-line/90 rounded p-4 border border-line">
-                        <span class="text-[11px] font-semibold text-ink-muted uppercase">Total Drivers</span>
-                        <div class="flex items-baseline justify-between mt-1">
-                            <span id="statTotalDrivers" class="text-2xl font-semibold text-navy">0</span>
-                            <span class="text-xs font-semibold text-brand"></span>
+                    <div class="stat-card stat-card--amber">
+                        <div class="flex items-center justify-between">
+                            <span class="stat-label">Total Drivers</span>
+                            <div class="stat-icon-chip chip-amber">
+                                <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-user-tie"/></svg>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <span id="statTotalDrivers" class="stat-number">0</span>
                         </div>
                     </div>
 
-                    <div class="bg-surface border border-line/90 rounded p-4 border border-line">
-                        <span class="text-[11px] font-semibold text-ink-muted uppercase">Total Students</span>
-                        <div class="flex items-baseline justify-between mt-1">
-                            <span id="statTotalStudents" class="text-2xl font-semibold text-navy">0</span>
-                            <span class="text-xs font-semibold text-brand"></span>
+                    <div class="stat-card stat-card--info">
+                        <div class="flex items-center justify-between">
+                            <span class="stat-label">Total Students</span>
+                            <div class="stat-icon-chip chip-info">
+                                <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-user-graduate"/></svg>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <span id="statTotalStudents" class="stat-number">0</span>
                         </div>
                     </div>
 
-                    <div class="bg-surface border border-line/90 rounded p-4 border border-line">
-                        <span class="text-[11px] font-semibold text-ink-muted uppercase">Travelling Today</span>
-                        <div class="flex items-baseline justify-between mt-1">
-                            <span id="statTravellingToday" class="text-2xl font-semibold text-ok">0</span>
-                            <span class="text-xs font-semibold text-ok"></span>
+                    <div class="stat-card stat-card--success">
+                        <div class="flex items-center justify-between">
+                            <span class="stat-label">Travelling Today</span>
+                            <div class="stat-icon-chip chip-success">
+                                <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-users"/></svg>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <span id="statTravellingToday" class="stat-number" style="color: var(--success);">0</span>
                         </div>
                     </div>
 
-                    <div class="bg-surface border border-line/90 rounded p-4 border border-line">
-                        <span class="text-[11px] font-semibold text-ink-muted uppercase">Total Routes</span>
-                        <div class="flex items-baseline justify-between mt-1">
-                            <span id="statTotalRoutes" class="text-2xl font-semibold text-navy">0</span>
-                            <span class="text-xs font-semibold text-ink-muted"></span>
+                    <div class="stat-card stat-card--warning">
+                        <div class="flex items-center justify-between">
+                            <span class="stat-label">Total Routes</span>
+                            <div class="stat-icon-chip chip-warning">
+                                <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-route"/></svg>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <span id="statTotalRoutes" class="stat-number">0</span>
                         </div>
                     </div>
 
-                    <div class="bg-surface border border-line/90 rounded p-4 border border-line">
-                        <span class="text-[11px] font-semibold text-ink-muted uppercase">Total Stops</span>
-                        <div class="flex items-baseline justify-between mt-1">
-                            <span id="statTotalStops" class="text-2xl font-semibold text-navy">0</span>
-                            <span class="text-xs font-semibold text-ink-muted"></span>
+                    <div class="stat-card stat-card--amber">
+                        <div class="flex items-center justify-between">
+                            <span class="stat-label">Total Stops</span>
+                            <div class="stat-icon-chip chip-amber">
+                                <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-map-pin"/></svg>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <span id="statTotalStops" class="stat-number">0</span>
                         </div>
                     </div>
                 </div>
@@ -522,19 +949,19 @@
                 <!-- Active Trips & Alerts Dual Columns -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <!-- Active Trips Card -->
-                    <div class="bg-surface border border-line/90 rounded p-5 border border-line">
-                        <div class="flex items-center justify-between mb-3">
-                            <h3 class="text-sm font-semibold text-navy flex items-center gap-2">
-                                <span class="w-2.5 h-2.5 rounded-full bg-ok"></span> Currently Active Trips
+                    <div class="kx-card p-5">
+                        <div class="card-header-bar">
+                            <h3 class="text-sm font-bold flex items-center gap-2" style="color: var(--text);">
+                                <span class="w-2.5 h-2.5 rounded-full animate-pulse" style="background-color: var(--success);"></span> Currently Active Trips
                             </h3>
-                            <button type="button" onclick="window.KambusAdmin.showSection('live-map')" class="text-xs font-semibold text-brand hover:underline">
+                            <button type="button" onclick="window.KambusAdmin.showSection('live-map')" class="text-xs font-semibold hover:underline flex items-center gap-1 transition" style="color: var(--warning);">
                                 Full Map &rarr;
                             </button>
                         </div>
                         <div id="dashboardActiveTrips" class="space-y-2.5">
-                            <div class="p-3 bg-bg border border-line rounded flex items-center justify-between">
+                            <div class="p-3 bg-bg border border-line rounded-lg flex items-center justify-between">
                                 <div class="flex items-center gap-2.5">
-                                    <span class="w-8 h-8 rounded bg-line kambus-skeleton shrink-0"></span>
+                                    <span class="w-8 h-8 rounded-lg bg-line kambus-skeleton shrink-0"></span>
                                     <div class="space-y-1.5">
                                         <span class="block w-24 h-3.5 bg-line kambus-skeleton"></span>
                                         <span class="block w-36 h-2.5 bg-line kambus-skeleton"></span>
@@ -542,9 +969,9 @@
                                 </div>
                                 <span class="w-16 h-4 bg-line kambus-skeleton"></span>
                             </div>
-                            <div class="p-3 bg-bg border border-line rounded flex items-center justify-between">
+                            <div class="p-3 bg-bg border border-line rounded-lg flex items-center justify-between">
                                 <div class="flex items-center gap-2.5">
-                                    <span class="w-8 h-8 rounded bg-line kambus-skeleton shrink-0"></span>
+                                    <span class="w-8 h-8 rounded-lg bg-line kambus-skeleton shrink-0"></span>
                                     <div class="space-y-1.5">
                                         <span class="block w-20 h-3.5 bg-line kambus-skeleton"></span>
                                         <span class="block w-32 h-2.5 bg-line kambus-skeleton"></span>
@@ -556,16 +983,16 @@
                     </div>
 
                     <!-- Recent Alerts -->
-                    <div class="bg-surface border border-line/90 rounded p-5 border border-line">
-                        <div class="flex items-center justify-between mb-3">
-                            <h3 class="text-sm font-semibold text-navy flex items-center gap-2">
+                    <div class="kx-card p-5">
+                        <div class="card-header-bar">
+                            <h3 class="text-sm font-bold flex items-center gap-2" style="color: var(--text);">
                                 <svg class="w-4 h-4 shrink-0 text-warn" aria-hidden="true"><use href="icons.svg#icon-alert"/></svg> Operational Alerts
                             </h3>
-                            <button type="button" onclick="window.KambusAdmin.showSection('alerts')" class="text-xs font-semibold text-brand hover:underline">
+                            <button type="button" onclick="window.KambusAdmin.showSection('alerts')" class="text-xs font-semibold hover:underline flex items-center gap-1 transition" style="color: var(--warning);">
                                 View All &rarr;
                             </button>
                         </div>
-                        <div id="dashboardRecentAlerts" class="divide-y divide-slate-100">
+                        <div id="dashboardRecentAlerts" class="divide-y divide-border">
                             <div class="space-y-2 py-1">
                                 <div class="flex items-center gap-3 py-2">
                                     <span class="w-6 h-6 rounded-full bg-line kambus-skeleton shrink-0"></span>
@@ -600,11 +1027,11 @@
                 </div>
 
                 <div id="busesList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div class="p-4 bg-surface border border-line rounded space-y-3">
+                    <div class="kx-card p-4 space-y-3">
                         <div class="flex items-center justify-between"><span class="w-20 h-4 bg-line kambus-skeleton"></span><span class="w-12 h-4 bg-line kambus-skeleton"></span></div>
                         <div class="space-y-1.5"><span class="block w-32 h-3 bg-line kambus-skeleton"></span><span class="block w-24 h-2.5 bg-line kambus-skeleton"></span></div>
                     </div>
-                    <div class="p-4 bg-surface border border-line rounded space-y-3">
+                    <div class="kx-card p-4 space-y-3">
                         <div class="flex items-center justify-between"><span class="w-20 h-4 bg-line kambus-skeleton"></span><span class="w-12 h-4 bg-line kambus-skeleton"></span></div>
                         <div class="space-y-1.5"><span class="block w-28 h-3 bg-line kambus-skeleton"></span><span class="block w-20 h-2.5 bg-line kambus-skeleton"></span></div>
                     </div>
@@ -624,7 +1051,7 @@
                 </div>
 
                 <div id="driversList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div class="p-4 bg-surface border border-line rounded space-y-3">
+                    <div class="kx-card p-4 space-y-3">
                         <div class="flex items-center justify-between"><span class="w-24 h-4 bg-line kambus-skeleton"></span><span class="w-12 h-4 bg-line kambus-skeleton"></span></div>
                         <div class="space-y-1.5"><span class="block w-32 h-3 bg-line kambus-skeleton"></span><span class="block w-24 h-2.5 bg-line kambus-skeleton"></span></div>
                     </div>
@@ -635,26 +1062,26 @@
             <section id="section-students" class="admin-section space-y-5">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
-                        <h2 class="text-xl font-semibold text-navy tracking-tight">Student Directory</h2>
-                        <p class="text-xs text-ink-muted">Manage student profiles, bus assignments, and stops.</p>
+                        <h2 class="text-xl font-bold tracking-tight" style="color: var(--navy-900);">Student Directory</h2>
+                        <p class="text-xs" style="color: var(--text-muted);">Manage student profiles, bus assignments, and stops.</p>
                     </div>
-                    <button type="button" onclick="window.KambusAdmin.openAddStudentModal()" class="px-4 py-2 bg-brand hover:bg-brandDark text-white text-xs font-semibold rounded border border-line flex items-center gap-2 self-start sm:self-auto">
+                    <button type="button" onclick="window.KambusAdmin.openAddStudentModal()" class="btn-navy self-start sm:self-auto">
                         <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-user-plus"/></svg> <span>Add Student</span>
                     </button>
                 </div>
 
                 <!-- Filters Bar -->
-                <div class="bg-surface border border-line/90 rounded p-3.5 border border-line grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div class="kx-card p-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
-                        <input type="text" id="studentSearchInput" placeholder="Search by name, roll, or department..." oninput="window.KambusAdmin.loadStudents()" class="w-full px-3 py-2 border border-line rounded text-xs focus:border-brand focus:ring-1 focus:ring-brand">
+                        <input type="text" id="studentSearchInput" placeholder="Search by name, roll, or department..." oninput="window.KambusAdmin.loadStudents()" class="w-full text-xs">
                     </div>
                     <div>
-                        <select id="studentFilterBus" onchange="window.KambusAdmin.loadStudents()" class="w-full px-3 py-2 border border-line rounded text-xs focus:border-brand">
+                        <select id="studentFilterBus" onchange="window.KambusAdmin.loadStudents()" class="w-full text-xs cursor-pointer">
                             <option value="">-- All Buses --</option>
                         </select>
                     </div>
                     <div>
-                        <select id="studentFilterTravelling" onchange="window.KambusAdmin.loadStudents()" class="w-full px-3 py-2 border border-line rounded text-xs focus:border-brand">
+                        <select id="studentFilterTravelling" onchange="window.KambusAdmin.loadStudents()" class="w-full text-xs cursor-pointer">
                             <option value="">-- All Travel Statuses --</option>
                             <option value="true">Travelling Today</option>
                             <option value="false">Not Travelling Today</option>
@@ -662,9 +1089,25 @@
                     </div>
                 </div>
 
+                <!-- Bulk Students Action Toolbar -->
+                <div id="bulkStudentToolbar" class="hidden p-3.5 rounded-xl flex items-center justify-between flex-wrap gap-2 transition" style="background-color: var(--amber-100); border: 1px solid rgba(245, 166, 35, 0.45);">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full animate-pulse inline-block" style="background-color: var(--amber-500);"></span>
+                        <span id="bulkStudentCount" class="font-bold text-xs" style="color: var(--navy-900);">0 students selected</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="window.KambusAdmin.clearStudentSelection()" class="btn-secondary" style="padding: 6px 12px; font-size: 11px;">
+                            Clear Selection
+                        </button>
+                        <button type="button" onclick="window.KambusAdmin.openBulkAssignBusModal()" class="btn-amber" style="padding: 6px 14px; font-size: 11px;">
+                            <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-bus"/></svg> <span>Reassign to Bus</span>
+                        </button>
+                    </div>
+                </div>
+
                 <!-- Student List Container -->
                 <div id="studentsList">
-                    <div class="bg-surface border border-line rounded p-4 space-y-3">
+                    <div class="kx-card p-4 space-y-3">
                         <div class="flex items-center gap-3">
                             <span class="w-8 h-8 rounded-full bg-line kambus-skeleton shrink-0"></span>
                             <div class="flex-1 space-y-1.5"><span class="block w-40 h-3.5 bg-line kambus-skeleton"></span><span class="block w-24 h-2.5 bg-line kambus-skeleton"></span></div>
@@ -690,7 +1133,7 @@
                 </div>
 
                 <!-- Filters Bar -->
-                <div class="bg-surface border border-line/90 rounded p-3.5 border border-line flex flex-col sm:flex-row gap-3">
+                <div class="kx-card p-3.5 flex flex-col sm:flex-row gap-3">
                     <div class="flex-1">
                         <input type="text" id="parentSearchInput" placeholder="Search by name, phone, login ID, or email..." oninput="window.KambusAdmin.loadParents()" class="w-full px-3 py-2 border border-line rounded text-xs focus:border-brand focus:ring-1 focus:ring-brand">
                     </div>
@@ -698,7 +1141,7 @@
 
                 <!-- Parent List Container -->
                 <div id="parentsList">
-                    <div class="bg-surface border border-line rounded p-4 space-y-3">
+                    <div class="kx-card p-4 space-y-3">
                         <div class="flex items-center gap-3">
                             <span class="w-8 h-8 rounded-full bg-line kambus-skeleton shrink-0"></span>
                             <div class="flex-1 space-y-1.5"><span class="block w-36 h-3.5 bg-line kambus-skeleton"></span><span class="block w-28 h-2.5 bg-line kambus-skeleton"></span></div>
@@ -720,8 +1163,8 @@
                 </div>
 
                 <div id="routesList" class="space-y-4">
-                    <div class="p-4 bg-surface border border-line rounded flex items-center justify-between"><div class="space-y-1.5"><span class="block w-36 h-4 bg-line kambus-skeleton"></span><span class="block w-48 h-3 bg-line kambus-skeleton"></span></div><span class="w-16 h-6 bg-line kambus-skeleton"></span></div>
-                    <div class="p-4 bg-surface border border-line rounded flex items-center justify-between"><div class="space-y-1.5"><span class="block w-40 h-4 bg-line kambus-skeleton"></span><span class="block w-44 h-3 bg-line kambus-skeleton"></span></div><span class="w-16 h-6 bg-line kambus-skeleton"></span></div>
+                    <div class="kx-card p-4 flex items-center justify-between"><div class="space-y-1.5"><span class="block w-36 h-4 bg-line kambus-skeleton"></span><span class="block w-48 h-3 bg-line kambus-skeleton"></span></div><span class="w-16 h-6 bg-line kambus-skeleton"></span></div>
+                    <div class="kx-card p-4 flex items-center justify-between"><div class="space-y-1.5"><span class="block w-40 h-4 bg-line kambus-skeleton"></span><span class="block w-44 h-3 bg-line kambus-skeleton"></span></div><span class="w-16 h-6 bg-line kambus-skeleton"></span></div>
                 </div>
             </section>
 
@@ -738,7 +1181,7 @@
                 </div>
 
                 <!-- Route Filter Bar -->
-                <div class="bg-surface border border-line/90 rounded p-3.5 border border-line flex items-center gap-3">
+                <div class="kx-card p-3.5 flex items-center gap-3">
                     <label for="stopFilterRoute" class="text-xs font-semibold text-navy shrink-0">Filter by Route:</label>
                     <select id="stopFilterRoute" onchange="window.KambusAdmin.loadStops()" class="w-full sm:w-72 px-3 py-2 border border-line rounded text-xs focus:border-brand route-select-dropdown">
                         <option value="">-- All Routes --</option>
@@ -746,7 +1189,7 @@
                 </div>
 
                 <div id="stopsList" class="space-y-3">
-                    <div class="p-4 bg-surface border border-line rounded space-y-2">
+                    <div class="kx-card p-4 space-y-2">
                         <span class="block w-32 h-4 bg-line kambus-skeleton"></span>
                         <span class="block w-48 h-3 bg-line kambus-skeleton"></span>
                     </div>
@@ -767,21 +1210,21 @@
 
                 <!-- KPI Summary Cards -->
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div class="bg-surface border border-line/90 rounded p-4 border border-line">
+                    <div class="kx-card p-4">
                         <span class="text-[10px] font-semibold text-ink-muted uppercase tracking-wider">Total Reports</span>
                         <div class="flex items-baseline justify-between mt-1">
                             <span id="complaintsStatTotal" class="text-2xl font-semibold text-navy">0</span>
                             <span class="text-xs font-semibold text-warn"></span>
                         </div>
                     </div>
-                    <div class="bg-surface border border-line/90 rounded p-4 border border-line">
+                    <div class="kx-card p-4">
                         <span class="text-[10px] font-semibold text-ink-muted uppercase tracking-wider">Corroborated by Peers</span>
                         <div class="flex items-baseline justify-between mt-1">
                             <span id="complaintsStatCorroborated" class="text-2xl font-semibold text-danger">0</span>
                             <span class="text-xs font-semibold text-danger"></span>
                         </div>
                     </div>
-                    <div class="bg-surface border border-line/90 rounded p-4 border border-line">
+                    <div class="kx-card p-4">
                         <span class="text-[10px] font-semibold text-ink-muted uppercase tracking-wider">Drivers Reported</span>
                         <div class="flex items-baseline justify-between mt-1">
                             <span id="complaintsStatDriversCount" class="text-2xl font-semibold text-navy">0</span>
@@ -791,7 +1234,7 @@
                 </div>
 
                 <!-- Filter Bar -->
-                <div class="bg-surface border border-line/90 rounded p-3.5 border border-line flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                <div class="kx-card p-3.5 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                     <div class="flex items-center gap-2 flex-1">
                         <label for="complaintFilterDriver" class="text-xs font-semibold text-navy shrink-0">Filter by Driver:</label>
                         <select id="complaintFilterDriver" onchange="window.KambusAdmin.loadComplaints()" class="w-full px-3 py-2 border border-line rounded text-xs focus:border-brand driver-select-dropdown">
@@ -826,7 +1269,7 @@
                     </button>
                 </div>
 
-                <div class="bg-surface border border-line/90 rounded border border-line overflow-x-auto">
+                <div class="kx-card overflow-hidden overflow-x-auto">
                     <table class="w-full text-left text-xs">
                         <thead class="bg-bg border-b border-line text-[10px] font-semibold uppercase tracking-wider text-ink-muted">
                             <tr>
@@ -867,7 +1310,7 @@
                     </div>
                 </div>
 
-                <div class="bg-surface border border-line/90 rounded border border-line overflow-x-auto">
+                <div class="kx-card overflow-hidden overflow-x-auto">
                     <table class="w-full text-left text-xs">
                         <thead class="bg-bg border-b border-line text-[10px] font-semibold uppercase tracking-wider text-ink-muted">
                             <tr>
@@ -902,7 +1345,7 @@
                 </div>
 
                 <!-- Live Map Container -->
-                <div class="bg-surface border border-line/90 rounded overflow-hidden border border-line">
+                <div class="kx-card overflow-hidden">
                     <div id="adminLiveMap" style="height: 600px; width: 100%;"></div>
                 </div>
             </section>
@@ -921,19 +1364,19 @@
 
                 <!-- KPI Summary Cards -->
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div class="bg-surface border border-line/90 rounded p-4">
+                    <div class="kx-card p-4">
                         <span class="text-[10px] font-semibold text-ink-muted uppercase tracking-wider">Total Messages</span>
                         <div class="flex items-baseline justify-between mt-1">
                             <span id="messagesStatTotal" class="text-2xl font-semibold text-navy">0</span>
                         </div>
                     </div>
-                    <div class="bg-surface border border-line/90 rounded p-4">
+                    <div class="kx-card p-4">
                         <span class="text-[10px] font-semibold text-ink-muted uppercase tracking-wider">Unread</span>
                         <div class="flex items-baseline justify-between mt-1">
                             <span id="messagesStatUnread" class="text-2xl font-semibold text-warn">0</span>
                         </div>
                     </div>
-                    <div class="bg-surface border border-line/90 rounded p-4">
+                    <div class="kx-card p-4">
                         <span class="text-[10px] font-semibold text-ink-muted uppercase tracking-wider">Bus-Related</span>
                         <div class="flex items-baseline justify-between mt-1">
                             <span id="messagesStatBusRelated" class="text-2xl font-semibold text-brand">0</span>
@@ -942,7 +1385,7 @@
                 </div>
 
                 <!-- Filter Bar -->
-                <div class="bg-surface border border-line/90 rounded p-3.5 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                <div class="kx-card p-3.5 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                     <div class="flex items-center gap-2 flex-1">
                         <label for="messageFilterCategory" class="text-xs font-semibold text-navy shrink-0">Category:</label>
                         <select id="messageFilterCategory" onchange="window.KambusAdmin.loadMessages()" class="w-full px-3 py-2 border border-line rounded text-xs focus:border-brand">
@@ -976,7 +1419,7 @@
 
                 <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
                     <!-- Composer Form -->
-                    <form onsubmit="window.KambusAdmin.submitBroadcastAnnouncement(event)" class="lg:col-span-7 bg-surface border border-line/90 rounded-2xl p-5 border border-line space-y-4">
+                    <form onsubmit="window.KambusAdmin.submitBroadcastAnnouncement(event)" class="lg:col-span-7 kx-card p-5 space-y-4">
                         <h3 class="text-sm font-semibold text-navy">Drop an update</h3>
 
                         <div>
@@ -994,7 +1437,7 @@
                         </div>
 
                         <!-- Dynamic Fields Area -->
-                        <div id="templateFieldsContainer" class="space-y-3 p-3.5 bg-bg border border-line rounded"></div>
+                        <div id="templateFieldsContainer" class="space-y-3 p-3.5 kx-card-sub"></div>
 
                         <!-- Target Audience Area -->
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1042,7 +1485,7 @@
                     </form>
 
                     <!-- History List -->
-                    <div class="lg:col-span-5 bg-surface border border-line/90 rounded-2xl p-5 border border-line flex flex-col justify-between">
+                    <div class="lg:col-span-5 kx-card p-5 flex flex-col justify-between">
                         <div>
                             <h3 class="text-sm font-semibold text-navy mb-3">Recent sends</h3>
                             <div id="announcementHistoryList" class="space-y-2.5 max-h-[500px] overflow-y-auto">
@@ -1079,7 +1522,7 @@
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4" id="todayOpsContainer">
-                    <div class="bg-surface border border-line/90 rounded p-5 border border-line">
+                    <div class="kx-card p-5">
                         <h4 class="text-xs font-semibold text-ink-muted uppercase">Buses Breakdown</h4>
                         <div class="mt-3 space-y-2 text-xs">
                             <div class="flex justify-between font-semibold text-ok"><span> Active Now:</span> <span id="opsBusesActive">0</span></div>
@@ -1088,7 +1531,7 @@
                         </div>
                     </div>
 
-                    <div class="bg-surface border border-line/90 rounded p-5 border border-line">
+                    <div class="kx-card p-5">
                         <h4 class="text-xs font-semibold text-ink-muted uppercase">Student Travel Status</h4>
                         <div class="mt-3 space-y-2 text-xs">
                             <div class="flex justify-between font-semibold text-brand"><span> Registered:</span> <span id="opsStudentsExpected">0</span></div>
@@ -1097,7 +1540,7 @@
                         </div>
                     </div>
 
-                    <div class="bg-surface border border-line/90 rounded p-5 border border-line">
+                    <div class="kx-card p-5">
                         <h4 class="text-xs font-semibold text-ink-muted uppercase">Trips Summary</h4>
                         <div class="mt-3 space-y-2 text-xs">
                             <div class="flex justify-between font-semibold text-ok"><span> Active in Transit:</span> <span id="opsTripsActive">0</span></div>
@@ -1114,13 +1557,13 @@
                     <p class="text-xs text-ink-muted">Instantly lookup students, drivers, buses, routes, and stops.</p>
                 </div>
 
-                <div class="bg-surface border border-line/90 rounded p-4 border border-line">
+                <div class="kx-card p-4">
                     <div class="flex items-center gap-2">
                         <input type="text" id="globalSearchInput" placeholder="Type a bus number, student roll number, driver name, or stop..." oninput="window.KambusAdmin.executeGlobalSearch()" class="w-full px-3.5 py-2.5 border border-line rounded text-xs font-semibold focus:border-brand">
                     </div>
                 </div>
 
-                <div id="globalSearchResults" class="bg-surface border border-line/90 rounded p-4 border border-line min-h-[150px]">
+                <div id="globalSearchResults" class="kx-card p-4 min-h-[150px]">
                     <div class="p-6 text-center text-xs text-ink-muted">Start typing to search records...</div>
                 </div>
             </section>
@@ -1183,7 +1626,7 @@
 
     <!-- BUS DETAILS MODAL (WITH EDITABLE FIELDS + QUICK DRIVER/ROUTE CHANGE) -->
     <div id="busDetailsModal" data-modal="true" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-surface rounded max-w-lg w-full max-h-[90vh] flex flex-col border border-line overflow-hidden border border-slate-100">
+        <div class="kx-modal-window max-w-lg w-full max-h-[90vh] flex flex-col overflow-hidden">
             <!-- Modal Header -->
             <div class="p-5 bg-bg border-b border-slate-100 flex items-center justify-between">
                 <div>
@@ -1201,7 +1644,7 @@
             <!-- Modal Body -->
             <div class="p-5 overflow-y-auto space-y-4 text-xs">
                 <!-- Stats Summary -->
-                <div class="grid grid-cols-2 gap-3 p-3.5 bg-bg/60 rounded border border-line">
+                <div class="grid grid-cols-2 gap-3 p-3.5 kx-card-sub">
                     <div>
                         <span class="text-[10px] font-semibold uppercase text-ink-muted">Assigned Students</span>
                         <p id="modalBusStudentCount" class="text-lg font-semibold text-navy mt-0.5">0</p>
@@ -1213,7 +1656,7 @@
                 </div>
 
                 <!-- Editable Bus Properties (Bus Number, Reg, Status) -->
-                <div class="p-4 bg-surface border border-line rounded space-y-3">
+                <div class="kx-card p-4 space-y-3">
                     <span class="text-[10px] font-semibold uppercase text-ink-muted">Edit Bus Properties</span>
                     <input type="hidden" id="modalBusId">
                     <div class="grid grid-cols-2 gap-2">
@@ -1226,22 +1669,32 @@
                             <input type="text" id="modalEditBusReg" class="w-full p-2 border border-line rounded text-xs">
                         </div>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <div class="flex-1">
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-[11px] font-semibold text-ink-muted mb-0.5">Gender Restriction</label>
+                            <select id="modalEditBusGender" class="w-full p-2 border border-line rounded text-xs font-semibold">
+                                <option value="">Mixed / Unrestricted</option>
+                                <option value="girls_only">Girls Only (Female only)</option>
+                                <option value="boys_only">Boys Only (Male only)</option>
+                            </select>
+                        </div>
+                        <div>
                             <label class="block text-[11px] font-semibold text-ink-muted mb-0.5">Fleet Status</label>
                             <select id="modalEditBusStatus" class="w-full p-2 border border-line rounded text-xs font-semibold">
                                 <option value="active">Active (Operational)</option>
                                 <option value="inactive">Inactive (Maintenance / Offline)</option>
                             </select>
                         </div>
-                        <button type="button" id="btnSaveBusGeneralProps" class="mt-4 px-3 py-2 bg-slate-800 text-white font-semibold rounded hover:bg-slate-900 transition shrink-0">
+                    </div>
+                    <div class="flex justify-end">
+                        <button type="button" id="btnSaveBusGeneralProps" class="px-3 py-2 bg-slate-800 text-white font-semibold rounded hover:bg-slate-900 transition shrink-0">
                             Update Info
                         </button>
                     </div>
                 </div>
 
                 <!-- Current Driver & Instant Change Driver -->
-                <div class="p-4 bg-surface border border-line rounded space-y-2">
+                <div class="kx-card p-4 space-y-2">
                     <div>
                         <span class="text-[10px] font-semibold uppercase text-ink-muted">Assigned Driver</span>
                         <h4 id="modalBusDriverName" class="text-sm font-semibold text-navy">Driver Name</h4>
@@ -1256,7 +1709,7 @@
                 </div>
 
                 <!-- Current Route & Instant Change Route -->
-                <div class="p-4 bg-surface border border-line rounded space-y-2">
+                <div class="kx-card p-4 space-y-2">
                     <div>
                         <span class="text-[10px] font-semibold uppercase text-ink-muted">Assigned Route</span>
                         <h4 id="modalBusRouteName" class="text-sm font-semibold text-navy">Route Name</h4>
@@ -1272,7 +1725,7 @@
                 <!-- Assigned Students List -->
                 <div>
                     <h4 class="text-xs font-semibold text-navy mb-2">Students Assigned to this Bus</h4>
-                    <div id="modalBusStudentsList" class="max-h-40 overflow-y-auto border border-line rounded divide-y divide-slate-100 p-2"></div>
+                    <div id="modalBusStudentsList" class="max-h-40 overflow-y-auto kx-card-sub divide-y divide-slate-100 p-2"></div>
                 </div>
             </div>
         </div>
@@ -1280,7 +1733,7 @@
 
     <!-- DRIVER DETAILS MODAL -->
     <div id="driverDetailsModal" data-modal="true" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-surface rounded max-w-md w-full max-h-[85vh] flex flex-col border border-line overflow-hidden border border-slate-100">
+        <div class="kx-modal-window max-w-md w-full max-h-[85vh] flex flex-col overflow-hidden">
             <div class="p-5 bg-bg border-b border-slate-100 flex items-center justify-between">
                 <div>
                     <h3 id="modalDriverName" class="text-lg font-semibold text-navy">Driver Profile</h3>
@@ -1301,14 +1754,14 @@
                     <p id="modalDriverBus" class="font-semibold text-brand">Bus Assignment</p>
                 </div>
                 <h4 class="font-semibold text-navy mt-3">Recent Trip History</h4>
-                <div id="modalDriverTrips" class="border border-line rounded divide-y divide-slate-100 max-h-48 overflow-y-auto"></div>
+                <div id="modalDriverTrips" class="kx-card-sub divide-y divide-slate-100 max-h-48 overflow-y-auto"></div>
             </div>
         </div>
     </div>
 
     <!-- ADD BUS MODAL -->
     <div id="addBusModal" data-modal="true" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-surface rounded max-w-md w-full p-6 border border-line border border-slate-100">
+        <div class="kx-modal-window max-w-md w-full p-6">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-base font-semibold text-navy">Add New Bus</h3>
                 <button type="button" onclick="document.getElementById('addBusModal').classList.add('hidden')" class="text-ink-muted hover:text-ink-muted">
@@ -1323,6 +1776,14 @@
                 <div>
                     <label class="block font-semibold text-navy mb-1">Registration Number (Optional)</label>
                     <input type="text" name="registration_number" placeholder="e.g. TS03-EA-1234" class="w-full p-2.5 border border-line rounded">
+                </div>
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Gender Restriction</label>
+                    <select name="gender_restriction" class="w-full p-2.5 border border-line rounded text-navy font-semibold">
+                        <option value="">Mixed / Unrestricted (All Students)</option>
+                        <option value="girls_only">Girls Only (Strictly Female)</option>
+                        <option value="boys_only">Boys Only (Strictly Male)</option>
+                    </select>
                 </div>
                 <div>
                     <label class="block font-semibold text-navy mb-1">Assign Driver (Optional)</label>
@@ -1342,7 +1803,7 @@
 
     <!-- ADD DRIVER MODAL -->
     <div id="addDriverModal" data-modal="true" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-surface rounded max-w-md w-full p-6 border border-line border border-slate-100">
+        <div class="kx-modal-window max-w-md w-full p-6">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-base font-semibold text-navy">Add New Driver</h3>
                 <button type="button" onclick="document.getElementById('addDriverModal').classList.add('hidden')" class="text-ink-muted hover:text-ink-muted">
@@ -1380,7 +1841,7 @@
 
     <!-- EDIT DRIVER MODAL -->
     <div id="editDriverModal" data-modal="true" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-surface rounded max-w-md w-full p-6 border border-line border border-slate-100">
+        <div class="kx-modal-window max-w-md w-full p-6">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-base font-semibold text-navy">Edit Driver</h3>
                 <button type="button" onclick="document.getElementById('editDriverModal').classList.add('hidden')" class="text-ink-muted hover:text-ink-muted">
@@ -1419,7 +1880,7 @@
 
     <!-- ADD STUDENT MODAL -->
     <div id="addStudentModal" data-modal="true" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-surface rounded max-w-md w-full p-6 border border-line border border-slate-100">
+        <div class="kx-modal-window max-w-md w-full p-6">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-base font-semibold text-navy">Add New Student</h3>
                 <button type="button" onclick="document.getElementById('addStudentModal').classList.add('hidden')" class="text-ink-muted hover:text-ink-muted">
@@ -1474,7 +1935,7 @@
 
     <!-- EDIT STUDENT MODAL -->
     <div id="editStudentModal" data-modal="true" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-surface rounded max-w-md w-full p-6 border border-line border border-slate-100">
+        <div class="kx-modal-window max-w-md w-full p-6">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-base font-semibold text-navy">Edit Student</h3>
                 <button type="button" onclick="document.getElementById('editStudentModal').classList.add('hidden')" class="text-ink-muted hover:text-ink-muted">
@@ -1523,7 +1984,7 @@
 
     <!-- ADD ADMIN MODAL (super-admin only) -->
     <div id="addAdminModal" data-modal="true" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-surface rounded max-w-md w-full p-6 border border-line border border-slate-100">
+        <div class="kx-modal-window max-w-md w-full p-6">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-base font-semibold text-navy">Add Admin</h3>
                 <button type="button" onclick="document.getElementById('addAdminModal').classList.add('hidden')" class="text-ink-muted hover:text-ink-muted">
@@ -1561,7 +2022,7 @@
 
     <!-- RESET ADMIN PASSWORD MODAL (super-admin only) -->
     <div id="resetAdminPasswordModal" data-modal="true" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-surface rounded max-w-md w-full p-6 border border-line border border-slate-100">
+        <div class="kx-modal-window max-w-md w-full p-6">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-base font-semibold text-navy">Reset Admin Password</h3>
                 <button type="button" onclick="document.getElementById('resetAdminPasswordModal').classList.add('hidden')" class="text-ink-muted hover:text-ink-muted">
@@ -1585,7 +2046,7 @@
 
     <!-- CREATE CAMPUS MODAL (super-admin) -->
     <div id="createCampusModal" data-modal="true" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-surface rounded-xl max-w-md w-full p-6 border border-line border border-slate-100 shadow-xl">
+        <div class="kx-modal-window max-w-md w-full p-6">
             <div class="flex items-center justify-between mb-4">
                 <div class="flex items-center gap-2">
                     <div class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
@@ -1636,7 +2097,7 @@
 
     <!-- ALLOT ADMIN CAMPUS MODAL (super-admin) -->
     <div id="allotAdminCampusModal" data-modal="true" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-surface rounded-xl max-w-md w-full p-6 border border-line border border-slate-100 shadow-xl">
+        <div class="kx-modal-window max-w-md w-full p-6">
             <div class="flex items-center justify-between mb-4">
                 <div class="flex items-center gap-2">
                     <div class="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-bold">
@@ -1678,7 +2139,7 @@
 
     <!-- ASSIGN STUDENT BUS/STOP MODAL -->
     <div id="assignStudentModal" data-modal="true" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-surface rounded max-w-sm w-full p-5 border border-line border border-slate-100">
+        <div class="kx-modal-window max-w-sm w-full p-5">
             <h3 class="text-sm font-semibold text-navy mb-1">Assign Bus & Stop</h3>
             <p id="assignStudentName" class="text-xs text-brand font-semibold mb-3"></p>
             <input type="hidden" id="assignStudentId">
@@ -1702,7 +2163,7 @@
 
     <!-- ADD STOP MODAL (WITH INTERACTIVE MAP PICKER) -->
     <div id="addStopModal" data-modal="true" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-surface rounded max-w-lg w-full p-6 border border-line border border-slate-100 flex flex-col max-h-[90vh]">
+        <div class="kx-modal-window max-w-lg w-full p-6 flex flex-col max-h-[90vh]">
             <div class="flex items-center justify-between mb-3">
                 <div>
                     <h3 class="text-base font-semibold text-navy">Add Stop (Interactive Map Picker)</h3>
@@ -1760,7 +2221,7 @@
 
     <!-- EDIT STOP MODAL -->
     <div id="editStopModal" data-modal="true" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-surface rounded max-w-lg w-full p-6 border border-line border border-slate-100 flex flex-col max-h-[90vh]">
+        <div class="kx-modal-window max-w-lg w-full p-6 flex flex-col max-h-[90vh]">
             <div class="flex items-center justify-between mb-3">
                 <div>
                     <h3 class="text-base font-semibold text-navy">Edit Stop</h3>
@@ -1817,7 +2278,7 @@
 
     <!-- ADD ROUTE MODAL -->
     <div id="addRouteModal" data-modal="true" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-surface rounded max-w-md w-full p-6 border border-line border border-slate-100">
+        <div class="kx-modal-window max-w-md w-full p-6">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-base font-semibold text-navy">Create New Route</h3>
                 <button type="button" onclick="document.getElementById('addRouteModal').classList.add('hidden')" class="text-ink-muted hover:text-ink-muted">
@@ -1843,7 +2304,7 @@
 
     <!-- ROUTE PREVIEW ROAD MAP MODAL -->
     <div id="routePreviewModal" data-modal="true" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-surface rounded max-w-2xl w-full p-6 border border-line border border-slate-100 flex flex-col max-h-[90vh]">
+        <div class="kx-modal-window max-w-2xl w-full p-6 flex flex-col max-h-[90vh]">
             <div class="flex items-center justify-between mb-3">
                 <div>
                     <h3 id="routePreviewTitle" class="text-base font-semibold text-navy">Route Map</h3>
@@ -1861,7 +2322,7 @@
 
     <!-- SUPER-ADMIN COMPLAINT DETAIL & VOTER BREAKDOWN MODAL -->
     <div id="complaintDetailModal" data-modal="true" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-surface rounded max-w-2xl w-full p-6 border border-line border border-slate-100 flex flex-col max-h-[90vh] overflow-y-auto space-y-4">
+        <div class="kx-modal-window max-w-2xl w-full p-6 flex flex-col max-h-[90vh] overflow-y-auto space-y-4">
             <div class="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div class="flex items-center gap-2">
                     <span class="px-2 py-0.5 rounded-full bg-brand/10 text-brand text-[10px] font-semibold uppercase tracking-wider">Super Admin View</span>
@@ -1882,7 +2343,7 @@
                     </div>
                     <span id="complaintDetailReasonBadge" class="px-2.5 py-1 rounded bg-warn/10 text-warn border border-warn/20 text-xs font-semibold">Reason</span>
                 </div>
-                <div id="complaintDetailDescriptionBox" class="p-3 bg-surface rounded border border-slate-100 text-xs text-navy mt-2">
+                <div id="complaintDetailDescriptionBox" class="p-3 kx-card-sub text-xs text-navy mt-2">
                     —
                 </div>
             </div>
@@ -1919,7 +2380,7 @@
 
     <!-- ADD PARENT MODAL -->
     <div id="addParentModal" data-modal="true" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-surface rounded max-w-md w-full p-6 border border-line border border-slate-100">
+        <div class="kx-modal-window max-w-md w-full p-6">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-base font-semibold text-navy">Add New Parent</h3>
                 <button type="button" onclick="document.getElementById('addParentModal').classList.add('hidden')" class="text-ink-muted hover:text-ink">
@@ -1966,7 +2427,7 @@
 
     <!-- LINK CHILD MODAL -->
     <div id="linkChildModal" data-modal="true" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-surface rounded max-w-lg w-full p-6 border border-line border border-slate-100">
+        <div class="kx-modal-window max-w-lg w-full p-6">
             <div class="flex items-center justify-between mb-4">
                 <div>
                     <h3 class="text-base font-semibold text-navy">Link Student to Parent</h3>
@@ -2003,7 +2464,7 @@
                 </div>
 
                 <!-- Search Results List -->
-                <div id="linkStudentResultsContainer" class="border border-line rounded max-h-48 overflow-y-auto divide-y divide-line/70 bg-white">
+                <div id="linkStudentResultsContainer" class="kx-card-sub max-h-48 overflow-y-auto divide-y divide-line/70 bg-white">
                     <div class="p-4 text-center text-xs text-slate-400">Type above to search students on this campus.</div>
                 </div>
 
@@ -2021,6 +2482,149 @@
                 <div class="pt-3 flex gap-2">
                     <button type="button" onclick="document.getElementById('linkChildModal').classList.add('hidden')" class="flex-1 py-2.5 bg-bg hover:bg-slate-200 text-navy font-semibold rounded">Cancel</button>
                     <button type="submit" id="btnSubmitLinkChild" class="flex-1 py-2.5 bg-brand hover:bg-brandDark text-white font-semibold rounded shadow">Link Student</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- EDIT CAMPUS MODAL -->
+    <div id="editCampusModal" data-modal="true" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="kx-modal-window max-w-md w-full p-6">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h3 class="text-base font-bold text-navy">Edit Campus</h3>
+                    <p id="editCampusSlug" class="text-xs font-mono text-ink-muted"></p>
+                </div>
+                <button type="button" onclick="document.getElementById('editCampusModal').classList.add('hidden')" class="text-ink-muted hover:text-navy">
+                    <svg class="w-4 h-4 shrink-0 text-lg" aria-hidden="true"><use href="icons.svg#icon-xmark"/></svg>
+                </button>
+            </div>
+            <form onsubmit="window.KambusAdmin.submitEditCampus(event)" class="space-y-3.5 text-xs">
+                <input type="hidden" name="campus_id" id="editCampusId">
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Campus Name</label>
+                    <input type="text" name="name" id="editCampusName" class="w-full p-2.5 border border-line rounded font-semibold text-navy" required>
+                </div>
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Plan Tier</label>
+                    <select name="plan_tier" id="editCampusPlanTier" class="w-full p-2.5 border border-line rounded font-semibold text-navy">
+                        <option value="basic">Basic (Standard Routing & Pass Scans)</option>
+                        <option value="top">Top (Wait Stops + Road Detours)</option>
+                        <option value="premium">Premium (All Features + Emergency SOS + AI)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Campus Type</label>
+                    <select name="campus_type" id="editCampusType" class="w-full p-2.5 border border-line rounded text-navy">
+                        <option value="college">College (Student Pass & Self-registration)</option>
+                        <option value="school">School (Parent Portal & Linked Child Alerts)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Logo URL (Optional)</label>
+                    <input type="text" name="logo_url" id="editCampusLogo" placeholder="https://..." class="w-full p-2.5 border border-line rounded text-navy">
+                </div>
+                <div id="editCampusError" class="p-2.5 bg-danger/10 text-danger border border-danger/20 rounded font-semibold hidden"></div>
+                <div class="pt-3 flex gap-2">
+                    <button type="button" onclick="document.getElementById('editCampusModal').classList.add('hidden')" class="flex-1 py-2.5 bg-bg hover:bg-slate-200 text-navy font-semibold rounded">Cancel</button>
+                    <button type="submit" id="btnSubmitEditCampus" class="flex-1 py-2.5 bg-brand hover:bg-brandDark text-white font-semibold rounded shadow">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- EDIT ROUTE MODAL -->
+    <div id="editRouteModal" data-modal="true" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="kx-modal-window max-w-md w-full p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-base font-bold text-navy">Edit Route</h3>
+                <button type="button" onclick="document.getElementById('editRouteModal').classList.add('hidden')" class="text-ink-muted hover:text-navy">
+                    <svg class="w-4 h-4 shrink-0 text-lg" aria-hidden="true"><use href="icons.svg#icon-xmark"/></svg>
+                </button>
+            </div>
+            <form onsubmit="window.KambusAdmin.submitEditRoute(event)" class="space-y-3.5 text-xs">
+                <input type="hidden" name="route_id" id="editRouteId">
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Route Name</label>
+                    <input type="text" name="name" id="editRouteName" class="w-full p-2.5 border border-line rounded font-semibold text-navy" required>
+                </div>
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Description (Optional)</label>
+                    <textarea name="description" id="editRouteDescription" rows="3" class="w-full p-2.5 border border-line rounded text-navy" placeholder="e.g. Stops via Hanamkonda Main Road"></textarea>
+                </div>
+                <div class="pt-3 flex gap-2">
+                    <button type="button" onclick="document.getElementById('editRouteModal').classList.add('hidden')" class="flex-1 py-2.5 bg-bg hover:bg-slate-200 text-navy font-semibold rounded">Cancel</button>
+                    <button type="submit" id="btnSubmitEditRoute" class="flex-1 py-2.5 bg-brand hover:bg-brandDark text-white font-semibold rounded shadow">Save Route</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- EDIT PARENT MODAL -->
+    <div id="editParentModal" data-modal="true" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="kx-modal-window max-w-md w-full p-6">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h3 class="text-base font-bold text-navy">Edit Parent Profile</h3>
+                    <p id="editParentLoginId" class="text-xs font-mono text-ink-muted"></p>
+                </div>
+                <button type="button" onclick="document.getElementById('editParentModal').classList.add('hidden')" class="text-ink-muted hover:text-navy">
+                    <svg class="w-4 h-4 shrink-0 text-lg" aria-hidden="true"><use href="icons.svg#icon-xmark"/></svg>
+                </button>
+            </div>
+            <form onsubmit="window.KambusAdmin.submitEditParent(event)" class="space-y-3.5 text-xs">
+                <input type="hidden" name="parent_id" id="editParentId">
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Parent Full Name</label>
+                    <input type="text" name="name" id="editParentName" class="w-full p-2.5 border border-line rounded font-semibold text-navy" required>
+                </div>
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Phone Number (10 digits)</label>
+                    <input type="tel" name="phone" id="editParentPhone" class="w-full p-2.5 border border-line rounded font-semibold text-navy font-mono" required>
+                </div>
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Email Address (Optional)</label>
+                    <input type="email" name="email" id="editParentEmail" class="w-full p-2.5 border border-line rounded text-navy">
+                </div>
+                <div>
+                    <label class="block font-semibold text-navy mb-1">Reset Password (Leave blank to keep current)</label>
+                    <input type="password" name="password" id="editParentPassword" placeholder="Min. 6 characters" class="w-full p-2.5 border border-line rounded text-navy">
+                </div>
+                <div id="editParentError" class="p-2.5 bg-danger/10 text-danger border border-danger/20 rounded font-semibold hidden"></div>
+                <div class="pt-3 flex gap-2">
+                    <button type="button" onclick="document.getElementById('editParentModal').classList.add('hidden')" class="flex-1 py-2.5 bg-bg hover:bg-slate-200 text-navy font-semibold rounded">Cancel</button>
+                    <button type="submit" id="btnSubmitEditParent" class="flex-1 py-2.5 bg-brand hover:bg-brandDark text-white font-semibold rounded shadow">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- BULK REASSIGN BUS MODAL -->
+    <div id="bulkAssignBusModal" data-modal="true" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="kx-modal-window max-w-lg w-full p-6 max-h-[85vh] flex flex-col">
+            <div class="flex items-center justify-between mb-3 pb-2 border-b border-line">
+                <div>
+                    <h3 class="text-base font-bold text-navy">Bulk Reassign Students to Bus</h3>
+                    <p id="bulkAssignSubtitle" class="text-xs text-ink-muted">Assign multiple students to a selected bus in one action</p>
+                </div>
+                <button type="button" onclick="document.getElementById('bulkAssignBusModal').classList.add('hidden')" class="text-ink-muted hover:text-navy">
+                    <svg class="w-4 h-4 shrink-0 text-lg" aria-hidden="true"><use href="icons.svg#icon-xmark"/></svg>
+                </button>
+            </div>
+            <form onsubmit="window.KambusAdmin.submitBulkAssignBus(event)" class="space-y-4 text-xs overflow-y-auto">
+                <div>
+                    <label class="block font-bold text-navy mb-1.5">Target Bus</label>
+                    <select id="bulkAssignBusSelect" class="w-full p-2.5 border border-line rounded font-semibold text-navy" required></select>
+                    <p class="text-[11px] text-ink-muted mt-1">Note: Gender restrictions are validated per student. Incompatible students will be skipped and reported in the summary.</p>
+                </div>
+                <div>
+                    <span class="block font-bold text-navy mb-1.5">Selected Students (<span id="bulkAssignStudentCount">0</span>)</span>
+                    <div id="bulkAssignStudentsPreview" class="kx-card-sub p-2.5 max-h-48 overflow-y-auto divide-y divide-slate-100 text-[11px]"></div>
+                </div>
+                <div id="bulkAssignResultAlert" class="hidden p-3 rounded-lg border text-xs"></div>
+                <div class="pt-3 border-t border-line flex gap-2">
+                    <button type="button" onclick="document.getElementById('bulkAssignBusModal').classList.add('hidden')" class="flex-1 py-2.5 bg-bg hover:bg-slate-200 text-navy font-semibold rounded">Cancel</button>
+                    <button type="submit" id="btnSubmitBulkAssign" class="flex-1 py-2.5 bg-brand hover:bg-brandDark text-white font-bold rounded shadow">Apply Reassignment</button>
                 </div>
             </form>
         </div>

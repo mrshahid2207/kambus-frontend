@@ -35,6 +35,895 @@ function getInitialDriverDashboard() {
     }
 }
 
+// ========================================================================
+// MULTILINGUAL TRANSLATION SYSTEM (EN / HI / TE)
+// ========================================================================
+
+const TRANSLATIONS = {
+    en: {
+        // App & Header
+        app_title: "KAMBUS",
+        bus_badge: "Bus {num}",
+        driver_default: "Driver",
+        status_offline: "Offline",
+        status_gps_not_active: "GPS not active",
+        status_gps_paused: "GPS Paused",
+        status_updates_suspended: "Updates suspended",
+        status_acquiring_gps: "Acquiring GPS",
+        status_waiting_fix: "Waiting for first fix…",
+        status_live: "LIVE",
+        status_sending_elapsed: "Sending • {s}s ago",
+        status_slow_gps: "Slow GPS",
+        logout: "Logout",
+
+        // Banners
+        emergency_sos_active: "EMERGENCY SOS ACTIVE",
+        call_112: "Call 112",
+        clear: "Clear",
+        active_detour: "Active Detour",
+        clear_detour: "Clear Detour",
+        active_detour_banner_text: "Active Detour: {reason} (+{delay} min delay)",
+        active_sos_banner_text: "SOS ACTIVE: {type} — Authorities & Dispatch Alerted",
+
+        // Map controls & badges
+        route_preview_ready: "Route Preview • Ready",
+        trip_active_live_gps: "Trip Active • Live GPS",
+        road_route_active: "Road Route Active",
+        road_route_unavailable: "Road Route Unavailable",
+        nav_mode: "Nav Mode",
+        overview: "Overview",
+        recenter: "Recenter",
+        title_nav_mode: "Current: Bearing-Up Nav Camera (Click for Flat Overview)",
+        title_overview: "Current: Flat Overview (Click for Bearing-Up Nav Camera)",
+
+        // Pre-trip view
+        assigned_route: "Assigned Route",
+        stops_count: "{count} stops",
+        stop_count_single: "1 stop",
+        loading_route: "Loading assigned route...",
+        first_stop_label: "First Stop:",
+        route_stops_ready: "Route stops ready",
+        ready: "Ready",
+        select_trip_type: "Select trip type",
+        morning: "Morning",
+        evening: "Evening",
+        start_trip_select: "Select Trip Type",
+        start_morning_trip: "START MORNING TRIP",
+        start_evening_trip: "START EVENING TRIP",
+        starting_trip: "STARTING TRIP…",
+        scan_pass_title: "Scan Pass",
+        verify_student_sub: "Verify student",
+        report_detour_title: "Report Detour",
+        road_diversion_sub: "Road diversion",
+        sos_breakdown_footer: "Emergency SOS / Breakdown",
+
+        // Active Trip View - Next Stop Card
+        next_stop_header: "Next Stop",
+        finding_next_stop: "Finding next stop...",
+        all_stops_completed: "All stops completed",
+        trip_complete: "Trip Complete",
+        final_destination: "Final Destination",
+        stop_order_badge: "Stop {order} of {total}",
+        stop_order_badge_final: "Stop {order} of {total} (Final Stop)",
+        next_stop_eta: "ETA: ~{min} min",
+        students_expected: "{count} students expected",
+        student_expected_single: "1 student expected",
+
+        // Trip Summary Bar (Collapsed & Expanded)
+        college_label: "College",
+        final_stop_label: "Final Stop",
+        eta_to_college: "ETA to College",
+        eta_to_final_stop: "ETA to Final Stop",
+        duration_approx_min: "~{min} min",
+        summary_college_eta: "~{min} min ({time})",
+        expected_abbrev: "exp",
+        summary_exp: "{count} exp",
+        summary_stats: "Stats",
+        summary_passed_ratio: "{passed}/{total} passed",
+        passed_count: "{count} passed",
+        remaining_count: "{count} remaining",
+        today: "Today",
+        expected: "expected",
+        next_stop_prefix: "Next: {name}",
+        to_college: "To College",
+
+        // Driver Actions Row & Trip Active Bar
+        scan_pass_btn: "Scan Pass",
+        detour_btn: "Detour",
+        sos_btn: "SOS",
+        trip_active: "Trip Active",
+        end_trip: "End Trip",
+
+        // Wait Request Card
+        wait_request: "Wait Request",
+        wait_request_title: "WAIT REQUEST — {stop}",
+        upcoming_stop: "Upcoming Stop",
+        wait_students_waiting: "• {count} {student_str} waiting ({min} min)",
+        student_singular: "student",
+        students_plural: "students",
+        skip: "Skip",
+        wait_accepted_arrival: "Accepted — waiting for arrival",
+        wait_continue_trip: "Continue your trip",
+        wait_resume_in: "Waiting — resume in {min}:{sec}",
+        auto_accepting_soon: "Auto-accepting soon…",
+        auto_accepted: "Auto-accepted",
+        auto_accepting_in: "Auto-accepting in {time}",
+
+        // Pass Scanner Modal
+        scan_pass_modal_title: "Scan Student Pass",
+        scanner_instruction: "Position student barcode in front of camera",
+        start_camera: "Start Camera",
+        upload: "Upload",
+        or_enter_roll: "Or Enter Roll Number",
+        verify: "Verify",
+        checking: "Checking…",
+        pass_valid_active: "PASS VALID & ACTIVE",
+        marked_not_travelling: "MARKED NOT TRAVELLING",
+        just_now: "Just now",
+        stop_label: "Stop:",
+        bus_label: "Bus:",
+        invalid_pass: "Invalid Pass",
+        invalid_pass_title: "Invalid Student Pass",
+        student_not_assigned_bus: "Student not assigned to this bus.",
+        student_not_found_assigned: "Student not found or assigned to another bus.",
+        network_error: "Network error communicating with server.",
+
+        // Detour Modal
+        report_detour_modal_title: "Report Route Detour",
+        reason_for_detour: "Reason for Detour",
+        detour_road_work: "Road Work",
+        detour_traffic_jam: "Traffic Jam",
+        detour_weather: "Weather",
+        detour_road_closed: "Road Closed",
+        estimated_delay: "Estimated Delay",
+        broadcast_detour_btn: "Broadcast Detour to Students & Admin",
+        broadcasting: "Broadcasting…",
+
+        // Emergency SOS Modal
+        sos_modal_title: "Emergency SOS / Breakdown",
+        select_incident_type: "Select Incident Type",
+        sos_breakdown: "Breakdown",
+        sos_medical: "Medical",
+        sos_accident: "Accident",
+        sos_security: "Security",
+        college_transport_cell: "College Transport Cell",
+        police_emergency: "Police / Emergency",
+        transmit_sos_btn: "Transmit Emergency SOS",
+        transmitting_sos: "Transmitting SOS…",
+
+        // End Trip Confirmation Dialog
+        confirm_end_trip_title: "End this trip?",
+        confirm_end_trip_msg: "Your live location sharing will stop.",
+        confirm_logout_active_trip: "You have an active trip in progress. Are you sure you want to log out? The trip will be ended automatically.",
+        confirm_end_trip_ok: "End Trip",
+        cancel: "Cancel",
+
+        // Toasts & Notifications
+        toast_select_trip_type: "Select trip type",
+        toast_select_trip_msg: "Choose Morning or Evening before starting the trip.",
+        toast_session_expired: "Session expired",
+        toast_session_expired_msg: "Please login again.",
+        toast_bus_not_assigned: "Bus not assigned",
+        toast_bus_not_assigned_msg: "No bus assignment found for your driver account.",
+        toast_trip_started: "Trip started",
+        toast_trip_started_msg: "Live GPS sharing has started.",
+        toast_unable_start_trip: "Unable to start trip",
+        toast_unable_start_trip_msg: "Please check your connection.",
+        toast_trip_ended: "Trip ended",
+        toast_trip_ended_msg: "Live location sharing stopped.",
+        toast_unable_end_trip: "Unable to end trip",
+        toast_unable_end_trip_msg: "Please try again.",
+        toast_gps_not_supported: "GPS not supported",
+        toast_gps_not_supported_msg: "Geolocation is not supported on this device.",
+        toast_bus_reassigned: "Bus reassigned",
+        toast_bus_reassigned_msg: "You are no longer assigned to this bus. Please log in again to continue.",
+        toast_wait_skipped: "Wait skipped",
+        toast_wait_skipped_msg: "Wait request at {stop} was skipped.",
+        toast_skip_failed: "Skip failed",
+        toast_skip_failed_msg: "Please try again.",
+        toast_student_boarded: "Student boarded",
+        toast_student_boarded_msg: "Passenger marked as boarded. You can proceed.",
+        toast_complete_wait_failed_msg: "Unable to complete wait early. Please try again.",
+        wait_continue_now: "Student Boarded",
+        toast_camera_access: "Camera Access",
+        toast_camera_access_msg: "Camera not available. Please enter the Roll Number or upload a pass image.",
+        toast_barcode_scanner_unavailable: "Barcode scanner unavailable",
+        toast_enter_roll_manually: "Please enter the Roll Number manually.",
+        toast_pass_image_selected: "Pass image selected",
+        toast_pass_image_selected_msg: "Please enter the roll number directly below to verify.",
+        toast_qr_not_detected: "QR Not Detected",
+        toast_qr_not_detected_msg: "Could not read QR from the uploaded image. Please enter roll number.",
+        toast_roll_required: "Roll Number Required",
+        toast_roll_required_msg: "Please enter a valid student roll number.",
+        toast_invalid_scanner_val: "Invalid scanner value",
+        toast_invalid_scanner_msg: "The scanner returned an image frame instead of a barcode value. Please scan again or enter the Roll Number.",
+        toast_student_verified: "Student Verified",
+        toast_student_verified_msg: "{name} ({roll}) boarded for {stop}.",
+        toast_pass_invalid: "Pass Invalid",
+        toast_pass_invalid_msg: "Student pass could not be verified.",
+        toast_detour_broadcasted: "Detour Broadcasted",
+        toast_detour_cleared: "Detour Cleared",
+        toast_detour_cleared_msg: "Normal route travel resumed.",
+        toast_sos_dispatched: "EMERGENCY SOS DISPATCHED",
+        toast_sos_dispatched_msg: "College Transport Cell & Emergency services notified of {type}.",
+        toast_sos_cleared: "Emergency Status Cleared",
+        toast_sos_cleared_msg: "SOS alert has been stood down.",
+
+        // Voice Announcements
+        voice_next_stop_singular: "Next stop {name}, 1 student",
+        voice_next_stop_plural: "Next stop {name}, {count} students",
+        voice_no_need_stop: "No need to stop at {name}, no student coming in bus",
+        voice_wait_request: "{stop} stop, bus will stop for {minutes} {unit}",
+        min_singular: "min",
+        min_plural: "mins"
+    },
+    hi: {
+        // App & Header
+        app_title: "KAMBUS",
+        bus_badge: "बस {num}",
+        driver_default: "ड्राइवर",
+        status_offline: "ऑफ़लाइन",
+        status_gps_not_active: "जीपीएस सक्रिय नहीं",
+        status_gps_paused: "जीपीएस रुका हुआ",
+        status_updates_suspended: "अपडेट निलंबित",
+        status_acquiring_gps: "जीपीएस खोज रहा है",
+        status_waiting_fix: "सिग्नल की प्रतीक्षा…",
+        status_live: "लाइव",
+        status_sending_elapsed: "भेज रहा है • {s} से. पहले",
+        status_slow_gps: "धीमा जीपीएस",
+        logout: "लॉग आउट",
+
+        // Banners
+        emergency_sos_active: "आपातकालीन SOS सक्रिय",
+        call_112: "112 पर कॉल करें",
+        clear: "हटाएं",
+        active_detour: "सक्रिय डायवर्जन",
+        clear_detour: "डायवर्जन हटाएं",
+        active_detour_banner_text: "सक्रिय डायवर्जन: {reason} (+{delay} मिनट देरी)",
+        active_sos_banner_text: "SOS सक्रिय: {type} — अधिकारियों और नियंत्रण कक्ष को सूचित किया गया",
+
+        // Map controls & badges
+        route_preview_ready: "मार्ग पूर्वावलोकन • तैयार",
+        trip_active_live_gps: "यात्रा सक्रिय • लाइव जीपीएस",
+        road_route_active: "सड़क मार्ग सक्रिय",
+        road_route_unavailable: "सड़क मार्ग अनुपलब्ध",
+        nav_mode: "नेव मोड",
+        overview: "अवलोकन",
+        recenter: "पुनः केंद्रित करें",
+        title_nav_mode: "वर्तमान: नेविगेशन कैमरा (अवलोकन के लिए क्लिक करें)",
+        title_overview: "वर्तमान: अवलोकन (नेविगेशन कैमरा के लिए क्लिक करें)",
+
+        // Pre-trip view
+        assigned_route: "आवंटित मार्ग",
+        stops_count: "{count} स्टॉप",
+        stop_count_single: "1 स्टॉप",
+        loading_route: "आवंटित मार्ग लोड हो रहा है...",
+        first_stop_label: "पहला स्टॉप:",
+        route_stops_ready: "रूट के स्टॉप तैयार",
+        ready: "तैयार",
+        select_trip_type: "यात्रा का प्रकार चुनें",
+        morning: "सुबह",
+        evening: "शाम",
+        start_trip_select: "यात्रा का प्रकार चुनें",
+        start_morning_trip: "सुबह की यात्रा शुरू करें",
+        start_evening_trip: "शाम की यात्रा शुरू करें",
+        starting_trip: "यात्रा शुरू हो रही है…",
+        scan_pass_title: "पास स्कैन",
+        verify_student_sub: "छात्र सत्यापित करें",
+        report_detour_title: "डायवर्जन रिपोर्ट करें",
+        road_diversion_sub: "सड़क डायवर्जन",
+        sos_breakdown_footer: "आपातकालीन SOS / खराबी",
+
+        // Active Trip View - Next Stop Card
+        next_stop_header: "अगला स्टॉप",
+        finding_next_stop: "अगला स्टॉप खोजा जा रहा है...",
+        all_stops_completed: "सभी स्टॉप पूरे हुए",
+        trip_complete: "यात्रा पूर्ण",
+        final_destination: "अंतिम गंतव्य",
+        stop_order_badge: "स्टॉप {order}/{total}",
+        stop_order_badge_final: "स्टॉप {order}/{total} (अंतिम)",
+        next_stop_eta: "ETA: ~{min} मिनट",
+        students_expected: "{count} छात्र अपेक्षित",
+        student_expected_single: "1 छात्र अपेक्षित",
+
+        // Trip Summary Bar (Collapsed & Expanded)
+        college_label: "कॉलेज",
+        final_stop_label: "अंतिम स्टॉप",
+        eta_to_college: "कॉलेज पहुंचने का समय",
+        eta_to_final_stop: "अंतिम स्टॉप का समय",
+        duration_approx_min: "~{min} मिनट",
+        summary_college_eta: "~{min} मिनट ({time})",
+        expected_abbrev: "छात्र",
+        summary_exp: "{count} छात्र",
+        summary_stats: "विवरण",
+        summary_passed_ratio: "{passed}/{total} पार",
+        passed_count: "{count} पार हुए",
+        remaining_count: "{count} शेष",
+        today: "आज",
+        expected: "अपेक्षित",
+        next_stop_prefix: "अगला: {name}",
+        to_college: "कॉलेज की ओर",
+
+        // Driver Actions Row & Trip Active Bar
+        scan_pass_btn: "पास स्कैन",
+        detour_btn: "डायवर्जन",
+        sos_btn: "SOS",
+        trip_active: "यात्रा सक्रिय",
+        end_trip: "यात्रा समाप्त",
+
+        // Wait Request Card
+        wait_request: "रुकने का अनुरोध",
+        wait_request_title: "रुकने का अनुरोध — {stop}",
+        upcoming_stop: "आगामी स्टॉप",
+        wait_students_waiting: "• {count} छात्र प्रतीक्षा में ({min} मिनट)",
+        student_singular: "छात्र",
+        students_plural: "छात्र",
+        skip: "छोड़ें",
+        wait_accepted_arrival: "स्वीकृत — पहुंचने की प्रतीक्षा",
+        wait_continue_trip: "अपनी यात्रा जारी रखें",
+        wait_resume_in: "प्रतीक्षा — {min}:{sec} में आगे बढ़ें",
+        auto_accepting_soon: "शीघ्र ही स्वतः स्वीकार…",
+        auto_accepted: "स्वतः स्वीकृत",
+        auto_accepting_in: "{time} में स्वतः स्वीकार",
+
+        // Pass Scanner Modal
+        scan_pass_modal_title: "छात्र पास स्कैन करें",
+        scanner_instruction: "छात्र का बारकोड कैमरे के सामने रखें",
+        start_camera: "कैमरा चालू करें",
+        upload: "अपलोड",
+        or_enter_roll: "या रोल नंबर दर्ज करें",
+        verify: "सत्यापित करें",
+        checking: "जांच जारी है…",
+        pass_valid_active: "पास वैध एवं सक्रिय",
+        marked_not_travelling: "यात्रा नहीं कर रहे",
+        just_now: "अभी-अभी",
+        stop_label: "स्टॉप:",
+        bus_label: "बस:",
+        invalid_pass: "अमान्य पास",
+        invalid_pass_title: "अमान्य छात्र पास",
+        student_not_assigned_bus: "छात्र इस बस में आवंटित नहीं है।",
+        student_not_found_assigned: "छात्र नहीं मिला या दूसरी बस में आवंटित है।",
+        network_error: "सर्वर से संपर्क करने में त्रुटि।",
+
+        // Detour Modal
+        report_detour_modal_title: "रूट डायवर्जन रिपोर्ट करें",
+        reason_for_detour: "डायवर्जन का कारण",
+        detour_road_work: "सड़क कार्य",
+        detour_traffic_jam: "ट्रैफिक जाम",
+        detour_weather: "खराब मौसम",
+        detour_road_closed: "सड़क बंद",
+        estimated_delay: "अनुमानित देरी",
+        broadcast_detour_btn: "छात्रों और एडमिन को डायवर्जन भेजें",
+        broadcasting: "भेजा जा रहा है…",
+
+        // Emergency SOS Modal
+        sos_modal_title: "आपातकालीन SOS / खराबी",
+        select_incident_type: "घटना का प्रकार चुनें",
+        sos_breakdown: "बस खराबी",
+        sos_medical: "चिकित्सा",
+        sos_accident: "दुर्घटना",
+        sos_security: "सुरक्षा",
+        college_transport_cell: "कॉलेज परिवहन विभाग",
+        police_emergency: "पुलिस / आपातकालीन",
+        transmit_sos_btn: "आपातकालीन SOS भेजें",
+        transmitting_sos: "SOS भेजा जा रहा है…",
+
+        // End Trip Confirmation Dialog
+        confirm_end_trip_title: "क्या यात्रा समाप्त करें?",
+        confirm_end_trip_msg: "आपकी लाइव लोकेशन शेयरिंग बंद हो जाएगी।",
+        confirm_logout_active_trip: "आपकी यात्रा अभी सक्रिय है। क्या आप वाकई लॉग आउट करना चाहते हैं? यात्रा स्वतः समाप्त हो जाएगी।",
+        confirm_end_trip_ok: "यात्रा समाप्त करें",
+        cancel: "रद्द करें",
+
+        // Toasts & Notifications
+        toast_select_trip_type: "यात्रा का प्रकार चुनें",
+        toast_select_trip_msg: "यात्रा शुरू करने से पहले सुबह या शाम चुनें।",
+        toast_session_expired: "सत्र समाप्त",
+        toast_session_expired_msg: "कृपया पुनः लॉगिन करें।",
+        toast_bus_not_assigned: "बस आवंटित नहीं",
+        toast_bus_not_assigned_msg: "आपके ड्राइवर खाते के लिए कोई बस नहीं मिली।",
+        toast_trip_started: "यात्रा शुरू हुई",
+        toast_trip_started_msg: "लाइव जीपीएस शेयरिंग शुरू हो गई है।",
+        toast_unable_start_trip: "यात्रा शुरू करने में असमर्थ",
+        toast_unable_start_trip_msg: "कृपया अपना कनेक्शन जांचें।",
+        toast_trip_ended: "यात्रा समाप्त",
+        toast_trip_ended_msg: "लाइव लोकेशन शेयरिंग बंद कर दी गई।",
+        toast_unable_end_trip: "यात्रा समाप्त करने में असमर्थ",
+        toast_unable_end_trip_msg: "कृपया पुनः प्रयास करें।",
+        toast_gps_not_supported: "जीपीएस समर्थित नहीं",
+        toast_gps_not_supported_msg: "इस डिवाइस पर जियोलोकेशन समर्थित नहीं है।",
+        toast_bus_reassigned: "बस पुनः आवंटित",
+        toast_bus_reassigned_msg: "आप अब इस बस में नियुक्त नहीं हैं। जारी रखने के लिए कृपया पुनः लॉगिन करें।",
+        toast_wait_skipped: "प्रतीक्षा छोड़ी गई",
+        toast_wait_skipped_msg: "{stop} पर रुकने का अनुरोध छोड़ दिया गया।",
+        toast_skip_failed: "छोड़ना विफल",
+        toast_skip_failed_msg: "कृपया पुनः प्रयास करें।",
+        toast_student_boarded: "छात्र सवार हुआ",
+        toast_student_boarded_msg: "यात्री सवार हो गया है। आप आगे बढ़ सकते हैं।",
+        toast_complete_wait_failed_msg: "प्रतीक्षा समाप्त नहीं की जा सकी। कृपया पुनः प्रयास करें।",
+        wait_continue_now: "छात्र सवार हुआ",
+        toast_camera_access: "कैमरा एक्सेस",
+        toast_camera_access_msg: "कैमरा उपलब्ध नहीं है। कृपया रोल नंबर दर्ज करें या पास अपलोड करें।",
+        toast_barcode_scanner_unavailable: "बारकोड स्कैनर अनुपलब्ध",
+        toast_enter_roll_manually: "कृपया रोल नंबर मैन्युअल रूप से दर्ज करें।",
+        toast_pass_image_selected: "पास छवि चुनी गई",
+        toast_pass_image_selected_msg: "सत्यापित करने के लिए कृपया नीचे सीधे रोल नंबर दर्ज करें।",
+        toast_qr_not_detected: "QR नहीं मिला",
+        toast_qr_not_detected_msg: "अपलोड की गई छवि से QR नहीं पढ़ा जा सका। कृपया रोल नंबर दर्ज करें।",
+        toast_roll_required: "रोल नंबर आवश्यक",
+        toast_roll_required_msg: "कृपया एक मान्य छात्र रोल नंबर दर्ज करें।",
+        toast_invalid_scanner_val: "अमान्य स्कैनर मान",
+        toast_invalid_scanner_msg: "स्कैनर ने बारकोड के बजाय छवि भेजी। कृपया पुनः स्कैन करें या रोल नंबर दर्ज करें।",
+        toast_student_verified: "छात्र सत्यापित",
+        toast_student_verified_msg: "{name} ({roll}) {stop} के लिए बस में चढ़े।",
+        toast_pass_invalid: "पास अमान्य",
+        toast_pass_invalid_msg: "छात्र पास सत्यापित नहीं किया जा सका।",
+        toast_detour_broadcasted: "डायवर्जन भेजा गया",
+        toast_detour_cleared: "डायवर्जन समाप्त",
+        toast_detour_cleared_msg: "सामान्य मार्ग यात्रा फिर से शुरू हुई।",
+        toast_sos_dispatched: "आपातकालीन SOS भेजा गया",
+        toast_sos_dispatched_msg: "कॉलेज परिवहन विभाग और आपातकालीन सेवाओं को {type} की सूचना दी गई।",
+        toast_sos_cleared: "आपातकालीन स्थिति समाप्त",
+        toast_sos_cleared_msg: "SOS अलर्ट वापस ले लिया गया है।",
+
+        // Voice Announcements
+        voice_next_stop_singular: "अगला स्टॉप {name}, 1 छात्र",
+        voice_next_stop_plural: "अगला स्टॉप {name}, {count} छात्र",
+        voice_no_need_stop: "{name} पर रुकने की आवश्यकता नहीं है, कोई छात्र नहीं है",
+        voice_wait_request: "{stop} स्टॉप, बस {minutes} मिनट के लिए रुकेगी",
+        min_singular: "मिनट",
+        min_plural: "मिनट"
+    },
+    te: {
+        // App & Header
+        app_title: "KAMBUS",
+        bus_badge: "బస్సు {num}",
+        driver_default: "డ్రైవర్",
+        status_offline: "ఆఫ్‌లైన్",
+        status_gps_not_active: "GPS సక్రియంగా లేదు",
+        status_gps_paused: "GPS పాజ్ చేయబడింది",
+        status_updates_suspended: "అప్‌డేట్‌లు నిలిపివేయబడ్డాయి",
+        status_acquiring_gps: "GPS పొందుతోంది",
+        status_waiting_fix: "సిగ్నల్ కోసం వేచి ఉంది…",
+        status_live: "లైవ్",
+        status_sending_elapsed: "పంపిస్తోంది • {s} సెకన్ల క్రితం",
+        status_slow_gps: "స్లో GPS",
+        logout: "లాగ్ అవుట్",
+
+        // Banners
+        emergency_sos_active: "ఎమర్జెన్సీ SOS యాక్టివ్",
+        call_112: "112కి కాల్ చేయండి",
+        clear: "క్లియర్",
+        active_detour: "యాక్టివ్ మళ్లింపు",
+        clear_detour: "మళ్లింపు తొలగించు",
+        active_detour_banner_text: "యాక్టివ్ మళ్లింపు: {reason} (+{delay} నిమి ఆలస్యం)",
+        active_sos_banner_text: "SOS యాక్టివ్: {type} — అధికారులు & డిస్పాచ్‌కు సమాచారం అందించబడింది",
+
+        // Map controls & badges
+        route_preview_ready: "రూట్ ప్రివ్యూ • సిద్ధం",
+        trip_active_live_gps: "ట్రిప్ యాక్టివ్ • లైవ్ GPS",
+        road_route_active: "రోడ్డు రూట్ యాక్టివ్",
+        road_route_unavailable: "రోడ్డు రూట్ అందుబాటులో లేదు",
+        nav_mode: "నావ్ మోడ్",
+        overview: "ఓవర్‌వ్యూ",
+        recenter: "రీసెంటర్",
+        title_nav_mode: "ప్రస్తుతం: నావిగేషన్ కెమెరా (ఓవర్‌వ్యూ కోసం క్లిక్ చేయండి)",
+        title_overview: "ప్రస్తుతం: ఓవర్‌వ్యూ (నావిగేషన్ కెమెరా కోసం క్లిక్ చేయండి)",
+
+        // Pre-trip view
+        assigned_route: "కేటాయించిన రూట్",
+        stops_count: "{count} స్టాప్‌లు",
+        stop_count_single: "1 స్టాప్",
+        loading_route: "రూట్ లోడ్ అవుతోంది...",
+        first_stop_label: "మొదటి స్టాప్:",
+        route_stops_ready: "రూట్ స్టాప్‌లు సిద్ధంగా ఉన్నాయి",
+        ready: "సిద్ధం",
+        select_trip_type: "ట్రిప్ రకాన్ని ఎంచుకోండి",
+        morning: "ఉదయం",
+        evening: "సాయంత్రం",
+        start_trip_select: "ట్రిప్ రకాన్ని ఎంచుకోండి",
+        start_morning_trip: "ఉదయం ట్రిప్ ప్రారంభించండి",
+        start_evening_trip: "సాయంత్రం ట్రిప్ ప్రారంభించండి",
+        starting_trip: "ట్రిప్ ప్రారంభమవుతోంది…",
+        scan_pass_title: "పాస్ స్కాన్",
+        verify_student_sub: "విద్యార్థిని ధృవీకరించండి",
+        report_detour_title: "మళ్లింపు రిపోర్ట్ చేయండి",
+        road_diversion_sub: "రోడ్డు మళ్లింపు",
+        sos_breakdown_footer: "ఎమర్జెన్సీ SOS / బ్రేక్‌డౌన్",
+
+        // Active Trip View - Next Stop Card
+        next_stop_header: "తదుపరి స్టాప్",
+        finding_next_stop: "తదుపరి స్టాప్ కోసం వెతుకుతోంది...",
+        all_stops_completed: "అన్ని స్టాప్‌లు పూర్తయ్యాయి",
+        trip_complete: "ట్రిప్ పూర్తయింది",
+        final_destination: "తుది గమ్యస్థానం",
+        stop_order_badge: "స్టాప్ {order}/{total}",
+        stop_order_badge_final: "స్టాప్ {order}/{total} (చివరిది)",
+        next_stop_eta: "ETA: ~{min} నిమి",
+        students_expected: "{count} విద్యార్థులు రానున్నారు",
+        student_expected_single: "1 విద్యార్థి రానున్నారు",
+
+        // Trip Summary Bar (Collapsed & Expanded)
+        college_label: "కళాశాల",
+        final_stop_label: "చివరి స్టాప్",
+        eta_to_college: "కళాశాలకు చేరే సమయం",
+        eta_to_final_stop: "చివరి స్టాప్‌కు సమయం",
+        duration_approx_min: "~{min} నిమి",
+        summary_college_eta: "~{min} నిమి ({time})",
+        expected_abbrev: "మంది",
+        summary_exp: "{count} మంది",
+        summary_stats: "వివరాలు",
+        summary_passed_ratio: "{passed}/{total} దాటాయి",
+        passed_count: "{count} దాటాయి",
+        remaining_count: "{count} మిగిలి ఉన్నాయి",
+        today: "ఈరోజు",
+        expected: "రానున్నారు",
+        next_stop_prefix: "తర్వాత: {name}",
+        to_college: "కళాశాలకు",
+
+        // Driver Actions Row & Trip Active Bar
+        scan_pass_btn: "పాస్ స్కాన్",
+        detour_btn: "మళ్లింపు",
+        sos_btn: "SOS",
+        trip_active: "ట్రిప్ యాక్టివ్",
+        end_trip: "ట్రిప్ ముగించు",
+
+        // Wait Request Card
+        wait_request: "వేచి ఉండే అభ్యర్థన",
+        wait_request_title: "వేచి ఉండే అభ్యర్థన — {stop}",
+        upcoming_stop: "రాబోయే స్టాప్",
+        wait_students_waiting: "• {count} మంది వేచి ఉన్నారు ({min} నిమి)",
+        student_singular: "విద్యార్థి",
+        students_plural: "విద్యార్థులు",
+        skip: "దాటవేయి",
+        wait_accepted_arrival: "ఆమోదించబడింది — రాక కోసం వేచి ఉంది",
+        wait_continue_trip: "మీ ట్రిప్‌ను కొనసాగించండి",
+        wait_resume_in: "వేచి ఉంది — {min}:{sec} లో కొనసాగించండి",
+        auto_accepting_soon: "త్వరలో ఆటో-ఆమోదం…",
+        auto_accepted: "ఆటో-ఆమోదించబడింది",
+        auto_accepting_in: "{time} లో ఆటో-ఆమోదం",
+
+        // Pass Scanner Modal
+        scan_pass_modal_title: "విద్యార్థి పాస్ స్కాన్ చేయండి",
+        scanner_instruction: "విద్యార్థి బార్‌కోడ్‌ను కెమెరా ముందు ఉంచండి",
+        start_camera: "కెమెరా ప్రారంభించండి",
+        upload: "అప్‌లోడ్",
+        or_enter_roll: "లేదా రోల్ నంబర్ నమోదు చేయండి",
+        verify: "ధృవీకరించండి",
+        checking: "తనిఖీ చేస్తోంది…",
+        pass_valid_active: "పాస్ చెల్లుబాటులో ఉంది & యాక్టివ్",
+        marked_not_travelling: "ప్రయాణించడం లేదని గుర్తించబడింది",
+        just_now: "ఇప్పుడే",
+        stop_label: "స్టాప్:",
+        bus_label: "బస్సు:",
+        invalid_pass: "చెల్లని పాస్",
+        invalid_pass_title: "చెల్లని విద్యార్థి పాస్",
+        student_not_assigned_bus: "విద్యార్థి ఈ బస్సుకు కేటాయించబడలేదు.",
+        student_not_found_assigned: "విద్యార్థి కనుగొనబడలేదు లేదా వేరే బస్సుకి కేటాయించబడ్డారు.",
+        network_error: "సర్వర్‌తో కమ్యూనికేట్ చేయడంలో నెట్‌వర్క్ లోపం.",
+
+        // Detour Modal
+        report_detour_modal_title: "రూట్ మళ్లింపు రిపోర్ట్ చేయండి",
+        reason_for_detour: "మళ్లింపునకు కారణం",
+        detour_road_work: "రోడ్డు పని",
+        detour_traffic_jam: "ట్రాఫిక్ జామ్",
+        detour_weather: "వాతావరణం",
+        detour_road_closed: "రోడ్డు మూసివేత",
+        estimated_delay: "అంచనా వేసిన ఆలస్యం",
+        broadcast_detour_btn: "విద్యార్థులు & అడ్మిన్‌కు మళ్లింపు పంపండి",
+        broadcasting: "ప్రసారం చేస్తోంది…",
+
+        // Emergency SOS Modal
+        sos_modal_title: "ఎమర్జెన్సీ SOS / బ్రేక్‌డౌన్",
+        select_incident_type: "సమస్య రకాన్ని ఎంచుకోండి",
+        sos_breakdown: "బ్రేక్‌డౌన్",
+        sos_medical: "వైద్య అత్యవసరం",
+        sos_accident: "ప్రమాదం",
+        sos_security: "భద్రత",
+        college_transport_cell: "కళాశాల రవాణా విభాగం",
+        police_emergency: "పోలీస్ / అత్యవసరం",
+        transmit_sos_btn: "ఎమర్జెన్సీ SOS పంపండి",
+        transmitting_sos: "SOS పంపుతోంది…",
+
+        // End Trip Confirmation Dialog
+        confirm_end_trip_title: "ఈ ట్రిప్‌ను ముగించాలా?",
+        confirm_end_trip_msg: "మీ లైవ్ లొకేషన్ షేరింగ్ ఆగిపోతుంది.",
+        confirm_logout_active_trip: "మీ యాక్టివ్ ట్రిప్ ఇంకా కొనసాగుతోంది. మీరు ఖచ్చితంగా లాగ్ అవుట్ చేయాలనుకుంటున్నారా? ట్రిప్ స్వయంచాలకంగా ముగుస్తుంది.",
+        confirm_end_trip_ok: "ట్రిప్ ముగించండి",
+        cancel: "రద్దు చేయండి",
+
+        // Toasts & Notifications
+        toast_select_trip_type: "ట్రిప్ రకాన్ని ఎంచుకోండి",
+        toast_select_trip_msg: "ట్రిప్ ప్రారంభించే ముందు ఉదయం లేదా సాయంత్రం ఎంచుకోండి.",
+        toast_session_expired: "సెషన్ గడువు ముగిసింది",
+        toast_session_expired_msg: "దయచేసి మళ్లీ లాగిన్ అవ్వండి.",
+        toast_bus_not_assigned: "బస్సు కేటాయించబడలేదు",
+        toast_bus_not_assigned_msg: "మీ డ్రైవర్ ఖాతాకు బస్సు కేటాయింపు కనుగొనబడలేదు.",
+        toast_trip_started: "ట్రిప్ ప్రారంభమైంది",
+        toast_trip_started_msg: "లైవ్ GPS షేరింగ్ ప్రారంభమైంది.",
+        toast_unable_start_trip: "ట్రిప్ ప్రారంభించడం సాధ్యం కాలేదు",
+        toast_unable_start_trip_msg: "దయచేసి మీ కనెక్షన్‌ని తనిఖీ చేయండి.",
+        toast_trip_ended: "ట్రిప్ ముగిసింది",
+        toast_trip_ended_msg: "లైవ్ location sharing ఆగిపోయింది.",
+        toast_unable_end_trip: "ట్రిప్ ముగించడం సాధ్యం కాలేదు",
+        toast_unable_end_trip_msg: "దయచేసి మళ్లీ ప్రయత్నించండి.",
+        toast_gps_not_supported: "GPS మద్దతు లేదు",
+        toast_gps_not_supported_msg: "ఈ పరికరంలో జియోలొకేషన్ సపోర్ట్ లేదు.",
+        toast_bus_reassigned: "బస్సు తిరిగి కేటాయించబడింది",
+        toast_bus_reassigned_msg: "మీరు ఇకపై ఈ బస్సుకు కేటాయించబడలేదు. కొనసాగడానికి దయచేసి మళ్లీ లాగిన్ అవ్వండి.",
+        toast_wait_skipped: "నిరీక్షణ దాటవేయబడింది",
+        toast_wait_skipped_msg: "{stop} వద్ద వేచి ఉండే అభ్యర్థన దాటవేయబడింది.",
+        toast_skip_failed: "దాటవేయడం విఫలమైంది",
+        toast_skip_failed_msg: "దయచేసి మళ్లీ ప్రయత్నించండి.",
+        toast_student_boarded: "విద్యార్థి ఎక్కారు",
+        toast_student_boarded_msg: "ప్రయాణీకుడు ఎక్కారు. మీరు ప్రయాణాన్ని కొనసాగించవచ్చు.",
+        toast_complete_wait_failed_msg: "నిరీక్షణను ముందుగా పూర్తి చేయడం సాధ్యపడలేదు. దయచేసి మళ్లీ ప్రయత్నించండి.",
+        wait_continue_now: "విద్యార్థి ఎక్కారు",
+        toast_camera_access: "కెమెరా యాక్సెస్",
+        toast_camera_access_msg: "కెమెరా అందుబాటులో లేదు. దయచేసి రోల్ నంబర్‌ను నమోదు చేయండి లేదా పాస్‌ను అప్‌లోడ్ చేయండి.",
+        toast_barcode_scanner_unavailable: "బార్‌కోడ్ స్కానర్ అందుబాటులో లేదు",
+        toast_enter_roll_manually: "దయచేసి రోల్ నంబర్‌ను మాన్యువల్‌గా నమోదు చేయండి.",
+        toast_pass_image_selected: "పాస్ చిత్రం ఎంచుకోబడింది",
+        toast_pass_image_selected_msg: "ధృవీకరించడానికి దయచేసి క్రింద నేరుగా రోల్ నంబర్‌ను నమోదు చేయండి.",
+        toast_qr_not_detected: "QR గుర్తించబడలేదు",
+        toast_qr_not_detected_msg: "అప్‌లోడ్ చేసిన చిత్రం నుండి QR చదవలేకపోయాము. దయచేసి రోల్ నంబర్‌ను నమోదు చేయండి.",
+        toast_roll_required: "రోల్ నంబర్ అవసరం",
+        toast_roll_required_msg: "దయచేసి సరైన విద్యార్థి రోల్ నంబర్‌ను నమోదు చేయండి.",
+        toast_invalid_scanner_val: "చెల్లని స్కానర్ విలువ",
+        toast_invalid_scanner_msg: "స్కానర్ బార్‌కోడ్ విలువకు బదులుగా చిత్ర ఫ్రేమ్‌ను అందించింది. దయచేసి మళ్లీ స్కాన్ చేయండి లేదా రోల్ నంబర్‌ను నమోదు చేయండి.",
+        toast_student_verified: "విద్యార్థి ధృవీకరించబడ్డారు",
+        toast_student_verified_msg: "{name} ({roll}) {stop} కోసం బస్సు ఎక్కారు.",
+        toast_pass_invalid: "పాస్ చెల్లదు",
+        toast_pass_invalid_msg: "విద్యార్థి పాస్ ధృవీకరించబడలేదు.",
+        toast_detour_broadcasted: "మళ్లింపు ప్రసారం చేయబడింది",
+        toast_detour_cleared: "మళ్లింపు తొలగించబడింది",
+        toast_detour_cleared_msg: "సాధారణ రూట్ ప్రయాణం ప్రారంభమైంది.",
+        toast_sos_dispatched: "ఎమర్జెన్సీ SOS పంపబడింది",
+        toast_sos_dispatched_msg: "కళాశాల రవాణా విభాగం & అత్యవసర సేవలకు {type} గురించి సమాచారం అందించబడింది.",
+        toast_sos_cleared: "ఎమర్జెన్సీ స్థితి క్లియర్ చేయబడింది",
+        toast_sos_cleared_msg: "SOS హెచ్చరిక తొలగించబడింది.",
+
+        // Voice Announcements
+        voice_next_stop_singular: "తదుపరి స్టాప్ {name}, 1 విద్యార్థి",
+        voice_next_stop_plural: "తదుపరి స్టాప్ {name}, {count} విద్యార్థులు",
+        voice_no_need_stop: "{name} వద్ద ఆగాల్సిన అవసరం లేదు, బస్సులో విద్యార్థులు ఎవరూ లేరు",
+        voice_wait_request: "{stop} స్టాప్, బస్సు {minutes} నిమిషాలు ఆగుతుంది",
+        min_singular: "నిమిషం",
+        min_plural: "నిమిషాలు"
+    }
+};
+
+let currentLanguage = (function () {
+    try {
+        const saved = localStorage.getItem("kambus_driver_lang");
+        if (saved && (saved === "en" || saved === "hi" || saved === "te")) {
+            return saved;
+        }
+    } catch (_) {}
+    return "en";
+})();
+
+function getVoiceLangCode() {
+    switch (currentLanguage) {
+        case "hi": return "hi-IN";
+        case "te": return "te-IN";
+        default: return "en-IN";
+    }
+}
+
+function t(key, params = {}) {
+    const lang = TRANSLATIONS[currentLanguage] ? currentLanguage : "en";
+    let str = TRANSLATIONS[lang]?.[key] ?? TRANSLATIONS["en"]?.[key] ?? key;
+    if (params && typeof params === "object") {
+        for (const [k, v] of Object.entries(params)) {
+            str = str.replaceAll(`{${k}}`, v);
+        }
+    }
+    return str;
+}
+
+function updateLanguageSwitcherUI() {
+    ["en", "hi", "te"].forEach(lang => {
+        const btn = document.getElementById(`langBtn${lang.charAt(0).toUpperCase() + lang.slice(1)}`);
+        if (!btn) return;
+        const isSelected = currentLanguage === lang;
+        btn.setAttribute("aria-pressed", String(isSelected));
+        btn.classList.toggle("bg-navy", isSelected);
+        btn.classList.toggle("text-white", isSelected);
+        btn.classList.toggle("shadow-2xs", isSelected);
+        btn.classList.toggle("text-navy", !isSelected);
+        btn.classList.toggle("hover:bg-surface", !isSelected);
+    });
+}
+
+function applyStaticTranslations() {
+    if (typeof document === "undefined" || !document.querySelectorAll) return;
+
+    document.querySelectorAll("[data-i18n]").forEach(el => {
+        const key = el.getAttribute("data-i18n");
+        if (key) {
+            el.textContent = t(key);
+        }
+    });
+
+    document.querySelectorAll("[data-i18n-placeholder]").forEach(el => {
+        const key = el.getAttribute("data-i18n-placeholder");
+        if (key) el.placeholder = t(key);
+    });
+
+    document.querySelectorAll("[data-i18n-title]").forEach(el => {
+        const key = el.getAttribute("data-i18n-title");
+        if (key) el.title = t(key);
+    });
+
+    document.querySelectorAll("[data-i18n-aria]").forEach(el => {
+        const key = el.getAttribute("data-i18n-aria");
+        if (key) el.setAttribute("aria-label", t(key));
+    });
+}
+
+function refreshAllDynamicTexts() {
+    updateTopStatusBar();
+    updateTripTypeControls();
+    updatePreTripOverview();
+    updateCameraModeUI();
+    updateStopProgressionUI();
+
+    const busBadge = document.getElementById("headerBusBadge");
+    if (busBadge) {
+        busBadge.textContent = t("bus_badge", { num: currentBusData?.bus_number || "—" });
+    }
+    const driverName = document.getElementById("headerDriverName");
+    if (driverName && (!currentBusData || !currentBusData.driver_name)) {
+        driverName.textContent = t("driver_default");
+    }
+
+    if (isTripActive && lastPosition) {
+        updateNextStopAndEta(lastPosition);
+        updateCollegeEta(lastPosition);
+    } else {
+        const statusText = document.getElementById("routeStatusText");
+        if (statusText) {
+            statusText.textContent = isTripActive ? t("trip_active_live_gps") : t("route_preview_ready");
+        }
+    }
+
+    if (activeWaitRequest) {
+        renderActiveWaitCard(activeWaitRequest);
+    }
+
+    const detourBanner = document.getElementById("activeDetourBanner");
+    const detourText = document.getElementById("activeDetourText");
+    if (detourBanner && !detourBanner.classList.contains("hidden") && detourText) {
+        detourText.textContent = t("active_detour_banner_text", {
+            reason: getTranslatedDetourReason(currentDetourReason),
+            delay: currentDetourDelay
+        });
+    }
+
+    const sosBanner = document.getElementById("activeSosBanner");
+    const sosText = document.getElementById("activeSosText");
+    if (sosBanner && !sosBanner.classList.contains("hidden") && sosText) {
+        sosText.textContent = t("active_sos_banner_text", {
+            type: getTranslatedSosType(currentSosType)
+        });
+    }
+}
+
+function getTranslatedDetourReason(reason) {
+    switch (reason) {
+        case "Road Construction": return t("detour_road_work");
+        case "Heavy Traffic": return t("detour_traffic_jam");
+        case "Waterlogging": return t("detour_weather");
+        case "Road Blocked": return t("detour_road_closed");
+        default: return reason;
+    }
+}
+
+function getTranslatedSosType(type) {
+    switch (type) {
+        case "Vehicle Breakdown": return t("sos_breakdown");
+        case "Medical Emergency": return t("sos_medical");
+        case "Accident": return t("sos_accident");
+        case "Security Alert": return t("sos_security");
+        default: return type;
+    }
+}
+
+function setLanguage(lang) {
+    if (!TRANSLATIONS[lang]) lang = "en";
+    currentLanguage = lang;
+    try {
+        localStorage.setItem("kambus_driver_lang", lang);
+    } catch (_) {}
+
+    if (typeof document !== "undefined" && document.documentElement) {
+        document.documentElement.lang = lang;
+    }
+
+    updateLanguageSwitcherUI();
+    applyStaticTranslations();
+    refreshAllDynamicTexts();
+}
+if (typeof window !== "undefined") {
+    window.setLanguage = setLanguage;
+}
+
+// Multilingual Voice Announcement Engine
+function speakVoiceAnnouncement(text, priority = 1) {
+    if (typeof window === "undefined") return;
+
+    if ("speechSynthesis" in window) {
+        if (priority === 2) {
+            window.speechSynthesis.cancel();
+        } else if (window.speechSynthesis.speaking && priority === 1) {
+            return;
+        }
+
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 0.95;
+        const targetLang = getVoiceLangCode();
+        utterance.lang = targetLang;
+
+        if (typeof window.speechSynthesis.getVoices === "function") {
+            const voices = window.speechSynthesis.getVoices();
+            const prefix = targetLang.slice(0, 2).toLowerCase();
+            const matched = voices.find(v => v.lang === targetLang || (v.lang && v.lang.toLowerCase().startsWith(prefix)));
+            if (matched) utterance.voice = matched;
+        }
+
+        window.speechSynthesis.speak(utterance);
+        return;
+    }
+
+    if (typeof window.AndroidTTS !== "undefined" && typeof window.AndroidTTS.speak === "function") {
+        try {
+            window.AndroidTTS.speak(text);
+        } catch (_) {}
+    }
+}
+
+if (typeof VoiceAnnouncer !== "undefined") {
+    let lastAnnouncedStopId = null;
+    let lastAnnouncedWaitKey = null;
+
+    VoiceAnnouncer.checkProximityAnnouncement = function (stopId, name, studentCount, distToNext) {
+        const ANNOUNCE_DISTANCE_M = 400;
+        if (distToNext > ANNOUNCE_DISTANCE_M) return;
+        if (stopId === lastAnnouncedStopId) return;
+
+        const count = Number(studentCount) || 0;
+        let text;
+        if (count === 0) {
+            text = t("voice_no_need_stop", { name });
+        } else if (count === 1) {
+            text = t("voice_next_stop_singular", { name });
+        } else {
+            text = t("voice_next_stop_plural", { name, count });
+        }
+
+        speakVoiceAnnouncement(text, 1);
+        lastAnnouncedStopId = stopId;
+    };
+
+    VoiceAnnouncer.checkWaitRequestAnnouncement = function (group) {
+        const key = group.students?.[0]?.request_id || `${group.stop_name}-${group.minutes}`;
+        if (key === lastAnnouncedWaitKey) return;
+
+        const minutes = Number(group.minutes) || 1;
+        const unit = t(minutes === 1 ? "min_singular" : "min_plural");
+        const stopName = group.stop_name || t("stop_label").replace(":", "");
+        const text = t("voice_wait_request", { stop: stopName, minutes, unit });
+
+        speakVoiceAnnouncement(text, 2);
+        lastAnnouncedWaitKey = key;
+    };
+
+    VoiceAnnouncer.resetWaitDedup = function () {
+        lastAnnouncedWaitKey = null;
+    };
+}
+
 // Driver & Trip State
 let isTripActive = false;
 let isGpsPaused = false;
@@ -68,8 +957,18 @@ let routeMap = null;
 let driverMarker = null;
 let completedRouteLayer = null;
 let remainingRouteLayer = null;
+let remainingRouteArrowLayer = null;
+let currentRemainingRouteLatLngs = [];
 let stopMarkersGroup = null;
 let collegeMarker = null;
+
+// Navigation Camera & Bearing Tracking State
+let isBearingUpMode = true; // Driver toggle: true = Bearing-up follow camera, false = Flat north-up overview
+let currentSmoothedBearing = null;
+let previousGpsFix = null;
+const MIN_SPEED_FOR_DEVICE_BEARING_KMH = 2.0; // Device bearing is ignored when stopped / below 2 km/h (avoids GPS jitter)
+const MIN_DISTANCE_FOR_CALCULATED_BEARING_M = 3.0; // Minimum displacement to compute azimuth fallback
+const BEARING_SMOOTHING_ALPHA = 0.25; // Exponential moving average factor for circular angle smoothing
 
 // Authoritative College Coordinates (fallback default)
 const COLLEGE_LOCATION = {
@@ -121,10 +1020,56 @@ function getToken() {
 }
 
 // ========================================================================
+// CAMPUS PLAN ENTITLEMENTS & FEATURE GATING
+// ========================================================================
+
+let driverCampusEntitlements = null;
+
+async function loadDriverCampusEntitlements() {
+    const token = getToken();
+    if (!token) return;
+    try {
+        const response = await fetch(`${API_BASE}/me/entitlements`, {
+            headers: {
+                "Authorization": `Bearer ${token}`,
+                "Accept": "application/json"
+            }
+        });
+        if (response.ok) {
+            driverCampusEntitlements = await response.json();
+            applyDriverFeatureGating();
+        }
+    } catch (e) {
+        console.warn("Could not load driver campus entitlements:", e);
+    }
+}
+
+function hasDriverEntitlement(featureName) {
+    if (!driverCampusEntitlements || !Array.isArray(driverCampusEntitlements.features)) {
+        return true; // default open while loading
+    }
+    return driverCampusEntitlements.features.includes(featureName);
+}
+
+function applyDriverFeatureGating() {
+    if (!hasDriverEntitlement("driver_voice_announcements")) {
+        if (typeof VoiceAnnouncer !== "undefined" && typeof VoiceAnnouncer.setEnabled === "function") {
+            VoiceAnnouncer.setEnabled(false);
+        }
+    }
+    if (!hasDriverEntitlement("wait_request")) {
+        stopWaitRequestsPolling();
+        hideActiveWaitCard();
+    }
+}
+
+// ========================================================================
 // INITIALIZATION ON DOM LOAD
 // ========================================================================
 
 document.addEventListener("DOMContentLoaded", () => {
+    setLanguage(currentLanguage);
+    loadDriverCampusEntitlements();
 // Bind Start & End Trip Buttons
     document.getElementById("startTripBtn")?.addEventListener("click", handleStartTrip);
     document.getElementById("endTripBtn")?.addEventListener("click", confirmAndEndTrip);
@@ -132,11 +1077,14 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("eveningTripTypeBtn")?.addEventListener("click", () => selectTripType("evening"));
     updateTripTypeControls();
 
-    // Bind Recenter Map Button
+    // Bind Recenter & Camera Mode Toggle Buttons
     document.getElementById("recenterBtn")?.addEventListener("click", recenterRouteMap);
+    document.getElementById("cameraModeToggleBtn")?.addEventListener("click", toggleCameraMode);
+    updateCameraModeUI();
 
     // Bind Skip Wait Button
     document.getElementById("skipWaitBtn")?.addEventListener("click", handleSkipActiveWait);
+    document.getElementById("completeWaitBtn")?.addEventListener("click", handleCompleteActiveWait);
 
     // Bind Logout Button
     document.getElementById("driverLogoutBtn")?.addEventListener("click", handleDriverLogout);
@@ -146,6 +1094,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Restore Driver State
     restoreDriverDashboardState();
+
+    // Initialize Driver Real-time WebSocket
+    initDriverWebSocket();
 });
 
 // ========================================================================
@@ -156,28 +1107,38 @@ async function handleDriverLogout(event) {
     if (event) event.preventDefault();
 
     if (isTripActive) {
-        const confirmed = await confirm("You have an active trip in progress. Are you sure you want to log out? The trip will be ended automatically.");
+        const confirmed = await confirm(t("confirm_logout_active_trip"));
         if (!confirmed) return;
+    }
 
-        // End the trip on the backend before clearing local state
+    const token = getToken();
+
+    // End active trip and notify backend before clearing local session
+    if (token) {
         try {
-            const token = getToken();
-            const response = await fetch(`${API_BASE}/driver/end-trip`, {
+            await fetch(`${API_BASE}/driver/end-trip`, {
                 method: "POST",
                 headers: {
                     "Authorization": `Bearer ${token}`,
                     "Content-Type": "application/json"
-                }
-            });
-            if (response.ok) {
-} else {
-                const data = await response.json().catch(() => ({}));
-                console.warn("[WARN] End-trip call during logout returned non-OK:", response.status, data.detail || "");
-                // Proceed with logout anyway — don't block the user
-            }
+                },
+                keepalive: true
+            }).catch(() => {});
         } catch (err) {
-            console.error("[ERROR] End-trip call during logout failed (network error):", err);
-            // Proceed with logout anyway — don't block the user
+            console.warn("[WARN] /driver/end-trip failed during logout:", err);
+        }
+
+        try {
+            await fetch(`${API_BASE}/auth/logout`, {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json"
+                },
+                keepalive: true
+            }).catch(() => {});
+        } catch (err) {
+            console.warn("[WARN] /auth/logout failed during logout:", err);
         }
     }
 
@@ -217,25 +1178,25 @@ function updateTopStatusBar() {
 
     if (!isTripActive) {
         dot.className = "w-2 h-2 rounded-full bg-slate-300";
-        statusText.textContent = "Offline";
+        statusText.textContent = t("status_offline");
         statusText.className = "text-xs font-bold text-slate-500";
-        elapsedText.textContent = "GPS not active";
+        elapsedText.textContent = t("status_gps_not_active");
         return;
     }
 
     if (isGpsPaused) {
         dot.className = "w-2 h-2 rounded-full bg-warn animate-pulse";
-        statusText.textContent = "GPS Paused";
+        statusText.textContent = t("status_gps_paused");
         statusText.className = "text-xs font-bold text-warn";
-        elapsedText.textContent = "Updates suspended";
+        elapsedText.textContent = t("status_updates_suspended");
         return;
     }
 
     if (lastLocationSentAt === 0) {
         dot.className = "w-2 h-2 rounded-full bg-ok animate-pulse";
-        statusText.textContent = "Acquiring GPS";
+        statusText.textContent = t("status_acquiring_gps");
         statusText.className = "text-xs font-bold text-ok";
-        elapsedText.textContent = "Waiting for first fix…";
+        elapsedText.textContent = t("status_waiting_fix");
         return;
     }
 
@@ -243,14 +1204,14 @@ function updateTopStatusBar() {
 
     if (elapsedSeconds <= 15) {
         dot.className = "w-2 h-2 rounded-full bg-ok animate-pulse";
-        statusText.textContent = "LIVE";
+        statusText.textContent = t("status_live");
         statusText.className = "text-xs font-bold text-ok";
-        elapsedText.textContent = `Sending • ${elapsedSeconds}s ago`;
+        elapsedText.textContent = t("status_sending_elapsed", { s: elapsedSeconds });
     } else {
         dot.className = "w-2 h-2 rounded-full bg-warn";
-        statusText.textContent = "Slow GPS";
+        statusText.textContent = t("status_slow_gps");
         statusText.className = "text-xs font-bold text-warn";
-        elapsedText.textContent = `Sending • ${elapsedSeconds}s ago`;
+        elapsedText.textContent = t("status_sending_elapsed", { s: elapsedSeconds });
     }
 }
 
@@ -267,17 +1228,20 @@ async function restoreDriverDashboardState() {
         window.__driverStateRestoredFromLogin = true;
 
         await loadDriverBus();
-        await loadDriverRouteStops();
 
         const tripStatus = initialLoginData.trip_status;
         if (tripStatus && tripStatus.active) {
             isTripActive = true;
+            activeTripType = tripStatus.trip_type || initialLoginData.route_stops?.trip_type || "morning";
+            await loadDriverRouteStops(activeTripType);
             switchToActiveTripView();
             startGpsTracking();
             startWaitRequestsPolling();
             startBusAssignmentPolling();
         } else {
             isTripActive = false;
+            activeTripType = null;
+            await loadDriverRouteStops();
             switchToPreTripView();
         }
         return;
@@ -286,9 +1250,6 @@ async function restoreDriverDashboardState() {
     // 1. Load Driver's Assigned Bus
     const myBus = await loadDriverBus();
     if (!myBus.success) return;
-
-    // 2. Load Driver's Route Stops
-    await loadDriverRouteStops();
 
     try {
         const response = await fetch(`${API_BASE}/driver/trip-status`, {
@@ -300,14 +1261,17 @@ async function restoreDriverDashboardState() {
         const data = await response.json();
 
         if (response.ok && data.active) {
-            await loadDriverRouteStops();
             isTripActive = true;
+            activeTripType = data.trip_type || selectedTripType || "morning";
+            await loadDriverRouteStops(activeTripType);
             switchToActiveTripView();
             startGpsTracking();
             startWaitRequestsPolling();
             startBusAssignmentPolling();
         } else {
-isTripActive = false;
+            isTripActive = false;
+            activeTripType = null;
+            await loadDriverRouteStops();
             switchToPreTripView();
         }
     } catch (error) {
@@ -321,6 +1285,7 @@ isTripActive = false;
 // ========================================================================
 
 function switchToPreTripView() {
+    document.body.classList.remove("trip-active");
     document.getElementById("preTripView")?.classList.remove("hidden");
     document.getElementById("preTripFooter")?.classList.remove("hidden");
     document.getElementById("activeTripView")?.classList.add("hidden");
@@ -332,7 +1297,7 @@ function switchToPreTripView() {
     const statusText = document.getElementById("routeStatusText");
     if (statusBadge) statusBadge.classList.remove("hidden");
     if (statusDot) statusDot.className = "w-1.5 h-1.5 rounded-full bg-brand";
-    if (statusText) statusText.textContent = "Route Preview • Ready";
+    if (statusText) statusText.textContent = t("route_preview_ready");
 
     updatePreTripOverview();
     updateTopStatusBar();
@@ -352,6 +1317,7 @@ function switchToPreTripView() {
 }
 
 function switchToActiveTripView() {
+    document.body.classList.add("trip-active");
     document.getElementById("preTripView")?.classList.add("hidden");
     document.getElementById("preTripFooter")?.classList.add("hidden");
     document.getElementById("activeTripView")?.classList.remove("hidden");
@@ -362,7 +1328,7 @@ function switchToActiveTripView() {
     const statusText = document.getElementById("routeStatusText");
     if (statusBadge) statusBadge.classList.remove("hidden");
     if (statusDot) statusDot.className = "w-1.5 h-1.5 rounded-full bg-ok animate-pulse";
-    if (statusText) statusText.textContent = "Trip Active • Live GPS";
+    if (statusText) statusText.textContent = t("trip_active_live_gps");
 
     // Initialize/refresh map on active switch
     setTimeout(() => {
@@ -410,10 +1376,10 @@ async function loadDriverBus() {
 
         // Update header & badges
         const busBadge = document.getElementById("headerBusBadge");
-        if (busBadge) busBadge.textContent = `Bus ${data.bus_number || "—"}`;
+        if (busBadge) busBadge.textContent = t("bus_badge", { num: data.bus_number || "—" });
 
         const driverName = document.getElementById("headerDriverName");
-        if (driverName) driverName.textContent = data.driver_name || "Driver";
+        if (driverName) driverName.textContent = data.driver_name || t("driver_default");
 
         return { success: true, bus: data };
     } catch (error) {
@@ -426,17 +1392,43 @@ async function loadDriverBus() {
 // LOAD ROUTE STOPS & EXPECTED STUDENTS
 // ========================================================================
 
-function applyRouteStopsPayload(data) {
+function applyRouteStopsPayload(data, overrideTripType = null) {
     if (!data) return false;
-    // The backend already returns stops in the active trip's direction.
+
+    const resolvedTripType = overrideTripType || data.trip_type || activeTripType || selectedTripType || null;
+    if (resolvedTripType) activeTripType = resolvedTripType;
+    const isEvening = activeTripType === "evening";
+
     const rawStops = Array.isArray(data.stops) ? data.stops : [];
-    driverRouteStops = [...rawStops];
-    activeTripType = data.trip_type || null;
-    if (selectedTripType && driverRouteStops.length > 0) {
+
+    // Sort stops according to trip direction (morning: 1..N, evening: N..1)
+    let orderedStops = [...rawStops];
+    if (orderedStops.length > 0 && typeof orderedStops[0].stop_order === "number") {
+        orderedStops.sort((a, b) => {
+            const orderA = Number(a.stop_order ?? 0);
+            const orderB = Number(b.stop_order ?? 0);
+            return isEvening ? (orderB - orderA) : (orderA - orderB);
+        });
+    } else if (isEvening && (!data.trip_type || data.trip_type !== "evening")) {
+        // Fallback: reverse if stops lacked stop_order and were not already evening-ordered
+        orderedStops.reverse();
+    }
+
+    // Map each stop using evening coordinates when in evening trip, otherwise morning coordinates
+    driverRouteStops = orderedStops.map(stop => {
+        const useEveningCoords = isEvening && stop.evening_latitude != null && stop.evening_longitude != null;
+        const lat = useEveningCoords ? Number(stop.evening_latitude) : Number(stop.latitude);
+        const lng = useEveningCoords ? Number(stop.evening_longitude) : Number(stop.longitude);
+        return {
+            ...stop,
+            latitude: lat,
+            longitude: lng
+        };
+    });
+
+    if (driverRouteStops.length > 0) {
         const firstStopName = document.getElementById("preTripFirstStopName");
-        const firstStop = selectedTripType === "evening"
-            ? driverRouteStops[driverRouteStops.length - 1]
-            : driverRouteStops[0];
+        const firstStop = driverRouteStops[0];
         if (firstStopName && firstStop) firstStopName.textContent = firstStop.name;
     }
 
@@ -452,6 +1444,8 @@ function applyRouteStopsPayload(data) {
     if (todayStudentsElem) {
         const count = data.total_students_today ?? data.total_assigned_students ?? "--";
         todayStudentsElem.textContent = count;
+        const summaryTodayElem = document.getElementById("summaryTodayStudents");
+        if (summaryTodayElem) summaryTodayElem.textContent = count;
     }
 
     updatePreTripOverview();
@@ -467,19 +1461,25 @@ function applyRouteStopsPayload(data) {
     return true;
 }
 
-async function loadDriverRouteStops() {
+async function loadDriverRouteStops(requestedTripType = null) {
     const token = getToken();
     if (!token) return;
 
+    const effectiveTripType = requestedTripType || activeTripType || selectedTripType || null;
     const initialLoginData = getInitialDriverDashboard();
-    if (!window.__driverRouteStopsLoadedFromLogin && initialLoginData && initialLoginData.route_stops) {
-        window.__driverRouteStopsLoadedFromLogin = true;
-        applyRouteStopsPayload(initialLoginData.route_stops);
-        return;
+
+    if (!requestedTripType && !window.__driverRouteStopsLoadedFromLogin && initialLoginData && initialLoginData.route_stops) {
+        const cachedTripType = initialLoginData.route_stops.trip_type || initialLoginData.trip_status?.trip_type || null;
+        if (!effectiveTripType || cachedTripType === effectiveTripType) {
+            window.__driverRouteStopsLoadedFromLogin = true;
+            applyRouteStopsPayload(initialLoginData.route_stops, effectiveTripType);
+            return;
+        }
     }
 
     try {
-        const response = await fetch(`${API_BASE}/driver/route-stops`, {
+        const query = effectiveTripType ? `?trip_type=${encodeURIComponent(effectiveTripType)}` : "";
+        const response = await fetch(`${API_BASE}/driver/route-stops${query}`, {
             headers: {
                 "Authorization": `Bearer ${token}`
             }
@@ -492,7 +1492,7 @@ async function loadDriverRouteStops() {
             return;
         }
 
-        applyRouteStopsPayload(data);
+        applyRouteStopsPayload(data, effectiveTripType);
     } catch (error) {
         console.error("loadDriverRouteStops error:", error);
     }
@@ -505,18 +1505,18 @@ async function loadDriverRouteStops() {
 function updatePreTripOverview() {
     const routeName = document.getElementById("preTripRouteName");
     if (routeName) {
-        routeName.textContent = currentBusData?.route_name || "Assigned Route";
+        routeName.textContent = currentBusData?.route_name || t("assigned_route");
     }
 
     const stopCount = document.getElementById("preTripStopCount");
     if (stopCount) {
         const count = driverRouteStops.length;
-        stopCount.textContent = `${count} stop${count === 1 ? "" : "s"}`;
+        stopCount.textContent = count === 1 ? t("stop_count_single") : t("stops_count", { count });
     }
 
     const firstStopName = document.getElementById("preTripFirstStopName");
     if (firstStopName) {
-        firstStopName.textContent = driverRouteStops[0]?.name || "Route stops ready";
+        firstStopName.textContent = driverRouteStops[0]?.name || t("route_stops_ready");
     }
 }
 
@@ -524,28 +1524,22 @@ function updatePreTripOverview() {
 // START TRIP CONTROLLER
 // ========================================================================
 
-function selectTripType(tripType) {
+async function selectTripType(tripType) {
     selectedTripType = tripType;
-    if (driverRouteStops.length > 0) {
-        const firstStopName = document.getElementById("preTripFirstStopName");
-        const firstStop = tripType === "evening"
-            ? driverRouteStops[driverRouteStops.length - 1]
-            : driverRouteStops[0];
-        if (firstStopName && firstStop) firstStopName.textContent = firstStop.name;
-    }
+    await loadDriverRouteStops(tripType);
     updateTripTypeControls();
 }
 
 function updateTripTypeControls() {
     const startBtn = document.getElementById("startTripBtn");
     const startText = document.getElementById("startTripText");
-    const labels = { morning: "Morning", evening: "Evening" };
 
     ["morning", "evening"].forEach((tripType) => {
         const button = document.getElementById(`${tripType}TripTypeBtn`);
         if (!button) return;
         const isSelected = selectedTripType === tripType;
         button.setAttribute("aria-pressed", String(isSelected));
+        button.textContent = t(tripType);
         button.classList.toggle("bg-navy", isSelected);
         button.classList.toggle("text-white", isSelected);
         button.classList.toggle("border-navy", isSelected);
@@ -557,8 +1551,8 @@ function updateTripTypeControls() {
     if (startBtn && !isTripStarting) startBtn.disabled = !selectedTripType;
     if (startText && !isTripStarting) {
         startText.textContent = selectedTripType
-            ? `START ${labels[selectedTripType].toUpperCase()} TRIP`
-            : "SELECT TRIP TYPE";
+            ? (selectedTripType === "morning" ? t("start_morning_trip") : t("start_evening_trip"))
+            : t("start_trip_select");
     }
 }
 
@@ -568,8 +1562,8 @@ async function handleStartTrip() {
     if (!selectedTripType) {
         KambusNotify.notify({
             type: "warning",
-            title: "Select trip type",
-            message: "Choose Morning or Evening before starting the trip."
+            title: t("toast_select_trip_type"),
+            message: t("toast_select_trip_msg")
         });
         return;
     }
@@ -578,8 +1572,8 @@ async function handleStartTrip() {
     if (!token) {
         KambusNotify.notify({
             type: "warning",
-            title: "Session expired",
-            message: "Please login again."
+            title: t("toast_session_expired"),
+            message: t("toast_session_expired_msg")
         });
         return;
     }
@@ -589,8 +1583,8 @@ async function handleStartTrip() {
         if (!BUS_ID) {
             KambusNotify.notify({
                 type: "error",
-                title: "Bus not assigned",
-                message: "No bus assignment found for your driver account."
+                title: t("toast_bus_not_assigned"),
+                message: t("toast_bus_not_assigned_msg")
             });
             return;
         }
@@ -607,7 +1601,7 @@ async function handleStartTrip() {
         startIcon.className = "w-4 h-4 animate-spin shrink-0";
         startIcon.innerHTML = '<use href="icons.svg#icon-spinner"/>';
     }
-    if (startText) startText.textContent = "STARTING TRIP…";
+    if (startText) startText.textContent = t("starting_trip");
 
     try {
         const response = await fetch(`${API_BASE}/driver/start-trip`, {
@@ -622,15 +1616,20 @@ async function handleStartTrip() {
         const data = await response.json();
 
         if (!response.ok) {
-            throw new Error(data.detail || "Server failed to start trip");
+            throw new Error(data.detail || t("toast_unable_start_trip_msg"));
         }
-        await loadDriverRouteStops();
+        activeTripType = selectedTripType || data.trip_type || "morning";
+        await loadDriverRouteStops(activeTripType);
         isTripActive = true;
         isGpsPaused = false;
         passedStopIds.clear();
         lastRouteFetchAt = 0;
         lastRouteFetchPos = null;
         lastNextStopId = null;
+        currentSmoothedBearing = null;
+        previousGpsFix = null;
+        isBearingUpMode = true;
+        updateCameraModeUI();
 
         switchToActiveTripView();
         startGpsTracking();
@@ -639,15 +1638,15 @@ async function handleStartTrip() {
 
         KambusNotify.notify({
             type: "success",
-            title: "Trip started",
-            message: "Live GPS sharing has started."
+            title: t("toast_trip_started"),
+            message: t("toast_trip_started_msg")
         });
     } catch (error) {
         console.error("Start trip failed:", error);
         KambusNotify.notify({
             type: "error",
-            title: "Unable to start trip",
-            message: error.message || "Please check your connection."
+            title: t("toast_unable_start_trip"),
+            message: error.message || t("toast_unable_start_trip_msg")
         });
     } finally {
         isTripStarting = false;
@@ -669,10 +1668,10 @@ async function confirmAndEndTrip() {
 
     // Safety Confirmation Modal
     const confirmed = await KambusNotify.confirm({
-        title: "End this trip?",
-        message: "Your live location sharing will stop.",
-        confirmText: "End Trip",
-        cancelText: "Cancel",
+        title: t("confirm_end_trip_title"),
+        message: t("confirm_end_trip_msg"),
+        confirmText: t("confirm_end_trip_ok"),
+        cancelText: t("cancel"),
         danger: true
     });
 
@@ -693,7 +1692,7 @@ async function confirmAndEndTrip() {
         const data = await response.json();
 
         if (!response.ok) {
-            throw new Error(data.detail || "Failed to end trip");
+            throw new Error(data.detail || t("toast_unable_end_trip_msg"));
         }
 // Stop GPS & Intervals
         stopGpsTracking();
@@ -707,9 +1706,17 @@ async function confirmAndEndTrip() {
         passedStopIds.clear();
         lastRouteFetchAt = 0;
         lastRouteFetchPos = null;
+        currentSmoothedBearing = null;
+        previousGpsFix = null;
+        if (routeMap && routeMap._rotate && typeof routeMap.setBearing === "function") {
+            routeMap.setBearing(0);
+        }
+        updateCameraModeUI();
 
         // Clear Map Layers
         if (remainingRouteLayer) remainingRouteLayer.clearLayers();
+        if (remainingRouteArrowLayer) remainingRouteArrowLayer.clearLayers();
+        currentRemainingRouteLatLngs = [];
         if (completedRouteLayer) completedRouteLayer.clearLayers();
         if (driverMarker && routeMap) {
             routeMap.removeLayer(driverMarker);
@@ -720,15 +1727,15 @@ async function confirmAndEndTrip() {
 
         KambusNotify.notify({
             type: "success",
-            title: "Trip ended",
-            message: "Live location sharing stopped."
+            title: t("toast_trip_ended"),
+            message: t("toast_trip_ended_msg")
         });
     } catch (error) {
         console.error("End trip failed:", error);
         KambusNotify.notify({
             type: "error",
-            title: "Unable to end trip",
-            message: error.message || "Please try again."
+            title: t("toast_unable_end_trip"),
+            message: error.message || t("toast_unable_end_trip_msg")
         });
     } finally {
         isTripEnding = false;
@@ -746,8 +1753,8 @@ function startGpsTracking() {
     if (!navigator.geolocation) {
         KambusNotify.notify({
             type: "error",
-            title: "GPS not supported",
-            message: "Geolocation is not supported on this device."
+            title: t("toast_gps_not_supported"),
+            message: t("toast_gps_not_supported_msg")
         });
         return;
     }
@@ -780,9 +1787,26 @@ function handleDriverLocationFix(position) {
     const speed = (speedMs !== null && speedMs !== undefined && speedMs >= 0)
         ? Math.round(speedMs * 3.6)
         : null;
+    const rawHeading = position.coords.heading;
+
+    const currentPos = { latitude, longitude, speed, heading: rawHeading };
+
+    // Bearing resolution & smoothing for navigation camera
+    const targetBearing = resolveTargetBearing(
+        rawHeading,
+        speed,
+        currentPos,
+        previousGpsFix,
+        currentSmoothedBearing
+    );
+
+    if (targetBearing !== null && targetBearing !== undefined) {
+        currentSmoothedBearing = smoothBearing(currentSmoothedBearing, targetBearing, BEARING_SMOOTHING_ALPHA);
+    }
 
     const isFirstFix = !lastPosition;
-    lastPosition = { latitude, longitude, speed };
+    previousGpsFix = lastPosition ? { ...lastPosition } : null;
+    lastPosition = currentPos;
 
     // 1. Smoothly update Driver live marker ONLY (NO map reconstruction)
     updateDriverMarkerOnMap(latitude, longitude, speed, isFirstFix);
@@ -829,6 +1853,24 @@ async function sendLocationUpdateToBackend(latitude, longitude, speed) {
         if (response.ok) {
             lastLocationSentAt = Date.now();
             updateTopStatusBar();
+            const respData = await response.json().catch(() => ({}));
+            if (respData.rerouted && Array.isArray(respData.route_polyline) && respData.route_polyline.length >= 2) {
+                const newCoords = respData.remaining_polyline || respData.route_polyline;
+                currentRemainingRouteLatLngs = newCoords.map(p => [Number(p[0]), Number(p[1])]);
+                if (remainingRouteLayer) {
+                    remainingRouteLayer.clearLayers();
+                    remainingRouteLayer.addData({
+                        type: "Feature",
+                        geometry: {
+                            type: "LineString",
+                            coordinates: currentRemainingRouteLatLngs.map(p => [p[1], p[0]])
+                        }
+                    });
+                }
+                if (remainingRouteArrowLayer && routeMap) {
+                    renderDirectionArrows(routeMap, remainingRouteArrowLayer, currentRemainingRouteLatLngs, "#ffffff");
+                }
+            }
         } else if (response.status === 403) {
             // Bus was reassigned to another driver mid-trip — this driver no longer owns it
             handleBusReassignmentDetected();
@@ -837,6 +1879,73 @@ async function sendLocationUpdateToBackend(latitude, longitude, speed) {
         console.warn("Location send network failure:", e);
     } finally {
         locationRequestInFlight = false;
+    }
+}
+
+let driverSocket = null;
+let driverWsReconnectTimer = null;
+
+function initDriverWebSocket() {
+    const token = getToken();
+    if (!token || typeof WebSocket === "undefined") return;
+    if (driverSocket && (driverSocket.readyState === WebSocket.OPEN || driverSocket.readyState === WebSocket.CONNECTING)) {
+        return;
+    }
+
+    try {
+        const wsUrl = `${API_BASE.replace(/^http/, "ws")}/ws/notifications?token=${encodeURIComponent(token)}`;
+        driverSocket = new WebSocket(wsUrl);
+
+        driverSocket.onopen = () => {
+            if (driverWsReconnectTimer) {
+                clearTimeout(driverWsReconnectTimer);
+                driverWsReconnectTimer = null;
+            }
+        };
+
+        driverSocket.onmessage = (event) => {
+            try {
+                if (event.data === "pong") return;
+                const data = JSON.parse(event.data);
+                if (data.type === "route_rerouted" || data.type === "route_update") {
+                    const poly = data.remaining_polyline || data.polyline;
+                    if (Array.isArray(poly) && poly.length >= 2) {
+                        currentRemainingRouteLatLngs = poly.map(p => [Number(p[0]), Number(p[1])]);
+                        if (remainingRouteLayer) {
+                            remainingRouteLayer.clearLayers();
+                            remainingRouteLayer.addData({
+                                type: "Feature",
+                                geometry: {
+                                    type: "LineString",
+                                    coordinates: currentRemainingRouteLatLngs.map(p => [p[1], p[0]])
+                                }
+                            });
+                        }
+                        if (remainingRouteArrowLayer && routeMap) {
+                            renderDirectionArrows(routeMap, remainingRouteArrowLayer, currentRemainingRouteLatLngs, "#ffffff");
+                        }
+                    }
+                } else if (data.type === "wait_request_boarded") {
+                    hideActiveWaitCard();
+                    KambusNotify.notify({
+                        type: "success",
+                        title: t("toast_student_boarded"),
+                        message: t("toast_student_boarded_msg")
+                    });
+                    setTimeout(loadActiveWaitRequests, 500);
+                }
+            } catch (err) {
+                console.warn("Driver WS parse error:", err);
+            }
+        };
+
+        driverSocket.onclose = () => {
+            if (!driverWsReconnectTimer) {
+                driverWsReconnectTimer = setTimeout(initDriverWebSocket, 5000);
+            }
+        };
+    } catch (e) {
+        console.warn("Driver WS init error:", e);
     }
 }
 
@@ -889,8 +1998,8 @@ async function handleBusReassignmentDetected() {
 
     KambusNotify.notify({
         type: "error",
-        title: "Bus reassigned",
-        message: "You are no longer assigned to this bus. Please log in again to continue."
+        title: t("toast_bus_reassigned"),
+        message: t("toast_bus_reassigned_msg")
     });
 }
 
@@ -907,9 +2016,9 @@ function updateNextStopAndEta(driverPos) {
     if (remainingStops.length === 0) {
         if (activeTripType === "evening") {
             renderNextStopCard({
-                name: "All stops completed",
+                name: t("all_stops_completed"),
                 distance: 0,
-                orderText: "Trip Complete",
+                orderText: t("trip_complete"),
                 studentCount: null,
                 isCollege: false
             });
@@ -930,7 +2039,7 @@ function updateNextStopAndEta(driverPos) {
         renderNextStopCard({
             name: COLLEGE_LOCATION.name,
             distance: distToCollege,
-            orderText: "Final Destination",
+            orderText: t("final_destination"),
             studentCount: null,
             isCollege: true
         });
@@ -967,10 +2076,15 @@ function updateNextStopAndEta(driverPos) {
     const previousNextStopId = currentNextStop ? (currentNextStop.stop_id || currentNextStop.id) : null;
     currentNextStop = nextStop;
 
+    const isFinalStop = (nextStopPosition === driverRouteStops.length);
+    const orderText = isFinalStop && activeTripType === "evening"
+        ? t("stop_order_badge_final", { order: nextStopPosition, total: driverRouteStops.length })
+        : t("stop_order_badge", { order: nextStopPosition, total: driverRouteStops.length });
+
     renderNextStopCard({
         name: nextStop.name,
         distance: distToNext,
-        orderText: `Stop ${nextStopPosition} of ${driverRouteStops.length}`,
+        orderText: orderText,
         studentCount: nextStop.student_count,
         isCollege: false
     });
@@ -1004,7 +2118,7 @@ function renderNextStopCard({ name, distance, orderText, studentCount, isCollege
     if (etaElem) {
         const speedKmh = (lastPosition?.speed && lastPosition.speed >= 12) ? lastPosition.speed : 25;
         const minutes = Math.max(1, Math.ceil((distance / 1000) / (speedKmh / 60)));
-        etaElem.textContent = `ETA: ~${minutes} min`;
+        etaElem.textContent = t("next_stop_eta", { min: minutes });
     }
 
     // Expected Students Count
@@ -1017,7 +2131,9 @@ function renderNextStopCard({ name, distance, orderText, studentCount, isCollege
             studentsContainer.classList.add("hidden");
         } else {
             studentsContainer.classList.remove("hidden");
-            studentsElem.textContent = `${count} students expected`;
+            studentsElem.textContent = count === 1
+                ? t("student_expected_single")
+                : t("students_expected", { count });
         }
     }
 }
@@ -1034,8 +2150,13 @@ function updateCollegeEta(driverPos) {
         : null;
     const destination = finalStop || COLLEGE_LOCATION;
 
+    const labelText = finalStop ? t("eta_to_final_stop") : t("eta_to_college");
     if (labelElem) {
-        labelElem.textContent = finalStop ? "ETA to Final Stop" : "ETA to College";
+        labelElem.textContent = labelText;
+    }
+    const summaryLabelElem = document.getElementById("summaryCollegeLabel");
+    if (summaryLabelElem) {
+        summaryLabelElem.textContent = finalStop ? t("final_stop_label") : t("college_label");
     }
 
     const distanceMeters = calculateDistance(
@@ -1048,10 +2169,16 @@ function updateCollegeEta(driverPos) {
     const speedKmh = (driverPos.speed && driverPos.speed >= 15) ? driverPos.speed : 28;
     const durationMinutes = Math.max(2, Math.ceil((distanceMeters / 1000) / (speedKmh / 60)));
 
-    durationElem.textContent = `~${durationMinutes} min`;
+    durationElem.textContent = t("duration_approx_min", { min: durationMinutes });
 
     const etaDate = new Date(Date.now() + durationMinutes * 60000);
-    clockElem.textContent = etaDate.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    const clockTime = etaDate.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    clockElem.textContent = clockTime;
+
+    const summaryEtaElem = document.getElementById("summaryCollegeEta");
+    if (summaryEtaElem) {
+        summaryEtaElem.textContent = t("summary_college_eta", { min: durationMinutes, time: clockTime });
+    }
 }
 
 function updateStopProgressionUI() {
@@ -1060,16 +2187,42 @@ function updateStopProgressionUI() {
     const remainingCount = Math.max(0, totalStops - passedCount);
 
     const passedElem = document.getElementById("progressPassedText");
-    if (passedElem) passedElem.innerHTML = `<svg class="w-3.5 h-3.5 text-ok shrink-0 inline mr-1" aria-hidden="true"><use href="icons.svg#icon-check"/></svg>${passedCount} passed`;
+    if (passedElem) passedElem.innerHTML = `<svg class="w-3.5 h-3.5 text-ok shrink-0 inline mr-1" aria-hidden="true"><use href="icons.svg#icon-check"/></svg>${t("passed_count", { count: passedCount })}`;
 
     const remainingElem = document.getElementById("progressRemainingText");
-    if (remainingElem) remainingElem.textContent = `${remainingCount} remaining`;
+    if (remainingElem) remainingElem.textContent = t("remaining_count", { count: remainingCount });
 
     const nextElem = document.getElementById("progressNextText");
     if (nextElem) {
-        nextElem.textContent = currentNextStop ? `Next: ${currentNextStop.name}` : `To College`;
+        nextElem.textContent = currentNextStop ? t("next_stop_prefix", { name: currentNextStop.name }) : t("to_college");
+    }
+
+    const summaryPassedElem = document.getElementById("summaryPassedCount");
+    if (summaryPassedElem) summaryPassedElem.textContent = passedCount;
+    const summaryProgressElem = document.getElementById("summaryProgressText");
+    if (summaryProgressElem) {
+        summaryProgressElem.textContent = t("summary_passed_ratio", { passed: passedCount, total: totalStops });
     }
 }
+
+function toggleTripSummary() {
+    const details = document.getElementById("summaryDetailsContent");
+    const btn = document.getElementById("summaryToggleBtn");
+    const chevron = document.getElementById("summaryChevronIcon");
+    if (!details) return;
+
+    const isHidden = details.classList.contains("hidden");
+    if (isHidden) {
+        details.classList.remove("hidden");
+        btn?.setAttribute("aria-expanded", "true");
+        chevron?.classList.add("rotate-180");
+    } else {
+        details.classList.add("hidden");
+        btn?.setAttribute("aria-expanded", "false");
+        chevron?.classList.remove("rotate-180");
+    }
+}
+window.toggleTripSummary = toggleTripSummary;
 
 // ========================================================================
 // LIVE ROAD ROUTE MAP (LEAFLET + OSRM PUBLIC ROUTING)
@@ -1082,10 +2235,14 @@ function initOrUpdateRouteMap() {
     if (!routeMap) {
         routeMap = L.map("routeMap", {
             zoomControl: false,
-            attributionControl: false
+            attributionControl: false,
+            rotate: true,
+            rotateControl: false,
+            touchRotate: false
         }).setView([COLLEGE_LOCATION.latitude, COLLEGE_LOCATION.longitude], 14);
 
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
             maxZoom: 19
         }).addTo(routeMap);
 
@@ -1097,6 +2254,15 @@ function initOrUpdateRouteMap() {
         remainingRouteLayer = L.geoJSON(null, {
             style: { color: "#4A6F79", weight: 5, opacity: 0.85 }
         }).addTo(routeMap);
+
+        if (!remainingRouteArrowLayer) {
+            remainingRouteArrowLayer = L.layerGroup().addTo(routeMap);
+            routeMap.on("zoomend", function () {
+                if (currentRemainingRouteLatLngs && currentRemainingRouteLatLngs.length >= 2) {
+                    renderDirectionArrows(routeMap, remainingRouteArrowLayer, currentRemainingRouteLatLngs, "#ffffff");
+                }
+            });
+        }
 
         stopMarkersGroup = L.layerGroup().addTo(routeMap);
     }
@@ -1119,8 +2285,13 @@ function renderMapMarkers() {
 
         const stopIcon = createStopMarkerIcon(index + 1, isPassed, isNext);
 
+        const isLastInTrip = (index === driverRouteStops.length - 1);
+        const stopLabel = (isLastInTrip && activeTripType === "evening")
+            ? `Stop ${index + 1} (Final Stop)`
+            : `Stop ${index + 1}`;
+
         const marker = L.marker([lat, lng], { icon: stopIcon, zIndexOffset: isNext ? 500 : 100 })
-            .bindPopup(`<strong>${stop.name}</strong><br>Stop ${index + 1}${stop.student_count ? ` • ${stop.student_count} expected` : ''}`);
+            .bindPopup(`<strong>${stop.name}</strong><br>${stopLabel}${stop.student_count ? ` • ${stop.student_count} expected` : ''}`);
 
         marker.stopData = stop;
         stopMarkersGroup.addLayer(marker);
@@ -1145,10 +2316,11 @@ function renderMapMarkers() {
         iconAnchor: [16, 16]
     });
 
+    const collegeRole = activeTripType === "evening" ? "Trip Starting Point" : "Final Destination";
     collegeMarker = L.marker([COLLEGE_LOCATION.latitude, COLLEGE_LOCATION.longitude], {
         icon: collegeIcon,
         zIndexOffset: 300
-    }).bindPopup(`<strong>${COLLEGE_LOCATION.name}</strong>`);
+    }).bindPopup(`<strong>${COLLEGE_LOCATION.name}</strong><br>${collegeRole}`);
 
     stopMarkersGroup.addLayer(collegeMarker);
 
@@ -1248,24 +2420,36 @@ function updateDriverMarkerOnMap(latitude, longitude, speed, isFirstFix = false)
         driverMarker = L.marker([latitude, longitude], { icon: busIcon, zIndexOffset: 1000 }).addTo(routeMap);
 
         if (isFirstFix) {
-            routeMap.setView([latitude, longitude], 15);
+            if (isBearingUpMode) {
+                applyBearingUpCamera(latitude, longitude, currentSmoothedBearing, 17);
+            } else {
+                routeMap.setView([latitude, longitude], 15);
+            }
         }
-        } else {
-            // Smoothly update marker location
-            driverMarker.setLatLng([latitude, longitude]);
+    } else {
+        // Smoothly update marker location
+        driverMarker.setLatLng([latitude, longitude]);
 
-            // Auto-recenter map to follow the bus on every fix while trip is active
-            if (isTripActive) {
+        // Auto-recenter map to follow the bus on every fix while trip is active
+        if (isTripActive) {
+            if (isBearingUpMode) {
+                applyBearingUpCamera(latitude, longitude, currentSmoothedBearing);
+            } else {
                 routeMap.panTo([latitude, longitude], { animate: true, duration: 0.5 });
             }
         }
+    }
 }
 
 function recenterRouteMap() {
     if (!routeMap) return;
 
     if (isTripActive && lastPosition) {
-        routeMap.setView([lastPosition.latitude, lastPosition.longitude], 16, { animate: true });
+        if (isBearingUpMode) {
+            applyBearingUpCamera(lastPosition.latitude, lastPosition.longitude, currentSmoothedBearing, 17);
+        } else {
+            routeMap.setView([lastPosition.latitude, lastPosition.longitude], 16, { animate: true });
+        }
         driverMarker?.openPopup();
         return;
     }
@@ -1281,6 +2465,202 @@ function recenterRouteMap() {
     }
 
     routeMap.setView([COLLEGE_LOCATION.latitude, COLLEGE_LOCATION.longitude], 14, { animate: true });
+}
+
+// ========================================================================
+// BEARING-UP NAVIGATION CAMERA & HEADING CONTROLLER
+// ========================================================================
+
+/**
+ * Standard forward-azimuth calculation between consecutive GPS points.
+ * Returns bearing in degrees [0, 360).
+ */
+function calculateBearingFromCoords(lat1, lon1, lat2, lon2) {
+    if (!Number.isFinite(lat1) || !Number.isFinite(lon1) ||
+        !Number.isFinite(lat2) || !Number.isFinite(lon2)) {
+        return null;
+    }
+    const toRad = Math.PI / 180;
+    const toDeg = 180 / Math.PI;
+    const phi1 = lat1 * toRad;
+    const phi2 = lat2 * toRad;
+    const deltaLambda = (lon2 - lon1) * toRad;
+
+    const y = Math.sin(deltaLambda) * Math.cos(phi2);
+    const x = Math.cos(phi1) * Math.sin(phi2) -
+              Math.sin(phi1) * Math.cos(phi2) * Math.cos(deltaLambda);
+
+    const theta = Math.atan2(y, x);
+    return ((theta * toDeg) % 360 + 360) % 360;
+}
+
+/**
+ * Resolves the target heading according to sensor availability and speed:
+ * - Uses device bearing if available and speed > 2 km/h (eliminates stationary sensor jitter).
+ * - Falls back to 2-point GPS forward azimuth if distance >= 3m.
+ * - Otherwise retains last known bearing to prevent map spin while stopped.
+ */
+function resolveTargetBearing(deviceHeading, speedKmh, currentPos, prevPos, lastKnownBearing = null) {
+    const hasValidDeviceHeading = (
+        deviceHeading !== null &&
+        deviceHeading !== undefined &&
+        !isNaN(deviceHeading) &&
+        Number.isFinite(Number(deviceHeading))
+    );
+    const validSpeed = (typeof speedKmh === "number" && !isNaN(speedKmh)) ? speedKmh : 0;
+
+    // 1. Device-reported bearing when moving above threshold (> 2 km/h)
+    if (hasValidDeviceHeading && validSpeed > MIN_SPEED_FOR_DEVICE_BEARING_KMH) {
+        return ((Number(deviceHeading) % 360) + 360) % 360;
+    }
+
+    // 2. Fall back to computing bearing from the last two valid GPS points
+    if (prevPos && currentPos) {
+        const distM = calculateDistance(
+            prevPos.latitude, prevPos.longitude,
+            currentPos.latitude, currentPos.longitude
+        );
+        if (distM >= MIN_DISTANCE_FOR_CALCULATED_BEARING_M) {
+            const calculated = calculateBearingFromCoords(
+                prevPos.latitude, prevPos.longitude,
+                currentPos.latitude, currentPos.longitude
+            );
+            if (calculated !== null) {
+                return calculated;
+            }
+        }
+    }
+
+    // 3. Stationary or low speed with no displacement -> retain last known bearing
+    return lastKnownBearing;
+}
+
+/**
+ * Exponential moving average across the circular 0° / 360° boundary.
+ * Computes shortest angular delta between -180° and +180° to avoid spinning the camera.
+ */
+function smoothBearing(currentSmoothed, targetBearing, alpha = BEARING_SMOOTHING_ALPHA) {
+    if (targetBearing === null || targetBearing === undefined || !Number.isFinite(targetBearing)) {
+        return currentSmoothed;
+    }
+    if (currentSmoothed === null || currentSmoothed === undefined || !Number.isFinite(currentSmoothed)) {
+        return ((targetBearing % 360) + 360) % 360;
+    }
+
+    // Shortest angular difference in range [-180, 180]
+    let diff = ((targetBearing - currentSmoothed + 540) % 360) - 180;
+    let newBearing = (currentSmoothed + alpha * diff) % 360;
+    if (newBearing < 0) newBearing += 360;
+    return newBearing;
+}
+
+/**
+ * Offsets the map center so the bus marker sits in the bottom third of the viewport,
+ * opening up the road ahead like Google Maps turn-by-turn navigation.
+ */
+function computeNavigationCenter(lat, lng, bearingDeg, zoom, containerHeight = null) {
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return [lat, lng];
+
+    const mapContainer = document.getElementById("routeMap");
+    const mapH = containerHeight || (mapContainer ? mapContainer.clientHeight : 400) || 400;
+
+    // Offset the bus into the bottom third: roughly 22% of viewport height below screen center
+    const pixelOffset = Math.round(mapH * 0.22);
+
+    const safeBearing = Number.isFinite(bearingDeg) ? bearingDeg : 0;
+    const safeZoom = Number.isFinite(zoom) ? zoom : 17;
+    const toRad = Math.PI / 180;
+
+    // Ground resolution in meters/pixel at latitude and zoom level
+    const metersPerPixel = (156543.03392 * Math.cos(lat * toRad)) / Math.pow(2, safeZoom);
+    const distMeters = pixelOffset * metersPerPixel;
+
+    const bearingRad = safeBearing * toRad;
+    const deltaLat = (distMeters * Math.cos(bearingRad)) / 111320;
+    const deltaLng = (distMeters * Math.sin(bearingRad)) / (111320 * Math.cos(lat * toRad));
+
+    return [lat + deltaLat, lng + deltaLng];
+}
+
+/**
+ * Applies the bearing-up navigation camera to the driver map instance.
+ * Rotates the map container so heading is UP and positions the bus in the lower viewport.
+ */
+function applyBearingUpCamera(lat, lng, bearingDeg, targetZoom = null) {
+    if (!routeMap) return;
+
+    const currentZoom = (typeof routeMap.getZoom === "function") ? routeMap.getZoom() : 17;
+    const zoom = targetZoom ? targetZoom : Math.max(currentZoom, 17);
+    const smoothed = (bearingDeg !== null && bearingDeg !== undefined && Number.isFinite(bearingDeg))
+        ? bearingDeg
+        : 0;
+
+    // Rotate map so bus bearing points UP:
+    // When bus bearing is B (clockwise from north), map rotates counter-clockwise by B (i.e. 360 - B)
+    if (routeMap._rotate && typeof routeMap.setBearing === "function") {
+        const mapBearing = (360 - (smoothed % 360)) % 360;
+        routeMap.setBearing(mapBearing);
+    }
+
+    const center = computeNavigationCenter(lat, lng, smoothed, zoom);
+    routeMap.setView(center, zoom, { animate: true, duration: 0.35 });
+}
+
+/**
+ * Toggles between Bearing-Up Follow Mode and Flat North-Up Overview Mode.
+ */
+function toggleCameraMode() {
+    isBearingUpMode = !isBearingUpMode;
+    updateCameraModeUI();
+
+    if (!routeMap) return;
+
+    if (isBearingUpMode) {
+        // Nav Mode (Bearing-Up Follow):
+        // 1. Hide directional arrows (camera rotation provides direction)
+        if (remainingRouteArrowLayer) {
+            remainingRouteArrowLayer.clearLayers();
+        }
+        // 2. Orient and offset camera to follow bus
+        if (lastPosition) {
+            applyBearingUpCamera(lastPosition.latitude, lastPosition.longitude, currentSmoothedBearing, 17);
+        }
+    } else {
+        // Overview Mode (Flat North-Up):
+        // 1. Reset map bearing to 0 (North up)
+        if (routeMap._rotate && typeof routeMap.setBearing === "function") {
+            routeMap.setBearing(0);
+        }
+        // 2. Recenter view
+        if (lastPosition) {
+            routeMap.setView([lastPosition.latitude, lastPosition.longitude], 15, { animate: true });
+        }
+        // 3. Re-render directional arrows
+        if (currentRemainingRouteLatLngs && currentRemainingRouteLatLngs.length >= 2) {
+            renderDirectionArrows(routeMap, remainingRouteArrowLayer, currentRemainingRouteLatLngs, "#ffffff");
+        }
+    }
+}
+
+/**
+ * Updates the camera toggle button visuals to reflect current mode.
+ */
+function updateCameraModeUI() {
+    const btn = document.getElementById("cameraModeToggleBtn");
+    const text = document.getElementById("cameraModeText");
+    if (!btn || !text) return;
+
+    if (isBearingUpMode) {
+        btn.classList.remove("bg-surface", "text-navy", "border-line");
+        btn.classList.add("bg-navy", "text-white", "border-navy");
+        text.textContent = t("nav_mode");
+        btn.setAttribute("title", t("title_nav_mode"));
+    } else {
+        btn.classList.remove("bg-navy", "text-white", "border-navy");
+        btn.classList.add("bg-surface", "text-navy", "border-line");
+        text.textContent = t("overview");
+        btn.setAttribute("title", t("title_overview"));
+    }
 }
 
 // ========================================================================
@@ -1354,6 +2734,14 @@ async function fetchAndDrawRoadRoute(driverPos, nextId) {
             remainingRouteLayer.addData(routeGeoJson);
         }
 
+        // Extract road-snapped coordinates from OSRM [lon, lat]
+        const coordinates = data.routes[0].geometry.coordinates;
+        currentRemainingRouteLatLngs = coordinates.map(([lon, lat]) => [lat, lon]);
+
+        if (remainingRouteArrowLayer) {
+            renderDirectionArrows(routeMap, remainingRouteArrowLayer, currentRemainingRouteLatLngs, "#ffffff");
+        }
+
         // Cache fetch state
         lastRouteFetchAt = Date.now();
         lastRouteFetchPos = { latitude: driverPos.latitude, longitude: driverPos.longitude };
@@ -1363,19 +2751,74 @@ async function fetchAndDrawRoadRoute(driverPos, nextId) {
         if (statusBadge && statusDot && statusText) {
             statusBadge.classList.remove("hidden");
             statusDot.className = "w-1.5 h-1.5 rounded-full bg-ok";
-            statusText.textContent = "Road Route Active";
+            statusText.textContent = t("road_route_active");
         }
-} catch (error) {
+    } catch (error) {
         console.warn("Road routing notice:", error.message);
 
         // Fallback: Keep markers working, do not draw fake straight lines
         if (statusBadge && statusDot && statusText) {
             statusBadge.classList.remove("hidden");
             statusDot.className = "w-1.5 h-1.5 rounded-full bg-warn";
-            statusText.textContent = "Road Route Unavailable";
+            statusText.textContent = t("road_route_unavailable");
         }
     } finally {
         isRouteFetchInFlight = false;
+    }
+}
+
+function renderDirectionArrows(mapInstance, arrowLayer, polylinePoints, color = "#ffffff") {
+    if (!mapInstance || !arrowLayer || !Array.isArray(polylinePoints) || polylinePoints.length < 2) return;
+    arrowLayer.clearLayers();
+    if (isBearingUpMode) {
+        return; // Arrows hidden in bearing-up navigation mode (rotating camera replaces them)
+    }
+    const zoom = mapInstance.getZoom();
+
+    const arrowSpacing = 85;
+    let untilArrow = 45;
+
+    for (let i = 1; i < polylinePoints.length; i++) {
+        const p1 = polylinePoints[i - 1];
+        const p2 = polylinePoints[i];
+
+        const lat1 = Array.isArray(p1) ? p1[0] : p1.lat;
+        const lng1 = Array.isArray(p1) ? p1[1] : p1.lng;
+        const lat2 = Array.isArray(p2) ? p2[0] : p2.lat;
+        const lng2 = Array.isArray(p2) ? p2[1] : p2.lng;
+
+        if (!Number.isFinite(lat1) || !Number.isFinite(lng1) || !Number.isFinite(lat2) || !Number.isFinite(lng2)) continue;
+
+        const a = mapInstance.project([lat1, lng1], zoom);
+        const b = mapInstance.project([lat2, lng2], zoom);
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        const length = Math.hypot(dx, dy);
+        if (!length) continue;
+
+        for (; untilArrow <= length; untilArrow += arrowSpacing) {
+            const x = a.x + (dx * untilArrow) / length;
+            const y = a.y + (dy * untilArrow) / length;
+            const ux = dx / length;
+            const uy = dy / length;
+
+            const arrowPixels = [
+                [x - ux * 7 - uy * 4, y - uy * 7 + ux * 4],
+                [x, y],
+                [x - ux * 7 + uy * 4, y - uy * 7 - ux * 4]
+            ];
+
+            const arrowLatLngs = arrowPixels.map(p => mapInstance.unproject(p, zoom));
+            L.polyline(arrowLatLngs, {
+                color: color,
+                weight: 2.5,
+                opacity: 0.95,
+                lineCap: "round",
+                lineJoin: "round",
+                interactive: false
+            }).addTo(arrowLayer);
+        }
+        untilArrow -= length;
     }
 }
 
@@ -1384,6 +2827,7 @@ async function fetchAndDrawRoadRoute(driverPos, nextId) {
 // ========================================================================
 
 function startWaitRequestsPolling() {
+    if (!hasDriverEntitlement("wait_request")) return;
     stopWaitRequestsPolling();
     loadActiveWaitRequests();
     waitRequestPollTimer = setInterval(loadActiveWaitRequests, 4000);
@@ -1398,6 +2842,7 @@ function stopWaitRequestsPolling() {
 
 async function loadActiveWaitRequests() {
     if (!isTripActive) return;
+    if (!hasDriverEntitlement("wait_request")) return;
 
     const token = getToken();
     if (!token) return;
@@ -1433,28 +2878,36 @@ function renderActiveWaitCard(group) {
     const countElem = document.getElementById("waitStudentCount");
     const countdownElem = document.getElementById("waitCountdownBadge");
     const skipBtn = document.getElementById("skipWaitBtn");
+    const completeBtn = document.getElementById("completeWaitBtn");
 
     if (!card || !title || !countdownElem) return;
 
     card.classList.remove("hidden");
-    title.textContent = `WAIT REQUEST — ${group.stop_name || "Upcoming Stop"}`;
+    title.textContent = t("wait_request_title", { stop: group.stop_name || t("upcoming_stop") });
 
     const studentCount = Number(group.student_count || 1);
     if (countElem) {
-        countElem.textContent = `• ${studentCount} ${studentCount === 1 ? "student" : "students"} waiting (${group.minutes} min)`;
+        const studentStr = studentCount === 1 ? t("student_singular") : t("students_plural");
+        countElem.textContent = t("wait_students_waiting", {
+            count: studentCount,
+            student_str: studentStr,
+            min: group.minutes || 1
+        });
     }
 
     if (waitCountdownInterval) clearInterval(waitCountdownInterval);
     const status = group.status || "pending";
 
     if (status === "accepted") {
-        countdownElem.textContent = "Accepted — waiting for arrival";
+        countdownElem.textContent = t("wait_accepted_arrival");
         skipBtn?.classList.add("hidden");
+        completeBtn?.classList.remove("hidden");
         return;
     }
 
     if (status === "waiting") {
         skipBtn?.classList.add("hidden");
+        completeBtn?.classList.remove("hidden");
         let fallbackSeconds = Math.max(0, Number(group.wait_remaining_seconds) || 0);
 
         function updateWaitingCountdown() {
@@ -1464,7 +2917,7 @@ function renderActiveWaitCard(group) {
                 : fallbackSeconds;
 
             if (remainingSeconds <= 0) {
-                countdownElem.textContent = "Continue your trip";
+                countdownElem.textContent = t("wait_continue_trip");
                 clearInterval(waitCountdownInterval);
                 waitCountdownInterval = null;
                 return;
@@ -1472,7 +2925,7 @@ function renderActiveWaitCard(group) {
 
             const minutes = Math.floor(remainingSeconds / 60);
             const seconds = String(remainingSeconds % 60).padStart(2, "0");
-            countdownElem.textContent = `Waiting — resume in ${minutes}:${seconds}`;
+            countdownElem.textContent = t("wait_resume_in", { min: minutes, sec: seconds });
             fallbackSeconds = Math.max(0, fallbackSeconds - 1);
         }
 
@@ -1482,19 +2935,20 @@ function renderActiveWaitCard(group) {
     }
 
     skipBtn?.classList.remove("hidden");
+    completeBtn?.classList.add("hidden");
 
     // Pending: live auto-accept countdown.
 
     function updateCountdown() {
         const deadline = Date.parse(group.auto_accept_at);
         if (!Number.isFinite(deadline)) {
-            countdownElem.textContent = "Auto-accepting soon…";
+            countdownElem.textContent = t("auto_accepting_soon");
             return;
         }
 
         const remainingMs = deadline - Date.now();
         if (remainingMs <= 0) {
-            countdownElem.textContent = "Auto-accepted";
+            countdownElem.textContent = t("auto_accepted");
             clearInterval(waitCountdownInterval);
             setTimeout(loadActiveWaitRequests, 1000);
             return;
@@ -1502,7 +2956,7 @@ function renderActiveWaitCard(group) {
 
         const remainingSec = Math.ceil(remainingMs / 1000);
         const formatted = remainingSec < 10 ? `00:0${remainingSec}` : `00:${remainingSec}`;
-        countdownElem.textContent = `Auto-accepting in ${formatted}`;
+        countdownElem.textContent = t("auto_accepting_in", { time: formatted });
     }
 
     updateCountdown();
@@ -1514,6 +2968,8 @@ function hideActiveWaitCard() {
     VoiceAnnouncer.resetWaitDedup();
     if (waitCountdownInterval) clearInterval(waitCountdownInterval);
     document.getElementById("waitRequestCard")?.classList.add("hidden");
+    document.getElementById("skipWaitBtn")?.classList.remove("hidden");
+    document.getElementById("completeWaitBtn")?.classList.add("hidden");
 }
 
 async function handleSkipActiveWait() {
@@ -1543,24 +2999,73 @@ async function handleSkipActiveWait() {
         if (response.ok) {
             KambusNotify.notify({
                 type: "warning",
-                title: "Wait skipped",
-                message: `Wait request at ${activeWaitRequest.stop_name} was skipped.`
+                title: t("toast_wait_skipped"),
+                message: t("toast_wait_skipped_msg", { stop: activeWaitRequest.stop_name || "" })
             });
             hideActiveWaitCard();
             setTimeout(loadActiveWaitRequests, 500);
         } else {
-            throw new Error(data.detail || "Unable to skip");
+            throw new Error(data.detail || t("toast_skip_failed_msg"));
         }
     } catch (e) {
         KambusNotify.notify({
             type: "error",
-            title: "Skip failed",
-            message: e.message || "Please try again."
+            title: t("toast_skip_failed"),
+            message: e.message || t("toast_skip_failed_msg")
         });
     } finally {
         if (skipBtn) {
             skipBtn.disabled = false;
-            skipBtn.innerHTML = `<svg class="w-3 h-3 shrink-0" aria-hidden="true"><use href="icons.svg#icon-forward-step"/></svg><span>SKIP</span>`;
+            skipBtn.innerHTML = `<svg class="w-3 h-3 shrink-0" aria-hidden="true"><use href="icons.svg#icon-forward-step"/></svg><span>${t("skip")}</span>`;
+        }
+    }
+}
+
+async function handleCompleteActiveWait() {
+    if (!activeWaitRequest) return;
+
+    const firstStudentRequestId = activeWaitRequest.students?.[0]?.request_id;
+    if (!firstStudentRequestId) return;
+
+    const completeBtn = document.getElementById("completeWaitBtn");
+    if (completeBtn) {
+        completeBtn.disabled = true;
+        completeBtn.innerHTML = `<svg class="w-3.5 h-3.5 animate-spin shrink-0" aria-hidden="true"><use href="icons.svg#icon-spinner"/></svg>`;
+    }
+
+    const token = getToken();
+
+    try {
+        const response = await fetch(`${API_BASE}/driver/wait-request/${firstStudentRequestId}/complete-early`, {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            KambusNotify.notify({
+                type: "success",
+                title: t("toast_student_boarded"),
+                message: t("toast_student_boarded_msg")
+            });
+            hideActiveWaitCard();
+            setTimeout(loadActiveWaitRequests, 500);
+        } else {
+            throw new Error(data.detail || t("toast_complete_wait_failed_msg"));
+        }
+    } catch (e) {
+        KambusNotify.notify({
+            type: "error",
+            title: t("toast_failed") || "Failed",
+            message: e.message || t("toast_complete_wait_failed_msg")
+        });
+    } finally {
+        if (completeBtn) {
+            completeBtn.disabled = false;
+            completeBtn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg><span>${t("wait_continue_now")}</span>`;
         }
     }
 }
@@ -1673,8 +3178,8 @@ async function startCameraScanner() {
         console.warn("Camera start failed, falling back to manual/file:", err);
         KambusNotify.notify({
             type: "warning",
-            title: "Camera Access",
-            message: "Camera not available. Please enter the Roll Number or upload a pass image."
+            title: t("toast_camera_access"),
+            message: t("toast_camera_access_msg")
         });
     }
 }
@@ -1769,8 +3274,8 @@ function startQuaggaFallback(video, reason = "unspecified") {
         console.warn("QuaggaJS is unavailable; use manual roll-number entry.");
         KambusNotify.notify({
             type: "warning",
-            title: "Barcode scanner unavailable",
-            message: "Please enter the Roll Number manually."
+            title: t("toast_barcode_scanner_unavailable"),
+            message: t("toast_enter_roll_manually")
         });
         return;
     }
@@ -1816,8 +3321,8 @@ function startQuaggaFallback(video, reason = "unspecified") {
             document.getElementById("scannerLaser")?.classList.add("hidden");
             KambusNotify.notify({
                 type: "warning",
-                title: "Barcode scanner unavailable",
-                message: "Please enter the Roll Number manually."
+                title: t("toast_barcode_scanner_unavailable"),
+                message: t("toast_enter_roll_manually")
             });
             return;
         }
@@ -1861,8 +3366,8 @@ async function handleQrFileUpload(event) {
     if (!('BarcodeDetector' in window)) {
         KambusNotify.notify({
             type: "info",
-            title: "Pass image selected",
-            message: "Please enter the roll number directly below to verify."
+            title: t("toast_pass_image_selected"),
+            message: t("toast_pass_image_selected_msg")
         });
         return;
     }
@@ -1880,8 +3385,8 @@ async function handleQrFileUpload(event) {
         } else {
             KambusNotify.notify({
                 type: "warning",
-                title: "QR Not Detected",
-                message: "Could not read QR from the uploaded image. Please enter roll number."
+                title: t("toast_qr_not_detected"),
+                message: t("toast_qr_not_detected_msg")
             });
         }
     } catch (err) {
@@ -1920,8 +3425,8 @@ async function handleManualPassLookup(event) {
     if (!rawQuery) {
         KambusNotify.notify({
             type: "warning",
-            title: "Roll Number Required",
-            message: "Please enter a valid student roll number."
+            title: t("toast_roll_required"),
+            message: t("toast_roll_required_msg")
         });
         return;
     }
@@ -1937,8 +3442,8 @@ async function verifyStudentPassBackend(queryStr) {
         console.error("[PassScanner] refused image frame data as a verification query");
         KambusNotify.notify({
             type: "error",
-            title: "Invalid scanner value",
-            message: "The scanner returned an image frame instead of a barcode value. Please scan again or enter the Roll Number."
+            title: t("toast_invalid_scanner_val"),
+            message: t("toast_invalid_scanner_msg")
         });
         return;
     }
@@ -1951,20 +3456,22 @@ async function verifyStudentPassBackend(queryStr) {
 
     if (submitBtn) {
         submitBtn.disabled = true;
-        submitBtn.textContent = "Checking…";
+        submitBtn.textContent = t("checking");
     }
 
     const token = getToken();
     try {
-        console.info("[PassScanner] verify-pass request query:", queryStr);
-        const response = await fetch(`${API_BASE}/driver/verify-pass`, {
+        console.info("[PassScanner] scan-pass request query:", queryStr);
+        const response = await fetch(`${API_BASE}/driver/scan-pass`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
                 "Authorization": `Bearer ${token}`
             },
             body: JSON.stringify({
+                token: queryStr,
                 query: queryStr,
+                roll_number: queryStr,
                 latitude: lastPosition ? lastPosition.latitude : null,
                 longitude: lastPosition ? lastPosition.longitude : null
             })
@@ -1983,19 +3490,19 @@ async function verifyStudentPassBackend(queryStr) {
                 const timeElem = document.getElementById("passVerifiedTime");
                 const badgeElem = document.getElementById("passBadgeStatus");
 
-                if (nameElem) nameElem.textContent = data.student_name || "Student";
+                if (nameElem) nameElem.textContent = data.student_name || t("student_singular");
                 if (rollElem) rollElem.textContent = `Roll: ${data.roll_number || queryStr} • ${data.department || "General"}`;
-                if (stopElem) stopElem.textContent = data.stop_name || "Route Stop";
-                if (busElem) busElem.textContent = `Bus ${data.bus_number || "—"}`;
+                if (stopElem) stopElem.textContent = data.stop_name || t("assigned_route");
+                if (busElem) busElem.textContent = t("bus_badge", { num: data.bus_number || "—" });
                 if (timeElem) timeElem.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
                 if (badgeElem) {
                     if (data.status === "warning_not_travelling") {
                         badgeElem.className = "text-[11px] font-black tracking-wider uppercase text-warn bg-warn/10 border border-warn/20 px-2.5 py-1 rounded";
-                        badgeElem.textContent = "MARKED NOT TRAVELLING";
+                        badgeElem.textContent = t("marked_not_travelling");
                     } else {
                         badgeElem.className = "text-[11px] font-black tracking-wider uppercase text-ok bg-ok/10 border border-ok/20 px-2.5 py-1 rounded";
-                        badgeElem.textContent = "PASS VALID & ACTIVE";
+                        badgeElem.textContent = t("pass_valid_active");
                     }
                 }
 
@@ -2007,8 +3514,12 @@ async function verifyStudentPassBackend(queryStr) {
 
             KambusNotify.notify({
                 type: "success",
-                title: "Student Verified",
-                message: `${data.student_name} (${data.roll_number}) boarded for ${data.stop_name}.`
+                title: t("toast_student_verified"),
+                message: t("toast_student_verified_msg", {
+                    name: data.student_name || t("student_singular"),
+                    roll: data.roll_number || queryStr,
+                    stop: data.stop_name || ""
+                })
             });
 
         } else {
@@ -2017,8 +3528,8 @@ async function verifyStudentPassBackend(queryStr) {
             if (errorCard) {
                 const errTitle = document.getElementById("passErrorTitle");
                 const errMsg = document.getElementById("passErrorMessage");
-                if (errTitle) errTitle.textContent = "Invalid Student Pass";
-                if (errMsg) errMsg.textContent = data.detail || "Student not found or assigned to another bus.";
+                if (errTitle) errTitle.textContent = t("invalid_pass_title");
+                if (errMsg) errMsg.textContent = data.detail || t("student_not_found_assigned");
                 errorCard.classList.remove("hidden");
             }
 
@@ -2026,22 +3537,22 @@ async function verifyStudentPassBackend(queryStr) {
 
             KambusNotify.notify({
                 type: "error",
-                title: "Pass Invalid",
-                message: data.detail || "Student pass could not be verified."
+                title: t("toast_pass_invalid"),
+                message: data.detail || t("toast_pass_invalid_msg")
             });
         }
     } catch (err) {
         console.error("Pass verification network error:", err);
         if (errorCard) {
             const errMsg = document.getElementById("passErrorMessage");
-            if (errMsg) errMsg.textContent = "Network error communicating with server.";
+            if (errMsg) errMsg.textContent = t("network_error");
             errorCard.classList.remove("hidden");
         }
     } finally {
         isVerifyingPass = false;
         if (submitBtn) {
             submitBtn.disabled = false;
-            submitBtn.textContent = "Verify";
+            submitBtn.textContent = t("verify");
         }
     }
 }
@@ -2088,7 +3599,7 @@ async function submitDetourReport() {
     const submitBtn = document.getElementById("submitDetourBtn");
     if (submitBtn) {
         submitBtn.disabled = true;
-        submitBtn.textContent = "Broadcasting…";
+        submitBtn.textContent = t("broadcasting");
     }
 
     const token = getToken();
@@ -2110,7 +3621,10 @@ async function submitDetourReport() {
         const textElem = document.getElementById("activeDetourText");
 
         if (banner && textElem) {
-            textElem.textContent = `Active Detour: ${currentDetourReason} (+${currentDetourDelay} min delay)`;
+            textElem.textContent = t("active_detour_banner_text", {
+                reason: getTranslatedDetourReason(currentDetourReason),
+                delay: currentDetourDelay
+            });
             banner.classList.remove("hidden");
         }
 
@@ -2118,8 +3632,11 @@ async function submitDetourReport() {
 
         KambusNotify.notify({
             type: "warning",
-            title: "Detour Broadcasted",
-            message: data.message || `Dispatch & students alerted: ${currentDetourReason} (+${currentDetourDelay}m).`
+            title: t("toast_detour_broadcasted"),
+            message: data.message || t("active_detour_banner_text", {
+                reason: getTranslatedDetourReason(currentDetourReason),
+                delay: currentDetourDelay
+            })
         });
     } catch (err) {
         console.error("Detour report error:", err);
@@ -2127,7 +3644,7 @@ async function submitDetourReport() {
     } finally {
         if (submitBtn) {
             submitBtn.disabled = false;
-            submitBtn.textContent = "Broadcast Detour to Students & Admin";
+            submitBtn.textContent = t("broadcast_detour_btn");
         }
     }
 }
@@ -2139,8 +3656,8 @@ function clearDetourReport() {
 
     KambusNotify.notify({
         type: "info",
-        title: "Detour Cleared",
-        message: "Normal route travel resumed."
+        title: t("toast_detour_cleared"),
+        message: t("toast_detour_cleared_msg")
     });
 }
 window.clearDetourReport = clearDetourReport;
@@ -2177,7 +3694,7 @@ async function submitEmergencySos() {
     const submitBtn = document.getElementById("submitSosBtn");
     if (submitBtn) {
         submitBtn.disabled = true;
-        submitBtn.textContent = "Transmitting SOS…";
+        submitBtn.textContent = t("transmitting_sos");
     }
 
     const token = getToken();
@@ -2200,7 +3717,9 @@ async function submitEmergencySos() {
         const textElem = document.getElementById("activeSosText");
 
         if (banner && textElem) {
-            textElem.textContent = `SOS ACTIVE: ${currentSosType} — Authorities & Dispatch Alerted`;
+            textElem.textContent = t("active_sos_banner_text", {
+                type: getTranslatedSosType(currentSosType)
+            });
             banner.classList.remove("hidden");
         }
 
@@ -2208,8 +3727,10 @@ async function submitEmergencySos() {
 
         KambusNotify.notify({
             type: "error",
-            title: "EMERGENCY SOS DISPATCHED",
-            message: data.message || `College Transport Cell & Emergency services notified of ${currentSosType}.`
+            title: t("toast_sos_dispatched"),
+            message: data.message || t("toast_sos_dispatched_msg", {
+                type: getTranslatedSosType(currentSosType)
+            })
         });
     } catch (err) {
         console.error("SOS report error:", err);
@@ -2217,7 +3738,7 @@ async function submitEmergencySos() {
     } finally {
         if (submitBtn) {
             submitBtn.disabled = false;
-            submitBtn.textContent = "TRANSMIT EMERGENCY SOS";
+            submitBtn.textContent = t("transmit_sos_btn");
         }
     }
 }
@@ -2229,8 +3750,8 @@ function cancelEmergencySos() {
 
     KambusNotify.notify({
         type: "info",
-        title: "Emergency Status Cleared",
-        message: "SOS alert has been stood down."
+        title: t("toast_sos_cleared"),
+        message: t("toast_sos_cleared_msg")
     });
 }
 window.cancelEmergencySos = cancelEmergencySos;
@@ -2252,3 +3773,29 @@ document.addEventListener("keydown", event => {
     closeDetourModal();
     closeSosModal();
 });
+
+if (typeof module !== "undefined" && module.exports) {
+    module.exports = {
+        calculateBearingFromCoords,
+        resolveTargetBearing,
+        smoothBearing,
+        computeNavigationCenter,
+        applyBearingUpCamera,
+        toggleCameraMode,
+        updateCameraModeUI,
+        toggleTripSummary,
+        MIN_SPEED_FOR_DEVICE_BEARING_KMH,
+        MIN_DISTANCE_FOR_CALCULATED_BEARING_M,
+        BEARING_SMOOTHING_ALPHA,
+        TRANSLATIONS,
+        setLanguage,
+        t,
+        getVoiceLangCode,
+        refreshAllDynamicTexts,
+        applyStaticTranslations,
+        getTranslatedDetourReason,
+        getTranslatedSosType,
+        speakVoiceAnnouncement,
+        getCurrentLanguage: () => currentLanguage
+    };
+}

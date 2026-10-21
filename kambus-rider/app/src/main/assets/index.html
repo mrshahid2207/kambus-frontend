@@ -4,365 +4,686 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>KAMBUS Rider</title>
-    <meta name="theme-color" content="#0d222a">
+    <meta name="theme-color" content="#14283A">
     <meta name="description" content="KAMBUS Rider - Safe Rides, Smarter Campus. Live bus tracking and transport schedules.">
     <link rel="icon" href="favicon.svg?v=2" type="image/svg+xml">
     <link rel="icon" href="favicon.ico?v=2" sizes="48x48">
     <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2">
     <link rel="manifest" href="site.webmanifest">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,600;1,6..72,600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="kambus.css">
     <script src="kambus-ui.js"></script>
     <style>
+        :root {
+            --banner-navy-top: #14283A;
+            --banner-navy-bot: #1F3345;
+            --form-bg: #FAF9F5;
+            --role-bg: #ECEAE2;
+            --input-border: #DAD7CE;
+            --prefix-bg: #F1EFE8;
+            --label-color: #3E4C58;
+            --btn-navy: #1F3345;
+            --help-muted: #4A5763;
+        }
+
         * {
             box-sizing: border-box;
-        }
-        body.login-page {
-            margin: 0;
-            padding: 0;
-            background-color: #0b1a20;
-            background-image: url('rider-login-bg.png');
-            background-repeat: no-repeat;
-            background-position: top center;
-            background-size: 100% auto;
-            min-height: 100vh;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: flex-start;
-            overflow-x: hidden;
-            overflow-y: auto;
             -webkit-tap-highlight-color: transparent;
         }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            background-color: #14283A;
+            min-height: 100vh;
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            color: #1F3345;
+            -webkit-text-size-adjust: 100%;
+            overflow-x: hidden;
+        }
+
         .login-viewport {
             width: 100%;
-            max-width: 472px;
+            max-width: 430px;
+            margin: 0 auto;
             min-height: 100vh;
-            position: relative;
+            background-color: var(--form-bg);
             display: flex;
             flex-direction: column;
+            position: relative;
+        }
+
+        /* Top Banner (flexible height: logo row + highlights + headline/subline + padding) */
+        .login-banner {
+            position: relative;
+            width: 100%;
+            min-height: auto;
+            background-color: var(--banner-navy-bot);
+            background-image: 
+                repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.045) 0, rgba(255, 255, 255, 0.045) 1px, transparent 1px, transparent 18px),
+                linear-gradient(180deg, var(--banner-navy-top) 0%, var(--banner-navy-bot) 100%);
+            background-repeat: no-repeat;
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            flex-direction: column;
+            padding: 0 28px;
+            padding-top: max(44px, calc(18px + env(safe-area-inset-top, 0px)));
+            padding-bottom: 52px;
+            box-sizing: border-box;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        /* Banner Top Row: Logo & Language Chip */
+        .banner-top-row {
+            display: flex;
             align-items: center;
-            justify-content: flex-start;
-            padding: 0 18px 28px;
+            justify-content: space-between;
+            width: 100%;
+            gap: 12px;
+        }
+
+        /* Highlights List (Compact 3 rows below headline & subline) */
+        .banner-highlights {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            margin-top: 0;
+            margin-bottom: 0;
+            width: 100%;
             box-sizing: border-box;
         }
-        /* Positions the card precisely where it sits in the mockup */
-        .login-card-anchor {
+
+        .highlight-row {
+            display: flex;
+            align-items: center;
+            gap: 14px;
             width: 100%;
-            max-width: 396px;
-            margin-top: calc(334 / 472 * 100vw);
-            margin-bottom: 24px;
-            flex-shrink: 0;
-            animation: card-enter 240ms cubic-bezier(0.16, 1, 0.3, 1) both;
         }
-        @media (min-width: 472px) {
-            .login-card-anchor {
-                margin-top: 334px;
-            }
-        }
-        @keyframes card-enter {
-            from { opacity: 0; transform: translateY(12px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .login-card {
-            position: relative;
-            background: #ffffff;
-            border-radius: 32px;
-            padding: 24px 22px 26px;
-            box-shadow: 0 20px 48px rgba(10, 30, 40, 0.35);
-            border: 1px solid rgba(255, 255, 255, 0.85);
-        }
-        .role-tabs {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            background: #f1f5f9;
-            padding: 4px;
-            border-radius: 16px;
-            gap: 4px;
-            border: 1px solid #e2e8f0;
-        }
-        .role-tab {
-            height: 46px;
-            min-height: 46px !important;
+
+        .highlight-tile {
+            width: 36px;
+            height: 36px;
+            min-width: 36px;
+            min-height: 36px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.10);
+            border: 1px solid rgba(255, 255, 255, 0.18);
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
-            border-radius: 12px;
-            font-size: 15px !important;
-            font-weight: 600;
-            color: #475569 !important;
-            background: transparent !important;
-            border: 0;
-            cursor: pointer;
-            transition: all 180ms ease;
-        }
-        .role-tab svg {
-            width: 19px;
-            height: 19px;
-            stroke: #475569;
             flex-shrink: 0;
-            transition: stroke 180ms ease;
+            box-sizing: border-box;
         }
-        .role-tab.is-active {
-            background: #17333f !important;
-            color: #ffffff !important;
-            box-shadow: 0 4px 12px rgba(23, 51, 63, 0.25);
+
+        .highlight-icon {
+            width: 20px;
+            height: 20px;
+            color: #7FD6C8;
+            stroke: currentColor;
+            display: block;
+            flex-shrink: 0;
         }
-        .role-tab.is-active svg {
-            stroke: #ffffff !important;
+
+        .highlight-text {
+            flex: 1;
+            font-size: 15px;
+            line-height: 1.35;
+            font-weight: 500;
+            color: #E3EAF0;
+            margin: 0;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            word-break: break-word;
         }
+
+        /* Responsive adjustments for short screens & open keyboard */
+        @media (max-height: 700px) {
+            .banner-highlights {
+                display: none !important;
+            }
+            .login-banner {
+                padding-top: max(28px, calc(12px + env(safe-area-inset-top, 0px)));
+                padding-bottom: 44px;
+            }
+            .banner-intro, .banner-bottom {
+                margin-top: 18px !important;
+                margin-bottom: 0 !important;
+            }
+        }
+
+        body.keyboard-open .banner-highlights {
+            display: none !important;
+        }
+        body.keyboard-open .login-banner {
+            padding-top: max(20px, calc(10px + env(safe-area-inset-top, 0px))) !important;
+            padding-bottom: 38px !important;
+        }
+        body.keyboard-open .banner-intro, body.keyboard-open .banner-bottom {
+            margin-top: 14px !important;
+            margin-bottom: 0 !important;
+        }
+        body.keyboard-open .banner-headline {
+            font-size: 24px !important;
+            margin-bottom: 4px !important;
+        }
+        body.keyboard-open .banner-subline {
+            font-size: 13px !important;
+        }
+
+        .brand-cluster {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            user-select: none;
+        }
+
+        .logo-tile {
+            width: 42px;
+            height: 42px;
+            min-width: 42px;
+            min-height: 42px;
+            border-radius: 10px;
+            background: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+
+        .logo-tile img {
+            width: 32px;
+            height: 32px;
+            object-fit: contain;
+            display: block;
+        }
+
+        .brand-wordmark {
+            color: #ffffff;
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: 1.6px;
+            line-height: 1;
+            text-transform: uppercase;
+        }
+
+        .lang-chip {
+            min-height: 44px;
+            min-width: 44px;
+            padding: 0 14px;
+            border: 1px solid rgba(255, 255, 255, 0.40);
+            background: transparent;
+            color: #ffffff;
+            font-size: 14px;
+            font-weight: 500;
+            border-radius: 10px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.15s ease, border-color 0.15s ease;
+            user-select: none;
+        }
+
+        .lang-chip:active {
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        /* Banner Intro Content (Headline & Subline) */
+        .banner-intro, .banner-bottom {
+            width: 100%;
+            margin-top: 24px;
+            margin-bottom: 20px;
+        }
+
+        .banner-headline {
+            font-family: 'Newsreader', Georgia, Cambria, "Times New Roman", Times, serif;
+            font-weight: 600;
+            font-size: 31px;
+            line-height: 1.1;
+            color: #ffffff;
+            margin: 0 0 10px 0;
+            letter-spacing: -0.01em;
+        }
+
+        .banner-subline {
+            font-size: 15px;
+            line-height: 1.45;
+            color: #D5DEE7;
+            margin: 0;
+            font-weight: 400;
+        }
+
+        /* Form Panel (starts at y=312px, overlaps banner, #FAF9F5, top corners 28px radius) */
+        .form-panel {
+            position: relative;
+            z-index: 2;
+            margin-top: -28px;
+            background-color: var(--form-bg);
+            border-top-left-radius: 28px;
+            border-top-right-radius: 28px;
+            padding: 24px 28px;
+            padding-bottom: max(32px, calc(24px + env(safe-area-inset-bottom, 0px)));
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 -6px 24px rgba(10, 20, 30, 0.08);
+        }
+
+        /* Segmented Role Control */
+        .segmented-role {
+            background-color: var(--role-bg);
+            border-radius: 12px;
+            padding: 4px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px;
+            margin-bottom: 22px;
+            user-select: none;
+        }
+
+        .role-btn {
+            min-height: 44px;
+            height: 44px;
+            border: 0;
+            border-radius: 9px;
+            background: transparent;
+            color: #4A5763;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s ease;
+            font-family: inherit;
+        }
+
+        .role-btn.is-active {
+            background: #ffffff;
+            color: #1F3345;
+            font-weight: 600;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+        }
+
+        /* Form Fields */
         .field-group {
-            margin-top: 16px;
+            margin-bottom: 18px;
         }
+
         .field-label {
             display: block;
             font-size: 14px;
-            font-weight: 700;
-            color: #17333f;
-            margin-bottom: 7px;
+            font-weight: 600;
+            color: var(--label-color);
+            margin-bottom: 8px;
+            line-height: 1.3;
         }
-        .input-wrap {
-            position: relative;
+
+        .input-row {
             display: flex;
-            align-items: center;
-            height: 50px;
-            min-height: 50px;
+            align-items: stretch;
+            min-height: 56px;
+            height: 56px;
+            border: 1px solid var(--input-border);
             border-radius: 12px;
-            border: 1.5px solid #cbd5e1;
             background: #ffffff;
+            overflow: hidden;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .input-row:focus-within {
+            border-color: #1F3345;
+            box-shadow: 0 0 0 3px rgba(31, 51, 69, 0.12);
+        }
+
+        .prefix-block {
+            background-color: var(--prefix-bg);
+            border-right: 1px solid var(--input-border);
+            border-top-left-radius: 11px;
+            border-bottom-left-radius: 11px;
             padding: 0 14px;
-            transition: border-color 160ms ease, box-shadow 160ms ease;
-        }
-        .input-wrap:focus-within {
-            border-color: #0d9488;
-            box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
-        }
-        .input-icon {
-            display: flex;
-            align-items: center;
-            color: #1e293b;
-            margin-right: 12px;
-            flex-shrink: 0;
-            pointer-events: none;
-        }
-        .login-input {
-            flex: 1;
-            height: 100%;
-            background: transparent;
-            border: 0;
-            font-size: 15px !important;
-            font-weight: 500;
-            color: #1e293b;
-            padding: 0;
-            outline: none;
-        }
-        .login-input::placeholder {
-            color: #94a3b8;
-            font-weight: 400;
-        }
-        .field-hint {
-            font-size: 12px;
-            color: #94a3b8;
-            margin-top: 6px;
-            font-weight: 400;
-        }
-        .phone-prefix {
-            display: none;
-            align-items: center;
-            padding-right: 10px;
-            margin-right: 10px;
-            border-right: 1.5px solid #cbd5e1;
-            color: #17333f;
-            font-size: 14px;
-            font-weight: 700;
-            user-select: none;
-        }
-        .phone-prefix.is-visible {
-            display: flex;
-        }
-        .pw-toggle-btn {
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 6px;
-            margin-right: -4px;
-            color: #1e293b;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--label-color);
+            user-select: none;
+            flex-shrink: 0;
+        }
+
+        .text-input {
+            flex: 1;
+            width: 100%;
+            height: 100%;
+            min-height: 56px;
+            font-size: 17px;
+            color: #1F3345;
+            background: #ffffff;
+            border: 0;
+            padding: 0 16px;
+            outline: none;
+            border-radius: 11px;
+            font-family: inherit;
+            scroll-margin-top: 32px;
+            scroll-margin-bottom: 32px;
+        }
+
+        .text-input::placeholder {
+            color: #8C9BA5;
+            font-weight: 400;
+        }
+
+        .pw-toggle-btn {
+            min-width: 48px;
+            min-height: 48px;
+            width: 48px;
             background: transparent;
             border: 0;
+            color: #73808C;
             cursor: pointer;
-            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            border-radius: 0 11px 11px 0;
+            transition: color 0.15s ease;
         }
+
         .pw-toggle-btn:hover {
-            color: #0d9488;
+            color: #1F3345;
         }
+
+        .field-hint {
+            font-size: 14px;
+            color: #606F7B;
+            margin: 6px 0 0 0;
+            line-height: 1.35;
+        }
+
+        /* Remember Me & Forgot Password Row */
         .remember-forgot-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin: 14px 0 16px;
+            margin: 12px 0 16px;
             user-select: none;
+            min-height: 44px;
         }
+
         .remember-label {
             display: inline-flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
+            min-height: 44px;
             cursor: pointer;
         }
+
         .custom-checkbox {
-            appearance: none;
-            -webkit-appearance: none;
-            width: 20px !important;
-            height: 20px !important;
-            min-width: 20px !important;
-            min-height: 20px !important;
-            border-radius: 5px;
-            border: 1.8px solid #17333f;
-            background: #ffffff;
+            width: 20px;
+            height: 20px;
+            min-width: 20px;
+            min-height: 20px;
+            accent-color: #1F3345;
             cursor: pointer;
-            position: relative;
+            margin: 0;
+        }
+
+        .remember-text {
+            font-size: 14px;
+            color: var(--label-color);
+            font-weight: 500;
+        }
+
+        .forgot-link {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1F3345;
+            text-decoration: none;
+            min-height: 44px;
             display: inline-flex;
             align-items: center;
-            justify-content: center;
-            margin: 0;
-            flex-shrink: 0;
-            transition: all 140ms ease;
-        }
-        .custom-checkbox:checked {
-            background: #17333f;
-            border-color: #17333f;
-        }
-        .custom-checkbox:checked::after {
-            content: "";
-            width: 5px;
-            height: 10px;
-            border: solid #ffffff;
-            border-width: 0 2.2px 2.2px 0;
-            transform: rotate(45deg);
-            margin-bottom: 2px;
-        }
-        .remember-text {
-            font-size: 13px;
-            font-weight: 500;
-            color: #1e293b;
-        }
-        .forgot-link {
-            font-size: 13px;
-            font-weight: 600;
-            color: #00838f;
-            text-decoration: none;
             cursor: pointer;
-            transition: opacity 160ms ease;
+            transition: opacity 0.15s ease;
         }
+
         .forgot-link:hover {
             text-decoration: underline;
             opacity: 0.85;
         }
-        .signin-btn {
-            position: relative;
-            overflow: hidden;
+
+        /* Error Alert Banner */
+        .login-error {
+            display: none;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 14px;
+            border-radius: 12px;
+            background: #FDE8E8;
+            border: 1px solid #F8B4B4;
+            color: #9B1C1C;
+            font-size: 14px;
+            line-height: 1.4;
+            margin-bottom: 16px;
+        }
+
+        .login-error.visible {
+            display: flex;
+        }
+
+        /* Submit Button */
+        .submit-btn {
             width: 100%;
-            height: 52px;
-            min-height: 52px !important;
-            border-radius: 16px !important;
-            background: #17333f !important;
-            color: #ffffff !important;
-            font-size: 16px !important;
-            font-weight: 700;
+            min-height: 56px;
+            height: 56px;
+            background-color: var(--btn-navy);
+            color: #ffffff;
+            font-size: 17px;
+            font-weight: 600;
+            border: 0;
+            border-radius: 12px;
+            margin-top: 22px;
+            cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
-            border: 0;
-            cursor: pointer;
-            box-shadow: 0 8px 20px rgba(23, 51, 63, 0.28);
-            transition: transform 160ms ease, box-shadow 160ms ease;
+            transition: transform 0.1s ease, background-color 0.15s ease, opacity 0.15s ease;
+            font-family: inherit;
+            scroll-margin-bottom: 32px;
         }
-        .signin-btn::after {
-            content: "";
-            position: absolute;
-            right: -25px;
-            top: -26px;
-            width: 104px;
-            height: 104px;
-            border-radius: 50%;
-            background: #2b7085;
-            pointer-events: none;
-            z-index: 1;
+
+        .submit-btn:hover:not(:disabled) {
+            background-color: #172736;
         }
-        .signin-btn > * {
-            position: relative;
-            z-index: 2;
-        }
-        .signin-btn:hover:not(:disabled) {
-            transform: translateY(-1px);
-            box-shadow: 0 9px 24px rgba(23, 51, 63, 0.35);
-        }
-        .signin-btn:active:not(:disabled) {
+
+        .submit-btn:active:not(:disabled) {
             transform: scale(0.98);
         }
-        .login-divider {
-            display: flex;
-            align-items: center;
-            margin: 18px 0 14px;
-            color: #94a3b8;
-            font-size: 11px;
-            font-weight: 600;
-            letter-spacing: 0.12em;
-            text-transform: uppercase;
+
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
         }
-        .login-divider::before, .login-divider::after {
-            content: "";
-            flex: 1;
-            height: 1px;
-            background: #e2e8f0;
-        }
-        .login-divider span {
-            padding: 0 12px;
-        }
+
+        /* Registration Row */
         .signup-row {
             text-align: center;
-            font-size: 13px;
-            color: #64748b;
-            margin: 2px 0 0;
+            font-size: 14px;
+            color: #606F7B;
+            margin: 18px 0 0 0;
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
         }
+
         .register-link {
-            color: #00838f;
+            color: #1F3345;
             font-weight: 700;
             border: 0;
             background: transparent;
-            padding: 2px 4px;
+            padding: 4px 6px;
+            font-size: 14px;
             cursor: pointer;
-            transition: opacity 160ms ease;
-        }
-        .register-link:hover {
+            min-height: 44px;
+            display: inline-flex;
+            align-items: center;
+            transition: opacity 0.15s ease;
+            font-family: inherit;
             text-decoration: underline;
         }
-        .login-error {
-            display: none;
-            align-items: flex-start;
-            gap: 8px;
-            margin: 0 0 14px;
-            padding: 11px 13px;
-            border: 1px solid #f0b9b9;
-            border-radius: 12px;
-            color: #992f2f;
-            background: #fff1f1;
-            font-size: 13px;
-            line-height: 1.35;
-        }
-        .login-error.visible { display: flex; }
-        .login-error svg { width: 16px; height: 16px; flex: none; margin-top: 1px; }
 
-        body.login-page .kambus-toast, body.login-page #kambusNotificationPanel {
-            background: rgba(255, 255, 255, .98);
-            border-color: #dce7e9;
-            border-radius: 14px;
-            box-shadow: 0 14px 32px rgba(23, 53, 65, .13);
+        .register-link:hover {
+            opacity: 0.85;
+        }
+
+        /* Help Line */
+        .help-line {
+            font-size: 14px;
+            color: var(--help-muted);
+            text-align: center;
+            margin: 20px 0 8px 0;
+            line-height: 1.45;
+            font-weight: 500;
+        }
+
+        /* Language Bottom Sheet Modal */
+        .sheet-backdrop {
+            position: fixed;
+            inset: 0;
+            z-index: 2200;
+            background: rgba(20, 40, 58, 0.65);
+            backdrop-filter: blur(2px);
+            -webkit-backdrop-filter: blur(2px);
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: center;
+            transition: opacity 0.2s ease;
+        }
+
+        .sheet-backdrop.hidden {
+            display: none !important;
+        }
+
+        .sheet-panel {
+            width: 100%;
+            max-width: 430px;
+            background: #ffffff;
+            border-top: 1px solid var(--input-border);
+            border-top-left-radius: 24px;
+            border-top-right-radius: 24px;
+            padding: 20px 24px 32px;
+            box-shadow: 0 -12px 36px rgba(0, 0, 0, 0.25);
+            animation: sheetSlideUp 0.24s cubic-bezier(0.16, 1, 0.3, 1) both;
+            box-sizing: border-box;
+        }
+
+        @keyframes sheetSlideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+
+        .sheet-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-bottom: 14px;
+            border-bottom: 1px solid #ECEAE2;
+            margin-bottom: 14px;
+        }
+
+        .sheet-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1F3345;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .sheet-close-btn {
+            width: 44px;
+            height: 44px;
+            min-width: 44px;
+            min-height: 44px;
+            border-radius: 50%;
+            border: 1px solid #DAD7CE;
+            background: #FAF9F5;
+            color: #4A5763;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.15s ease;
+        }
+
+        .sheet-close-btn:hover {
+            background: #ECEAE2;
+            color: #1F3345;
+        }
+
+        .lang-sheet-row {
+            width: 100%;
+            min-height: 56px;
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 1.5px solid #DAD7CE;
+            background: #FAF9F5;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.15s ease;
+        }
+
+        .lang-sheet-row.is-active {
+            border-color: #1F3345;
+            background: rgba(31, 51, 69, 0.05);
+        }
+
+        .lang-row-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1F3345;
+            line-height: 1.2;
+        }
+
+        .lang-row-tag {
+            font-size: 12px;
+            padding: 2px 8px;
+            border-radius: 6px;
+            background: #ffffff;
+            border: 1px solid #DAD7CE;
+            color: #606F7B;
+            font-weight: 500;
+            margin-left: 8px;
+        }
+
+        .lang-check-icon {
+            width: 22px;
+            height: 22px;
+            color: #256B4C;
+            flex-shrink: 0;
         }
     </style>
 </head>
-<body class="login-page">
+<body>
 
     <!-- Campus context preserved in DOM for existing JS logic -->
     <div id="campusBadge" style="display: none;" aria-hidden="true">
@@ -370,157 +691,220 @@
     </div>
 
     <div class="login-viewport">
-        <!-- Floating Interactive Card -->
-        <main class="login-card-anchor">
-            <section class="login-card">
-                <!-- Role Selector: Student vs Parent -->
-                <div class="role-tabs" id="roleTabs" role="tablist" aria-label="Select login role">
-                    <button type="button" class="role-tab is-active" id="tabStudent" data-role="student" role="tab" aria-selected="true" onclick="setRole('student')">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
-                            <path d="M6 12v5c3 3 9 3 12 0v-5"/>
-                        </svg>
-                        <span>Student</span>
-                    </button>
-                    <button type="button" class="role-tab" id="tabParent" data-role="parent" role="tab" aria-selected="false" onclick="setRole('parent')">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-                            <circle cx="9" cy="7" r="4"/>
-                            <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
-                            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                        </svg>
-                        <span>Parent</span>
-                    </button>
+        <!-- Top Banner (Flexible height) -->
+        <header class="login-banner" id="loginBanner">
+            <!-- Top Row: Existing Logo in Tile + Wordmark on Left, Language Chip on Right -->
+            <div class="banner-top-row">
+                <div class="brand-cluster" aria-label="KAMBUS Rider">
+                    <div class="logo-tile">
+                        <img src="kambus-logo.svg" alt="KAMBUS Logo" width="32" height="32">
+                    </div>
+                    <span class="brand-wordmark">KAMBUS</span>
                 </div>
 
-                <form id="loginForm" onsubmit="handleLogin(event)" novalidate>
-                    <!-- Identifier Field -->
-                    <div class="field-group">
-                        <label id="identityLabel" for="username" class="field-label">Roll number</label>
-                        <div class="input-wrap">
-                            <div id="phonePrefix" class="phone-prefix">
-                                <span style="margin-right: 5px; font-size: 13px;">🇮🇳</span>+91
-                            </div>
-                            <span id="studentIcon" class="input-icon">
-                                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                    <rect x="3" y="4" width="18" height="16" rx="2"/>
-                                    <line x1="3" y1="10" x2="21" y2="10"/>
-                                </svg>
-                            </span>
-                            <input type="text" id="username" name="username" required autocomplete="username"
-                                   autocapitalize="characters" autocorrect="off" spellcheck="false" enterkeyhint="next"
-                                   placeholder="e.g. B24CS073"
-                                   class="login-input">
-                        </div>
-                        <p id="identityHint" class="field-hint">Enter your institutional roll number</p>
-                    </div>
+                <button type="button" id="languageChipBtn" onclick="openLanguageSheet()" class="lang-chip" aria-haspopup="dialog" aria-expanded="false" aria-label="Select language">
+                    <span id="currentLangLabel">EN ▾</span>
+                </button>
+            </div>
 
-                    <!-- Password Field -->
-                    <div class="field-group">
-                        <label for="password" class="field-label">Password</label>
-                        <div class="input-wrap">
-                            <span class="input-icon">
-                                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                    <rect x="5" y="11" width="14" height="10" rx="2"/>
-                                    <path d="M8 11V7a4 4 0 0 1 8 0v4"/>
-                                </svg>
-                            </span>
-                            <input type="password" id="password" name="password" required autocomplete="current-password"
-                                   placeholder="Enter password" enterkeyhint="go"
-                                   class="login-input">
-                            <button type="button" onclick="togglePasswordVisibility('password', 'passwordToggleIcon')" aria-label="Show or hide password" aria-pressed="false" class="pw-toggle-btn">
-                                <svg id="passwordToggleIcon" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                                    <circle cx="12" cy="12" r="3"/>
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
+            <!-- Headline & Dynamic Sub Line (Above the 3 features) -->
+            <div class="banner-intro" id="bannerIntro">
+                <h1 id="loginHeadline" class="banner-headline">Know where your bus is.</h1>
+                <p id="loginSubline" class="banner-subline">Live location, arrival alerts and route details for KITS Warangal.</p>
+            </div>
 
-                    <!-- Remember me & Forgot password row -->
-                    <div class="remember-forgot-row">
-                        <label for="rememberMe" class="remember-label">
-                            <input type="checkbox" id="rememberMe" class="custom-checkbox" checked>
-                            <span class="remember-text">Remember me</span>
-                        </label>
-                        <a href="javascript:void(0)" onclick="handleForgotPassword()" class="forgot-link">Forgot password?</a>
-                    </div>
-
-                    <!-- Error Alert -->
-                    <div id="loginError" class="login-error" role="alert" aria-live="polite">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <circle cx="12" cy="12" r="10"/>
-                            <line x1="12" y1="8" x2="12" y2="12"/>
-                            <line x1="12" y1="16" x2="12.01" y2="16"/>
+            <!-- Highlights List (3 features) -->
+            <div class="banner-highlights" id="bannerHighlights" aria-label="Key features">
+                <div class="highlight-row">
+                    <div class="highlight-tile" aria-hidden="true">
+                        <svg class="highlight-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M12 2C8 2 5 5 5 9c0 6 7 13 7 13s7-7 7-13c0-4-3-7-7-7z"/>
+                            <circle cx="12" cy="9" r="2.5"/>
                         </svg>
-                        <span></span>
                     </div>
-
-                    <!-- Submit Button with Teal Crescent -->
-                    <button type="submit" id="btnSubmit" class="signin-btn">
-                        <span>Sign In</span>
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" aria-hidden="true">
-                            <path d="M5 12h14M12 5l7 7-7 7"/>
+                    <span class="highlight-text" id="highlightRow1">Live bus location on the map</span>
+                </div>
+                <div class="highlight-row">
+                    <div class="highlight-tile" aria-hidden="true">
+                        <svg class="highlight-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
                         </svg>
-                    </button>
-
-                    <!-- OR Divider -->
-                    <div class="login-divider">
-                        <span>OR</span>
                     </div>
+                    <span class="highlight-text" id="highlightRow2">Alerts when your bus is near your stop</span>
+                </div>
+                <div class="highlight-row">
+                    <div class="highlight-tile" aria-hidden="true">
+                        <svg class="highlight-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <circle cx="6" cy="19" r="3"/>
+                            <path d="M9 19h8a4 4 0 0 0 0-8H7a4 4 0 0 1 0-8h10"/>
+                            <circle cx="18" cy="5" r="3"/>
+                        </svg>
+                    </div>
+                    <span class="highlight-text" id="highlightRow3">Route, timings and driver details</span>
+                </div>
+            </div>
+        </header>
 
-                    <!-- Registration Link -->
-                    <p id="signupLinkRow" class="signup-row">
-                        New student? <button type="button" onclick="openSignupModal()" class="register-link">Register here</button>
-                    </p>
-                </form>
-            </section>
+        <!-- Form Panel: starts at y=312px overlapping banner -->
+        <main class="form-panel">
+            <!-- Segmented Role Selector: Student vs Parent -->
+            <div class="segmented-role" id="roleTabs" role="tablist" aria-label="Select login role">
+                <button type="button" class="role-btn is-active" id="tabStudent" data-role="student" role="tab" aria-selected="true" onclick="setRole('student')">
+                    <span id="roleStudentText">Student</span>
+                </button>
+                <button type="button" class="role-btn" id="tabParent" data-role="parent" role="tab" aria-selected="false" onclick="setRole('parent')">
+                    <span id="roleParentText">Parent</span>
+                </button>
+            </div>
+
+            <!-- Login Form -->
+            <form id="loginForm" onsubmit="handleLogin(event)" novalidate>
+                <!-- Identifier Field (Roll number for Student, Phone with +91 for Parent) -->
+                <div class="field-group">
+                    <label id="identityLabel" for="username" class="field-label">Roll number</label>
+                    <div class="input-row" id="identityInputWrapper">
+                        <div id="phonePrefix" class="prefix-block" style="display: none;">+91</div>
+                        <span id="studentIcon" style="display: none;" aria-hidden="true"></span>
+                        <input type="text" id="username" name="username" required autocomplete="username"
+                               autocapitalize="characters" autocorrect="off" spellcheck="false" enterkeyhint="next"
+                               placeholder="e.g. B24CS073"
+                               class="text-input">
+                    </div>
+                    <p id="identityHint" class="field-hint">Enter your institutional roll number</p>
+                </div>
+
+                <!-- Password Field -->
+                <div class="field-group">
+                    <label for="password" class="field-label" id="passwordLabel">Password</label>
+                    <div class="input-row">
+                        <input type="password" id="password" name="password" required autocomplete="current-password"
+                               placeholder="Enter password" enterkeyhint="go"
+                               class="text-input" style="border-radius: 11px 0 0 11px;">
+                        <button type="button" onclick="togglePasswordVisibility('password', 'passwordToggleIcon')" aria-label="Show or hide password" aria-pressed="false" class="pw-toggle-btn">
+                            <svg id="passwordToggleIcon" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                <circle cx="12" cy="12" r="3"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Remember Me & Forgot Password Row -->
+                <div class="remember-forgot-row">
+                    <label for="rememberMe" class="remember-label">
+                        <input type="checkbox" id="rememberMe" class="custom-checkbox" checked>
+                        <span class="remember-text" id="rememberMeText">Remember me</span>
+                    </label>
+                    <a href="javascript:void(0)" onclick="handleForgotPassword()" class="forgot-link" id="forgotPwLink">Forgot password?</a>
+                </div>
+
+                <!-- Error Alert Banner -->
+                <div id="loginError" class="login-error" role="alert" aria-live="polite">
+                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" y1="8" x2="12" y2="12"/>
+                        <line x1="12" y1="16" x2="12.01" y2="16"/>
+                    </svg>
+                    <span></span>
+                </div>
+
+                <!-- Sign In Button -->
+                <button type="submit" id="btnSubmit" class="submit-btn">
+                    <span id="btnSubmitText">Sign In</span>
+                </button>
+
+                <!-- Student Registration Row -->
+                <p id="signupLinkRow" class="signup-row">
+                    <span id="newStudentText">New student?</span>
+                    <button type="button" onclick="openSignupModal()" class="register-link" id="registerHereBtn">Register here</button>
+                </p>
+            </form>
+
+            <!-- Centered Help Line -->
+            <p id="loginHelpText" class="help-line">Need help? Contact your transport office</p>
         </main>
     </div>
 
-    <!-- STUDENT SIGNUP MODAL -->
-    <div id="signupModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl max-w-sm w-full p-6 border border-slate-200 shadow-xl max-h-[90vh] overflow-y-auto">
+    <!-- Student Signup Modal -->
+    <div id="signupModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4" style="background: rgba(20, 40, 58, 0.65); backdrop-filter: blur(2px);">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-6 border border-slate-200 shadow-xl max-h-[90vh] overflow-y-auto" style="border-radius: 20px;">
             <div class="flex items-center justify-between mb-4">
-                <h3 class="text-lg font-bold text-navy">Student Registration</h3>
-                <button type="button" onclick="closeSignupModal()" aria-label="Close registration" class="w-10 h-10 flex items-center justify-center text-ink-muted hover:text-navy text-2xl font-bold rounded-lg hover:bg-slate-100 transition-colors">&times;</button>
+                <h3 class="text-lg font-bold text-navy" style="font-size: 18px; color: #1F3345;">Student Registration</h3>
+                <button type="button" onclick="closeSignupModal()" aria-label="Close registration" class="w-10 h-10 flex items-center justify-center text-ink-muted hover:text-navy text-2xl font-bold rounded-lg transition-colors cursor-pointer" style="border: 0; background: transparent; font-size: 26px; color: #73808C;">&times;</button>
             </div>
             <form id="signupForm" onsubmit="handleSignup(event)" class="space-y-3.5 text-sm">
                 <div>
-                    <label class="block font-semibold text-xs text-navy mb-1.5">Full Name</label>
-                    <input type="text" id="regName" required placeholder="Your full name" class="login-input w-full px-3.5 h-11 border border-line rounded-xl text-sm focus:outline-none focus:border-[#4e9ab5] focus:ring-2 focus:ring-[#4e9ab5]/20">
+                    <label for="regName" class="block font-semibold text-xs text-navy mb-1.5" style="color: #3E4C58; font-size: 14px;">Full Name</label>
+                    <input type="text" id="regName" required placeholder="Your full name" class="login-input w-full px-3.5 h-11 border border-line rounded-xl text-sm focus:outline-none" style="min-height: 48px; border: 1px solid #DAD7CE; border-radius: 12px; font-size: 15px; width: 100%; padding: 0 14px;">
                 </div>
-                <div>
-                    <label class="block font-semibold text-xs text-navy mb-1.5">Roll Number</label>
-                    <input type="text" id="regRoll" required placeholder="e.g. B24CS071" class="login-input w-full px-3.5 h-11 border border-line rounded-xl text-sm uppercase focus:outline-none focus:border-[#4e9ab5] focus:ring-2 focus:ring-[#4e9ab5]/20">
+                <div style="margin-top: 12px;">
+                    <label for="regRoll" class="block font-semibold text-xs text-navy mb-1.5" style="color: #3E4C58; font-size: 14px;">Roll Number</label>
+                    <input type="text" id="regRoll" required placeholder="e.g. B24CS071" class="login-input w-full px-3.5 h-11 border border-line rounded-xl text-sm uppercase focus:outline-none" style="min-height: 48px; border: 1px solid #DAD7CE; border-radius: 12px; font-size: 15px; width: 100%; padding: 0 14px;">
                 </div>
-                <div>
-                    <label class="block font-semibold text-xs text-navy mb-1.5">Gender</label>
-                    <select id="regGender" required class="login-input w-full px-3.5 h-11 border border-line rounded-xl text-sm bg-white focus:outline-none focus:border-[#4e9ab5] focus:ring-2 focus:ring-[#4e9ab5]/20">
+                <div style="margin-top: 12px;">
+                    <label for="regGender" class="block font-semibold text-xs text-navy mb-1.5" style="color: #3E4C58; font-size: 14px;">Gender</label>
+                    <select id="regGender" required class="login-input w-full px-3.5 h-11 border border-line rounded-xl text-sm bg-white focus:outline-none" style="min-height: 48px; border: 1px solid #DAD7CE; border-radius: 12px; font-size: 15px; width: 100%; padding: 0 14px;">
                         <option value="">Select Gender</option>
                         <option value="male">Male</option>
                         <option value="female">Female</option>
                         <option value="other">Other</option>
                     </select>
                 </div>
-                <div>
-                    <label class="block font-semibold text-xs text-navy mb-1.5">Email</label>
-                    <input type="email" id="regEmail" required placeholder="student@kitsw.ac.in" class="login-input w-full px-3.5 h-11 border border-line rounded-xl text-sm focus:outline-none focus:border-[#4e9ab5] focus:ring-2 focus:ring-[#4e9ab5]/20">
+                <div style="margin-top: 12px;">
+                    <label for="regEmail" class="block font-semibold text-xs text-navy mb-1.5" style="color: #3E4C58; font-size: 14px;">Email</label>
+                    <input type="email" id="regEmail" required placeholder="student@kitsw.ac.in" class="login-input w-full px-3.5 h-11 border border-line rounded-xl text-sm focus:outline-none" style="min-height: 48px; border: 1px solid #DAD7CE; border-radius: 12px; font-size: 15px; width: 100%; padding: 0 14px;">
                 </div>
-                <div>
-                    <label class="block font-semibold text-xs text-navy mb-1.5">Phone Number</label>
-                    <input type="tel" id="regPhone" required placeholder="10-digit phone" class="login-input w-full px-3.5 h-11 border border-line rounded-xl text-sm focus:outline-none focus:border-[#4e9ab5] focus:ring-2 focus:ring-[#4e9ab5]/20">
+                <div style="margin-top: 12px;">
+                    <label for="regPhone" class="block font-semibold text-xs text-navy mb-1.5" style="color: #3E4C58; font-size: 14px;">Phone Number</label>
+                    <input type="tel" id="regPhone" required placeholder="10-digit phone" class="login-input w-full px-3.5 h-11 border border-line rounded-xl text-sm focus:outline-none" style="min-height: 48px; border: 1px solid #DAD7CE; border-radius: 12px; font-size: 15px; width: 100%; padding: 0 14px;">
                 </div>
-                <div>
-                    <label class="block font-semibold text-xs text-navy mb-1.5">Password</label>
-                    <input type="password" id="regPassword" required minlength="6" placeholder="Min 6 characters" class="login-input w-full px-3.5 h-11 border border-line rounded-xl text-sm focus:outline-none focus:border-[#4e9ab5] focus:ring-2 focus:ring-[#4e9ab5]/20">
+                <div style="margin-top: 12px;">
+                    <label for="regPassword" class="block font-semibold text-xs text-navy mb-1.5" style="color: #3E4C58; font-size: 14px;">Password</label>
+                    <input type="password" id="regPassword" required minlength="6" placeholder="Min 6 characters" class="login-input w-full px-3.5 h-11 border border-line rounded-xl text-sm focus:outline-none" style="min-height: 48px; border: 1px solid #DAD7CE; border-radius: 12px; font-size: 15px; width: 100%; padding: 0 14px;">
                 </div>
-                <div id="signupMsg" class="hidden text-xs p-2.5 rounded-xl"></div>
-                <div class="pt-3 flex gap-3">
-                    <button type="button" onclick="closeSignupModal()" class="flex-1 min-h-[48px] bg-slate-100 hover:bg-slate-200 text-navy font-semibold rounded-xl text-sm">Cancel</button>
-                    <button type="submit" id="btnRegSubmit" class="flex-1 min-h-[48px] bg-navy hover:bg-navy/90 text-white font-semibold rounded-xl text-sm">Register</button>
+                <div id="signupMsg" class="hidden text-xs p-2.5 rounded-xl" style="font-size: 13px; padding: 10px; border-radius: 10px; margin-top: 12px;"></div>
+                <div class="pt-3 flex gap-3" style="display: flex; gap: 12px; margin-top: 18px;">
+                    <button type="button" onclick="closeSignupModal()" class="flex-1 min-h-[48px] bg-slate-100 hover:bg-slate-200 text-navy font-semibold rounded-xl text-sm cursor-pointer" style="flex: 1; min-height: 48px; border: 1px solid #DAD7CE; border-radius: 12px; background: #FAF9F5; color: #1F3345; font-weight: 600;">Cancel</button>
+                    <button type="submit" id="btnRegSubmit" class="flex-1 min-h-[48px] bg-navy hover:bg-navy/90 text-white font-semibold rounded-xl text-sm cursor-pointer" style="flex: 1; min-height: 48px; border: 0; border-radius: 12px; background: #1F3345; color: #ffffff; font-weight: 600;">Register</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Language Selection Bottom Sheet -->
+    <div id="languageSheetBackdrop" class="sheet-backdrop hidden" onclick="handleLanguageBackdropClick(event)" role="dialog" aria-modal="true" aria-labelledby="langSheetTitle">
+        <div id="languageSheetPanel" class="sheet-panel" onclick="event.stopPropagation()">
+            <div class="sheet-header">
+                <h3 id="langSheetTitle" class="sheet-title">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"/></svg>
+                    <span>Select Language</span>
+                </h3>
+                <button type="button" onclick="closeLanguageSheet()" class="sheet-close-btn" aria-label="Close language selector">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            <!-- English Option -->
+            <button type="button" onclick="selectLanguageFromSheet('en')" class="lang-sheet-row" data-lang="en">
+                <div style="display: flex; align-items: center;">
+                    <span class="lang-row-name">English</span>
+                    <span class="lang-row-tag">Default</span>
+                </div>
+                <svg class="lang-check-icon hidden" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+            </button>
+
+            <!-- Hindi Option -->
+            <button type="button" onclick="selectLanguageFromSheet('hi')" class="lang-sheet-row" data-lang="hi">
+                <span class="lang-row-name">हिन्दी</span>
+                <svg class="lang-check-icon hidden" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+            </button>
+
+            <!-- Telugu Option -->
+            <button type="button" onclick="selectLanguageFromSheet('te')" class="lang-sheet-row" data-lang="te">
+                <span class="lang-row-name">తెలుగు</span>
+                <svg class="lang-check-icon hidden" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+            </button>
         </div>
     </div>
 
@@ -528,11 +912,248 @@
         const API_BASE = "https://kambus-backend.onrender.com";
         let currentRole = "student";
 
+        /* Multilingual Localization Dictionary */
+        const LOGIN_TRANSLATIONS = {
+            en: {
+                login_headline: "Know where your bus is.",
+                login_sub: "Live location, arrival alerts and route details for {campus}.",
+                role_student: "Student",
+                role_parent: "Parent",
+                label_roll: "Roll number",
+                label_phone: "Phone number",
+                placeholder_roll: "e.g. B24CS073",
+                placeholder_phone: "10-digit registered phone",
+                hint_roll: "Enter your institutional roll number",
+                hint_phone: "Enter your registered 10-digit mobile number",
+                label_password: "Password",
+                placeholder_password: "Enter password",
+                remember_me: "Remember me",
+                forgot_password: "Forgot password?",
+                sign_in: "Sign In",
+                signing_in: "Signing In...",
+                login_help: "Need help? Contact your transport office",
+                new_student: "New student?",
+                register_here: "Register here",
+                select_language: "Select Language",
+                highlight_live_location: "Live bus location on the map",
+                highlight_arrival_alerts: "Alerts when your bus is near your stop",
+                highlight_route_details: "Route, timings and driver details"
+            },
+            hi: {
+                login_headline: "जानें आपकी बस कहाँ है।",
+                login_sub: "{campus} के लिए लाइव लोकेशन, आगमन अलर्ट और रूट विवरण।",
+                role_student: "छात्र",
+                role_parent: "अभिभावक",
+                label_roll: "रोल नंबर",
+                label_phone: "फ़ोन नंबर",
+                placeholder_roll: "उदा. B24CS073",
+                placeholder_phone: "10-अंकीय पंजीकृत फ़ोन",
+                hint_roll: "अपना संस्थान रोल नंबर दर्ज करें",
+                hint_phone: "अपना पंजीकृत 10-अंकीय मोबाइल नंबर दर्ज करें",
+                label_password: "पासवर्ड",
+                placeholder_password: "पासवर्ड दर्ज करें",
+                remember_me: "मुझे याद रखें",
+                forgot_password: "पासवर्ड भूल गए?",
+                sign_in: "साइन इन",
+                signing_in: "साइन इन हो रहा है...",
+                login_help: "मदद चाहिए? अपने परिवहन कार्यालय से संपर्क करें",
+                new_student: "नए छात्र हैं?",
+                register_here: "यहाँ पंजीकरण करें",
+                select_language: "भाषा चुनें",
+                highlight_live_location: "नक्शे पर बस की लाइव लोकेशन",
+                highlight_arrival_alerts: "बस आपके स्टॉप के पास आने पर अलर्ट",
+                highlight_route_details: "रूट, समय और ड्राइवर का विवरण"
+            },
+            te: {
+                login_headline: "మీ బస్సు ఎక్కడుందో తెలుసుకోండి.",
+                login_sub: "{campus} కోసం లైవ్ లొకేషన్, రాక హెచ్చరికలు మరియు రూట్ వివరాలు.",
+                role_student: "విద్యార్థి",
+                role_parent: "తల్లిదండ్రులు",
+                label_roll: "రోల్ నంబర్",
+                label_phone: "ఫోన్ నంబర్",
+                placeholder_roll: "ఉదా. B24CS073",
+                placeholder_phone: "10 అంకెల నమోదిత ఫోన్",
+                hint_roll: "మీ ఇన్స్టిట్యూషనల్ రోల్ నంబర్‌ను నమోదు చేయండి",
+                hint_phone: "మీ నమోదిత 10 అంకెల మొబైల్ నంబర్‌ను నమోదు చేయండి",
+                label_password: "పాస్‌వర్డ్",
+                placeholder_password: "పాస్‌వర్డ్ నమోదు చేయండి",
+                remember_me: "నన్ను గుర్తుంచుకో",
+                forgot_password: "పాస్‌వర్డ్ మర్చిపోయారా?",
+                sign_in: "సైన్ ఇన్",
+                signing_in: "సైన్ ఇన్ అవుతోంది...",
+                login_help: "సహాయం కావాలా? మీ రవాణా కార్యాలయాన్ని సంప్రదించండి",
+                new_student: "కొత్త విద్యార్థినా?",
+                register_here: "ఇక్కడ నమోదు చేసుకోండి",
+                select_language: "భాషను ఎంచుకోండి",
+                highlight_live_location: "మ్యాప్‌లో బస్సు లైవ్ లొకేషన్",
+                highlight_arrival_alerts: "మీ స్టాప్ దగ్గరకు బస్సు వచ్చినప్పుడు అలర్ట్‌లు",
+                highlight_route_details: "రూట్, సమయాలు మరియు డ్రైవర్ వివరాలు"
+            }
+        };
+
+        const LANG_CHIP_LABELS = {
+            en: "EN ▾",
+            hi: "हिं ▾",
+            te: "తె ▾"
+        };
+
+        let currentLanguage = (function () {
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                const qLang = urlParams.get("lang");
+                if (qLang && (qLang === "en" || qLang === "hi" || qLang === "te")) {
+                    return qLang;
+                }
+                const saved = localStorage.getItem("kambus_rider_lang") || localStorage.getItem("kambus_lang");
+                if (saved && (saved === "en" || saved === "hi" || saved === "te")) {
+                    return saved;
+                }
+            } catch (_) {}
+            return "en";
+        })();
+
+        function t(key, params = {}) {
+            const dict = LOGIN_TRANSLATIONS[currentLanguage] || LOGIN_TRANSLATIONS.en;
+            let str = dict[key] || LOGIN_TRANSLATIONS.en[key] || key;
+            if (params && typeof params === "object") {
+                for (const [k, v] of Object.entries(params)) {
+                    str = str.replaceAll(`{${k}}`, v);
+                }
+            }
+            return str;
+        }
+
+        function getCampusName() {
+            return localStorage.getItem("kambus_campus_name") || "KITS Warangal";
+        }
+
         function initCampusBadge() {
-            const campusName = localStorage.getItem("kambus_campus_name") || "KITS Warangal";
+            const campusName = getCampusName();
             const el = document.getElementById("campusName");
             if (el) {
                 el.textContent = `Signing in to ${campusName}`;
+            }
+        }
+
+        function applyTranslations() {
+            const campus = getCampusName();
+            const headline = document.getElementById("loginHeadline");
+            const subline = document.getElementById("loginSubline");
+            const roleStudent = document.getElementById("roleStudentText");
+            const roleParent = document.getElementById("roleParentText");
+            const passwordLabel = document.getElementById("passwordLabel");
+            const passwordInput = document.getElementById("password");
+            const rememberMeText = document.getElementById("rememberMeText");
+            const forgotPwLink = document.getElementById("forgotPwLink");
+            const btnSubmit = document.getElementById("btnSubmit");
+            const btnSubmitText = document.getElementById("btnSubmitText");
+            const newStudentText = document.getElementById("newStudentText");
+            const registerHereBtn = document.getElementById("registerHereBtn");
+            const helpText = document.getElementById("loginHelpText");
+            const langTitle = document.querySelector("#langSheetTitle span");
+
+            if (headline) headline.textContent = t("login_headline");
+            if (subline) subline.textContent = t("login_sub", { campus });
+            if (roleStudent) roleStudent.textContent = t("role_student");
+            if (roleParent) roleParent.textContent = t("role_parent");
+            if (passwordLabel) passwordLabel.textContent = t("label_password");
+            if (passwordInput) passwordInput.placeholder = t("placeholder_password");
+            if (rememberMeText) rememberMeText.textContent = t("remember_me");
+            if (forgotPwLink) forgotPwLink.textContent = t("forgot_password");
+            if (btnSubmitText && !btnSubmit?.disabled) btnSubmitText.textContent = t("sign_in");
+            if (newStudentText) newStudentText.textContent = t("new_student");
+            if (registerHereBtn) registerHereBtn.textContent = t("register_here");
+            if (helpText) helpText.textContent = t("login_help");
+            if (langTitle) langTitle.textContent = t("select_language");
+
+            const hl1 = document.getElementById("highlightRow1");
+            const hl2 = document.getElementById("highlightRow2");
+            const hl3 = document.getElementById("highlightRow3");
+            if (hl1) hl1.textContent = t("highlight_live_location");
+            if (hl2) hl2.textContent = t("highlight_arrival_alerts");
+            if (hl3) hl3.textContent = t("highlight_route_details");
+
+            // Update role-specific fields
+            updateRoleFields();
+
+            // Update language chip label
+            const chipLabel = document.getElementById("currentLangLabel");
+            if (chipLabel) {
+                chipLabel.textContent = LANG_CHIP_LABELS[currentLanguage] || "EN ▾";
+            }
+        }
+
+        function setLanguage(lang) {
+            if (!LOGIN_TRANSLATIONS[lang]) return;
+            currentLanguage = lang;
+            try {
+                localStorage.setItem("kambus_rider_lang", lang);
+                localStorage.setItem("kambus_lang", lang);
+            } catch (_) {}
+            document.documentElement.lang = lang;
+            applyTranslations();
+            syncLanguageSheetUI();
+        }
+
+        /* Banner Photo Detection */
+        function checkBannerPhoto() {
+            const banner = document.getElementById("loginBanner");
+            if (!banner) return;
+
+            const testJpg = new Image();
+            testJpg.onload = function() {
+                banner.style.backgroundImage = "linear-gradient(180deg, rgba(20, 40, 58, 0.65) 0%, rgba(31, 51, 69, 0.72) 100%), url('login-banner.jpg')";
+            };
+            testJpg.onerror = function() {
+                const testWebp = new Image();
+                testWebp.onload = function() {
+                    banner.style.backgroundImage = "linear-gradient(180deg, rgba(20, 40, 58, 0.65) 0%, rgba(31, 51, 69, 0.72) 100%), url('login-banner.webp')";
+                };
+                testWebp.src = "login-banner.webp";
+            };
+            testJpg.src = "login-banner.jpg";
+        }
+
+        function updateRoleFields() {
+            const label = document.getElementById("identityLabel");
+            const input = document.getElementById("username");
+            const prefix = document.getElementById("phonePrefix");
+            const hint = document.getElementById("identityHint");
+            const signupRow = document.getElementById("signupLinkRow");
+            const campusType = (localStorage.getItem("kambus_campus_type") || "college").toLowerCase();
+
+            if (currentRole === "parent") {
+                if (label) label.textContent = t("label_phone");
+                if (prefix) prefix.style.display = "flex";
+                if (input) {
+                    input.type = "tel";
+                    input.inputMode = "tel";
+                    input.maxLength = 10;
+                    input.placeholder = t("placeholder_phone");
+                    input.autocomplete = "tel";
+                    input.style.borderTopLeftRadius = "0";
+                    input.style.borderBottomLeftRadius = "0";
+                }
+                if (hint) hint.textContent = t("hint_phone");
+                if (signupRow) signupRow.style.display = "none";
+            } else {
+                if (label) label.textContent = t("label_roll");
+                if (prefix) prefix.style.display = "none";
+                if (input) {
+                    input.type = "text";
+                    input.inputMode = "text";
+                    input.removeAttribute("maxlength");
+                    input.placeholder = t("placeholder_roll");
+                    input.autocomplete = "username";
+                    input.style.borderTopLeftRadius = "11px";
+                    input.style.borderBottomLeftRadius = "11px";
+                }
+                if (hint) hint.textContent = t("hint_roll");
+
+                // Student signup is not allowed on school campuses
+                if (signupRow) {
+                    signupRow.style.display = campusType === "school" ? "none" : "flex";
+                }
             }
         }
 
@@ -540,13 +1161,6 @@
             currentRole = role;
             const tabStudent = document.getElementById("tabStudent");
             const tabParent = document.getElementById("tabParent");
-            const label = document.getElementById("identityLabel");
-            const input = document.getElementById("username");
-            const prefix = document.getElementById("phonePrefix");
-            const studentIcon = document.getElementById("studentIcon");
-            const hint = document.getElementById("identityHint");
-            const signupRow = document.getElementById("signupLinkRow");
-            const orDivider = document.querySelector(".login-divider");
 
             hideLoginError();
 
@@ -555,46 +1169,127 @@
                 tabStudent?.setAttribute("aria-selected", "false");
                 tabParent?.classList.add("is-active");
                 tabParent?.setAttribute("aria-selected", "true");
-
-                if (label) label.textContent = "Phone number";
-                if (prefix) prefix.classList.add("is-visible");
-                if (studentIcon) studentIcon.style.display = "none";
-                if (input) {
-                    input.type = "tel";
-                    input.inputMode = "tel";
-                    input.maxLength = 10;
-                    input.placeholder = "10-digit registered phone";
-                    input.autocomplete = "tel";
-                    input.autocapitalize = "none";
-                }
-                if (hint) hint.textContent = "Enter your registered 10-digit mobile number";
-                if (signupRow) signupRow.style.display = "none";
-                if (orDivider) orDivider.style.display = "none";
             } else {
                 tabParent?.classList.remove("is-active");
                 tabParent?.setAttribute("aria-selected", "false");
                 tabStudent?.classList.add("is-active");
                 tabStudent?.setAttribute("aria-selected", "true");
-
-                if (label) label.textContent = "Roll number";
-                if (prefix) prefix.classList.remove("is-visible");
-                if (studentIcon) studentIcon.style.display = "flex";
-                if (input) {
-                    input.type = "text";
-                    input.inputMode = "text";
-                    input.removeAttribute("maxlength");
-                    input.placeholder = "e.g. B24CS073";
-                    input.autocomplete = "username";
-                    input.autocapitalize = "characters";
-                }
-                if (hint) hint.textContent = "Enter your institutional roll number";
-                if (signupRow) signupRow.style.display = "block";
-                if (orDivider) orDivider.style.display = "flex";
             }
+
+            updateRoleFields();
+        }
+
+        /* Language Bottom Sheet Interactivity */
+        function syncLanguageSheetUI() {
+            document.querySelectorAll(".lang-sheet-row").forEach(row => {
+                const rowLang = row.getAttribute("data-lang");
+                const isActive = rowLang === currentLanguage;
+                const check = row.querySelector(".lang-check-icon");
+                if (check) check.classList.toggle("hidden", !isActive);
+                row.classList.toggle("is-active", isActive);
+                row.setAttribute("aria-selected", String(isActive));
+            });
+        }
+
+        function openLanguageSheet() {
+            const backdrop = document.getElementById("languageSheetBackdrop");
+            if (!backdrop) return;
+            syncLanguageSheetUI();
+            backdrop.classList.remove("hidden");
+            const chipBtn = document.getElementById("languageChipBtn");
+            if (chipBtn) chipBtn.setAttribute("aria-expanded", "true");
+            document.body.style.overflow = "hidden";
+            try {
+                window.history.pushState({ kambus_sheet: "language" }, "");
+            } catch (_) {}
+        }
+
+        function closeLanguageSheet(fromPopState) {
+            const backdrop = document.getElementById("languageSheetBackdrop");
+            if (!backdrop || backdrop.classList.contains("hidden")) return;
+            backdrop.classList.add("hidden");
+            const chipBtn = document.getElementById("languageChipBtn");
+            if (chipBtn) chipBtn.setAttribute("aria-expanded", "false");
+            document.body.style.overflow = "";
+            if (!fromPopState) {
+                try {
+                    if (window.history.state && window.history.state.kambus_sheet === "language") {
+                        window.history.back();
+                    }
+                } catch (_) {}
+            }
+        }
+
+        function handleLanguageBackdropClick(event) {
+            if (event.target === document.getElementById("languageSheetBackdrop")) {
+                closeLanguageSheet();
+            }
+        }
+
+        function selectLanguageFromSheet(lang) {
+            setLanguage(lang);
+            closeLanguageSheet();
+        }
+
+        window.addEventListener("keydown", function(e) {
+            if (e.key === "Escape" || e.key === "Esc") {
+                closeLanguageSheet();
+            }
+        });
+
+        window.addEventListener("popstate", function(e) {
+            closeLanguageSheet(true);
+        });
+
+        function setupKeyboardListener() {
+            function checkKeyboard() {
+                if (window.visualViewport) {
+                    const isKeyboard = window.visualViewport.height < window.innerHeight - 120 || window.visualViewport.height < 550;
+                    if (isKeyboard) {
+                        document.body.classList.add("keyboard-open");
+                    } else {
+                        document.body.classList.remove("keyboard-open");
+                    }
+                }
+            }
+
+            if (window.visualViewport) {
+                window.visualViewport.addEventListener("resize", checkKeyboard);
+                window.visualViewport.addEventListener("scroll", checkKeyboard);
+            }
+            window.addEventListener("resize", () => {
+                if (!window.visualViewport) {
+                    if (window.innerHeight < 550) {
+                        document.body.classList.add("keyboard-open");
+                    } else {
+                        document.body.classList.remove("keyboard-open");
+                    }
+                }
+            });
+
+            const inputs = document.querySelectorAll("input, select, textarea");
+            inputs.forEach(input => {
+                input.addEventListener("focus", () => {
+                    if (window.innerHeight < 750 || (window.visualViewport && window.visualViewport.height < 600)) {
+                        document.body.classList.add("keyboard-open");
+                    }
+                });
+                input.addEventListener("blur", () => {
+                    setTimeout(() => {
+                        const active = document.activeElement;
+                        if (!active || (active.tagName !== "INPUT" && active.tagName !== "TEXTAREA")) {
+                            document.body.classList.remove("keyboard-open");
+                        }
+                    }, 100);
+                });
+            });
         }
 
         document.addEventListener("DOMContentLoaded", () => {
             initCampusBadge();
+            checkBannerPhoto();
+            applyTranslations();
+            setupKeyboardListener();
 
             const isRemembered = localStorage.getItem("kambus_remember");
             const savedIdentifier = localStorage.getItem("kambus_saved_identifier");
@@ -666,7 +1361,7 @@
             const button = document.getElementById("btnSubmit");
 
             if (!identifier || !password) {
-                const fieldName = currentRole === "student" ? "roll number" : "phone number";
+                const fieldName = currentRole === "student" ? t("label_roll").toLowerCase() : t("label_phone").toLowerCase();
                 notifyUser("warn", "Required Fields", `Please enter your ${fieldName} and password.`);
                 return;
             }
@@ -684,8 +1379,8 @@
             const originalButtonContent = button.innerHTML;
             button.disabled = true;
             button.innerHTML = `
-                <span>Signing In...</span>
-                <svg class="w-5 h-5 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+                <span>${t("signing_in")}</span>
+                <svg class="w-5 h-5 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true" style="animation: spin 1s linear infinite;">
                     <circle cx="12" cy="12" r="10" stroke-dasharray="32" stroke-dashoffset="16"/>
                 </svg>
             `;
@@ -820,6 +1515,9 @@
 
             if (!gender) {
                 msg.className = "text-xs p-2 rounded-lg bg-rose-50 text-rose-700 block";
+                msg.style.display = "block";
+                msg.style.background = "#fff1f1";
+                msg.style.color = "#992f2f";
                 msg.textContent = "Please select your gender.";
                 return;
             }
@@ -838,6 +1536,9 @@
                 if (!res.ok) throw new Error(data.detail || "Registration failed");
 
                 msg.className = "text-xs p-2 rounded-lg bg-emerald-50 text-emerald-700 block";
+                msg.style.display = "block";
+                msg.style.background = "#e4f2eb";
+                msg.style.color = "#256b4c";
                 msg.textContent = data.message || "Registration submitted! Check email for OTP.";
                 setTimeout(() => {
                     closeSignupModal();
@@ -845,6 +1546,9 @@
                 }, 1500);
             } catch (err) {
                 msg.className = "text-xs p-2 rounded-lg bg-rose-50 text-rose-700 block";
+                msg.style.display = "block";
+                msg.style.background = "#fff1f1";
+                msg.style.color = "#992f2f";
                 msg.textContent = err.message;
             } finally {
                 btn.disabled = false;

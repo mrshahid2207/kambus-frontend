@@ -2913,6 +2913,89 @@ window.addEventListener("orientationchange", () => {
 // ========================================================================
 // MESSAGE ADMIN HANDLERS
 // ========================================================================
+// MESSAGE ADMIN HANDLERS (BIDIRECTIONAL CHAT)
+// ========================================================================
+async function loadAdminMessageHistory() {
+    const historyContainer = document.getElementById("adminMessageHistory");
+    if (!historyContainer) return;
+
+    const token = typeof getToken === "function" ? getToken() : localStorage.getItem("kambus_token");
+    if (!token) {
+        historyContainer.innerHTML = `<div class="p-4 text-center text-xs text-slate-400">Please log in to view conversation.</div>`;
+        return;
+    }
+
+    try {
+        const res = await fetch(`${API_BASE}/student/messages`, {
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "Failed to load messages");
+
+        const messages = Array.isArray(data.messages) ? data.messages : [];
+        if (messages.length === 0) {
+            historyContainer.innerHTML = `
+                <div class="py-8 text-center text-xs text-slate-400 space-y-1">
+                    <div class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 text-slate-500 mb-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                    </div>
+                    <p class="font-semibold text-slate-600">No previous messages</p>
+                    <p class="text-[11px] text-slate-400">Type a query below to message the transport desk directly.</p>
+                </div>
+            `;
+            return;
+        }
+
+        historyContainer.innerHTML = messages.map(m => {
+            const timeStr = m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+            const replyTimeStr = m.replied_at ? new Date(m.replied_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+            const isBus = m.category === "bus-related";
+
+            return `
+                <div class="space-y-1.5 text-xs">
+                    <!-- Student message bubble -->
+                    <div class="flex flex-col items-end">
+                        <div class="bg-[#17333f] text-white p-3 rounded-2xl rounded-tr-none max-w-[85%] shadow-sm space-y-1">
+                            <div class="flex items-center justify-between gap-2 text-[10px] text-teal-300">
+                                <span class="font-bold uppercase tracking-wider">${isBus ? 'Bus Query' : 'General'}</span>
+                                <span>${timeStr}</span>
+                            </div>
+                            <p class="text-xs leading-relaxed whitespace-pre-wrap break-words">${typeof escapeHtml === "function" ? escapeHtml(m.message) : m.message}</p>
+                        </div>
+                    </div>
+
+                    <!-- Admin reply or waiting status -->
+                    ${m.reply ? `
+                        <div class="flex flex-col items-start pl-1">
+                            <div class="bg-teal-50 border border-teal-200/80 text-teal-950 p-3 rounded-2xl rounded-tl-none max-w-[85%] shadow-sm space-y-1">
+                                <div class="flex items-center gap-1.5 text-[10px] text-teal-700 font-bold">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-teal-500"></span>
+                                    <span>${m.admin_name || 'Transport Admin'}</span>
+                                    ${replyTimeStr ? `<span class="font-normal text-slate-400 ml-auto">${replyTimeStr}</span>` : ''}
+                                </div>
+                                <p class="text-xs text-slate-800 leading-relaxed whitespace-pre-wrap break-words">${typeof escapeHtml === "function" ? escapeHtml(m.reply) : m.reply}</p>
+                            </div>
+                        </div>
+                    ` : `
+                        <div class="flex items-center justify-end pr-2 text-[10px] text-slate-400 gap-1">
+                            <span class="inline-block w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
+                            <span>Waiting for admin response...</span>
+                        </div>
+                    `}
+                </div>
+            `;
+        }).join("");
+
+        // Scroll to bottom
+        historyContainer.scrollTop = historyContainer.scrollHeight;
+    } catch (e) {
+        historyContainer.innerHTML = `<div class="p-4 text-center text-xs text-red-500">Could not load chat history: ${e.message}</div>`;
+    }
+}
+window.loadAdminMessageHistory = loadAdminMessageHistory;
+
 window.openMessageAdminModal = function() {
     if (typeof window.hasEntitlement === "function" && !window.hasEntitlement("student_to_admin_query")) {
         window.showPlanUpgradePrompt("Message Admin", "Premium", "Direct inquiry channel with campus transport administrators.");
@@ -2930,7 +3013,8 @@ window.openMessageAdminModal = function() {
         submitBtn.textContent = "Send Message";
     }
     modal.classList.remove("hidden");
-    setTimeout(() => textarea?.focus(), 50);
+    loadAdminMessageHistory();
+    setTimeout(() => textarea?.focus(), 100);
 };
 
 window.closeMessageAdminModal = function() {
@@ -2979,15 +3063,16 @@ window.submitMessageToAdmin = async function() {
         });
         const data = await res.json();
         if (res.ok && data.success) {
+            if (textarea) textarea.value = "";
             if (successEl) {
+                successEl.textContent = "Message sent to admin!";
                 successEl.classList.remove("hidden");
+                setTimeout(() => successEl.classList.add("hidden"), 3000);
             }
             if (typeof showToast === "function") {
                 showToast("success", "Message Sent", "Your message was sent to the transport admin.");
             }
-            setTimeout(() => {
-                window.closeMessageAdminModal();
-            }, 1000);
+            await loadAdminMessageHistory();
         } else {
             throw new Error(data.detail || "Failed to send message.");
         }

@@ -955,9 +955,9 @@
 
         .kambus-modal-window {
             background: #ffffff;
-            border-radius: 26px !important;
-            border: 2px solid #e2e8f0;
-            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.3);
+            border-radius: 16px !important;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 16px 40px -8px rgba(23, 53, 65, 0.22);
             width: 100%;
             max-width: 380px;
             padding: 24px;
@@ -1381,9 +1381,9 @@
             gap: 6px;
             padding: 3px 10px;
             border-radius: 9999px;
-            background: rgba(245, 158, 11, 0.18);
-            border: 1px solid rgba(245, 158, 11, 0.38);
-            color: #fbbf24;
+            background: rgba(79, 179, 169, 0.16);
+            border: 1px solid rgba(79, 179, 169, 0.35);
+            color: #4fb3a9;
             font-size: 11.5px;
             font-weight: 700;
             max-width: 100%;
@@ -1396,7 +1396,7 @@
             text-overflow: ellipsis;
         }
 
-        /* Drawer Nav List & 56px Rows (Amber/Navy Theme) */
+        /* Drawer Nav List & 56px Rows (Teal/Navy Theme) */
         .drawer-nav {
             flex: 1;
             overflow-y: auto;
@@ -1428,11 +1428,11 @@
             -webkit-tap-highlight-color: transparent !important;
         }
         .drawer-menu-item:hover {
-            background: #f8fafc !important;
-            border-color: #f1f5f9 !important;
+            background: rgba(23, 51, 63, 0.05) !important;
+            border-color: rgba(79, 179, 169, 0.2) !important;
         }
         .drawer-menu-item:active {
-            background: #f1f5f9 !important;
+            background: rgba(79, 179, 169, 0.12) !important;
             transform: scale(0.98) !important;
         }
         .drawer-item-icon {
@@ -1443,14 +1443,14 @@
             align-items: center !important;
             justify-content: center !important;
             flex-shrink: 0 !important;
-            background: #fffbeb !important;
-            color: #d97706 !important;
-            border: 1px solid #fde68a !important;
+            background: rgba(79, 179, 169, 0.12) !important;
+            color: #4fb3a9 !important;
+            border: 1px solid rgba(79, 179, 169, 0.28) !important;
             transition: transform 0.15s ease !important;
         }
         .drawer-menu-item:hover .drawer-item-icon {
             transform: scale(1.05) !important;
-            background: #fef3c7 !important;
+            background: rgba(79, 179, 169, 0.22) !important;
         }
         .drawer-item-label {
             color: #173541 !important;
@@ -1535,13 +1535,14 @@
            ======================================================== */
         .student-modal-card {
             background: #ffffff;
-            border-radius: 20px;
+            border-radius: 16px;
             width: 100%;
             max-width: 440px;
             max-height: min(90vh, 760px);
             display: flex;
             flex-direction: column;
-            box-shadow: 0 24px 60px rgba(15, 36, 45, 0.35), 0 0 0 1px rgba(15, 36, 45, 0.08);
+            box-shadow: 0 16px 40px -8px rgba(23, 53, 65, 0.22);
+            border: 1px solid #e2e8f0;
             overflow: hidden;
             color: #0f172a;
             animation: modalFadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
@@ -1978,7 +1979,7 @@
 <!-- BOTTOM ACTION BAR -->
 <footer id="actionFooter" class="bg-white border-t border-slate-200 p-2.5 sm:p-3.5 space-y-2.5 z-40 shadow-lg">
     <!-- DRIVER CARD -->
-    <div id="driverRow" class="flex items-center justify-between gap-3 bg-slate-50 border border-slate-200/90 rounded-xl px-3 py-2">
+    <div id="driverRow" class="flex items-center justify-between gap-3 bg-slate-50 border border-slate-200/90 rounded-xl px-3 py-2 shadow-xs">
         <div class="flex items-center gap-2.5 min-w-0">
             <div class="w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-700 flex items-center justify-center shrink-0">
                 <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -2462,7 +2463,7 @@
             <div class="drawer-student-info">
                 <h3 id="drawerStudentName" class="drawer-student-name">Student</h3>
                 <div class="drawer-bus-stop-badge">
-                    <svg class="w-3.5 h-3.5 text-amber-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 16h16M4 16a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2M4 16v2a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-2m10 0v2a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-2"/></svg>
+                    <svg class="w-3.5 h-3.5 shrink-0" style="color: #4fb3a9;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 16h16M4 16a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2M4 16v2a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-2m10 0v2a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-2"/></svg>
                     <span id="drawerBusStop">Loading bus & stop...</span>
                 </div>
             </div>
@@ -2513,7 +2514,7 @@
 
 <!-- LOGOUT CONFIRMATION MODAL -->
 <div id="logoutConfirmModal" class="hidden kambus-modal-backdrop" style="z-index: 2200;">
-    <div class="kx-sheet" style="max-width: 320px; text-align: center; padding: 24px 20px; border-radius: 20px;">
+    <div class="kx-sheet" style="max-width: 320px; text-align: center; padding: 24px 20px; border-radius: 16px;">
         <div style="width: 48px; height: 48px; border-radius: 14px; background: #fee2e2; color: #dc2626; display: flex; align-items: center; justify-content: center; margin: 0 auto 14px auto;">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
         </div>
@@ -2687,35 +2688,42 @@
     </div>
 </div>
 
-<!-- MESSAGE ADMIN MODAL -->
+<!-- MESSAGE ADMIN MODAL (BIDIRECTIONAL CHAT) -->
 <div id="messageAdminModal" class="hidden kambus-modal-backdrop" style="z-index: 2100;">
-    <div class="kx-sheet">
-        <div class="kx-head">
-            <div class="kx-head-icon">
+    <div class="kx-sheet" style="max-height: 85vh; display: flex; flex-direction: column;">
+        <div class="kx-head shrink-0">
+            <div class="kx-head-icon" style="background: rgba(79, 179, 169, 0.14); color: #4fb3a9;">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
             </div>
             <div class="kx-head-text">
-                <h3 class="kx-title">Message Transport Admin</h3>
-                <p class="kx-sub">Send a message or query to the transport desk</p>
+                <h3 class="kx-title">Transport Admin Chat</h3>
+                <p class="kx-sub">Direct conversation with campus transport desk</p>
             </div>
             <button type="button" onclick="closeMessageAdminModal()" class="kx-close" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
         </div>
 
-        <div class="kx-body">
-            <div class="kx-stack">
-                <label for="adminMessageCategory" class="kx-label">Category</label>
-                <select id="adminMessageCategory" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-800 bg-white">
-                    <option value="general">General</option>
-                    <option value="bus-related">Bus-related</option>
-                </select>
+        <div class="kx-body" style="flex: 1; overflow-y: auto; padding-top: 8px; padding-bottom: 8px;">
+            <!-- Conversation Thread Container -->
+            <div id="adminMessageHistory" class="space-y-3 min-h-[140px] max-h-[300px] overflow-y-auto pr-1">
+                <div class="p-6 text-center text-xs text-slate-400">Loading conversation history...</div>
+            </div>
 
-                <label for="adminMessageText" class="kx-label">Your Message</label>
-                <textarea id="adminMessageText" rows="4" maxlength="2000" placeholder="Type your message to the transport admin..." class="kx-textarea"></textarea>
+            <!-- New Message Composer -->
+            <div class="kx-stack mt-3 pt-3 border-t border-slate-100">
+                <div class="flex items-center gap-2">
+                    <label for="adminMessageCategory" class="text-[11px] font-bold text-slate-500 uppercase tracking-wider shrink-0">Topic:</label>
+                    <select id="adminMessageCategory" class="px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs font-semibold text-slate-800 bg-white focus:border-brand focus:outline-none">
+                        <option value="general">General Query</option>
+                        <option value="bus-related">Bus & Route</option>
+                    </select>
+                </div>
+
+                <textarea id="adminMessageText" rows="3" maxlength="2000" placeholder="Type your message to the transport admin..." class="kx-textarea text-xs"></textarea>
                 <p id="adminMessageError" class="hidden kx-error">Please type a message before sending.</p>
                 <p id="adminMessageSuccess" class="hidden text-xs font-semibold text-emerald-600">Message sent successfully!</p>
 
                 <div class="kx-row">
-                    <button type="button" onclick="closeMessageAdminModal()" class="kx-btn kx-btn--ghost">Cancel</button>
+                    <button type="button" onclick="closeMessageAdminModal()" class="kx-btn kx-btn--ghost">Close</button>
                     <button type="button" id="adminMessageSubmitBtn" onclick="submitMessageToAdmin()" class="kx-btn kx-btn--primary">Send Message</button>
                 </div>
             </div>

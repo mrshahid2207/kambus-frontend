@@ -37,6 +37,7 @@
     let cachedStops = [];
     let cachedComplaints = [];
     let currentViewingBusId = null;
+    let selectedStudentIds = new Set();
 
     // =========================================================================
     // AUTHENTICATION & API REQUEST HELPERS
@@ -239,6 +240,98 @@
     }
 
     // =========================================================================
+    // CAMPUS PLAN ENTITLEMENTS & FEATURE GATING
+    // =========================================================================
+
+    let adminCampusEntitlements = null;
+
+    async function loadAdminCampusEntitlements(overrideCampusId = null) {
+        try {
+            const payload = getJwtPayload();
+            const campusId = overrideCampusId !== null ? overrideCampusId : (getSelectedCampusId() || (payload ? payload.campus_id : null));
+            const endpoint = campusId ? `/campus/me/entitlements?campus_id=${campusId}` : `/me/entitlements`;
+            const data = await apiRequest(endpoint);
+            if (data && Array.isArray(data.features)) {
+                adminCampusEntitlements = data;
+                applyAdminFeatureGating();
+            }
+        } catch (e) {
+            console.warn("Could not load campus entitlements:", e);
+        }
+    }
+
+    function hasAdminEntitlement(featureName) {
+        if (!adminCampusEntitlements || !Array.isArray(adminCampusEntitlements.features)) {
+            return true; // default open while loading
+        }
+        return adminCampusEntitlements.features.includes(featureName);
+    }
+
+    function renderPlanUpgradeView(container, featureTitle, requiredTier, featureDescription, priceInfo) {
+        if (!container) return;
+        if (!container.dataset.originalContent) {
+            container.dataset.originalContent = container.innerHTML;
+        }
+        const tierBadgeClass = requiredTier === "Premium" ? "bg-purple-100 text-purple-800 border-purple-200" : "bg-amber-100 text-amber-800 border-amber-200";
+        container.innerHTML = `
+            <div class="max-w-2xl mx-auto my-12 p-8 bg-surface rounded-2xl border border-line shadow-xs text-center">
+                <div class="w-14 h-14 mx-auto mb-4 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                </div>
+                <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${tierBadgeClass} mb-3">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    <span>Requires ${requiredTier} Plan</span>
+                </div>
+                <h2 class="text-xl font-bold text-navy tracking-tight">${escapeHtml(featureTitle)}</h2>
+                <p class="text-xs text-ink-muted mt-2 max-w-md mx-auto leading-relaxed">${escapeHtml(featureDescription)}</p>
+                
+                <div class="mt-6 p-4 rounded-xl bg-bg border border-line text-xs text-ink max-w-md mx-auto flex items-center justify-between">
+                    <span class="font-medium text-ink-muted">Plan tier required:</span>
+                    <span class="font-bold text-navy">${requiredTier} (${priceInfo})</span>
+                </div>
+
+                <div class="mt-6 flex items-center justify-center gap-3">
+                    <a href="mailto:support@kambus.in?subject=Upgrade%20Campus%20to%20${requiredTier}%20Plan" class="px-5 py-2.5 rounded-lg bg-brand text-white text-xs font-semibold hover:bg-brand/90 transition shadow-xs">
+                        Contact Support to Upgrade
+                    </a>
+                </div>
+            </div>
+        `;
+    }
+
+    function restorePlanContent(container) {
+        if (!container) return;
+        if (container.dataset.originalContent) {
+            container.innerHTML = container.dataset.originalContent;
+            delete container.dataset.originalContent;
+        }
+    }
+
+    function updateNavBadge(sectionName, requiredTier, isEntitled) {
+        const btn = document.querySelector(`.admin-nav-btn[data-section="${sectionName}"]`);
+        if (!btn) return;
+        const existingBadge = btn.querySelector(".plan-gate-badge");
+        if (isEntitled) {
+            if (existingBadge) existingBadge.remove();
+            restorePlanContent(document.getElementById(`section-${sectionName}`));
+        } else {
+            if (!existingBadge) {
+                const badge = document.createElement("span");
+                const badgeColor = requiredTier === "Premium" ? "bg-purple-100 text-purple-800" : "bg-amber-100 text-amber-800";
+                badge.className = `ml-auto text-[9px] px-1.5 py-0.5 rounded ${badgeColor} font-bold uppercase tracking-wider inline-flex items-center gap-0.5 plan-gate-badge`;
+                badge.innerHTML = `<svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg> ${requiredTier}`;
+                btn.appendChild(badge);
+            }
+        }
+    }
+
+    function applyAdminFeatureGating() {
+        updateNavBadge("temp-stop-logs", "Top", hasAdminEntitlement("temporary_stop_change"));
+        updateNavBadge("notifications", "Top", hasAdminEntitlement("admin_broadcasts"));
+        updateNavBadge("messages", "Premium", hasAdminEntitlement("student_to_admin_query"));
+    }
+
+    // =========================================================================
     // NAVIGATION & SECTIONS
     // =========================================================================
 
@@ -264,6 +357,8 @@
         });
 
         closeMobileSidebar();
+        document.querySelectorAll('[data-modal="true"]:not(.hidden)').forEach(m => m.classList.add("hidden"));
+        document.body.style.overflow = "";
 
         // Load section-specific data
         switch (sectionName) {
@@ -295,15 +390,45 @@
                 loadGeofenceLogs();
                 break;
             case "temp-stop-logs":
+                if (!hasAdminEntitlement("temporary_stop_change")) {
+                    renderPlanUpgradeView(
+                        target,
+                        "Temporary Stop Changes",
+                        "Top",
+                        "Allow students to select temporary pickup and dropoff locations along the route, with automatic route check and administrator approval workflows.",
+                        "₹1,300/mo per bus"
+                    );
+                    break;
+                }
                 loadTemporaryStopLogs();
                 break;
             case "live-map":
                 setTimeout(initLiveMap, 100);
                 break;
             case "messages":
+                if (!hasAdminEntitlement("student_to_admin_query")) {
+                    renderPlanUpgradeView(
+                        target,
+                        "Student Messages & Queries",
+                        "Premium",
+                        "Direct communication inbox allowing students to message campus administrators for inquiries, lost property, and transport feedback.",
+                        "₹1,800/mo per bus"
+                    );
+                    break;
+                }
                 loadMessages();
                 break;
             case "notifications":
+                if (!hasAdminEntitlement("admin_broadcasts")) {
+                    renderPlanUpgradeView(
+                        target,
+                        "Announcements & Broadcasts",
+                        "Top",
+                        "Send real-time broadcast push notifications, route updates, and announcements to students, parents, and drivers across your campus fleet.",
+                        "₹1,300/mo per bus"
+                    );
+                    break;
+                }
                 initAnnouncementComposer();
                 loadAnnouncementHistory();
                 loadAdminBusChanges();
@@ -329,6 +454,22 @@
         }
     }
 
+    // =========================================================================
+    // SCROLL LOCK / UNLOCK HELPERS (FIX-2)
+    // =========================================================================
+
+    function lockScroll() {
+        document.body.style.overflow = "hidden";
+    }
+
+    function unlockScroll() {
+        const hasOpenModal = document.querySelector('[data-modal="true"]:not(.hidden)');
+        const sidebarOpen = document.getElementById("adminSidebar")?.classList.contains("open");
+        if (!hasOpenModal && !sidebarOpen) {
+            document.body.style.overflow = "";
+        }
+    }
+
     function toggleMobileSidebar() {
         const sidebar = document.getElementById("adminSidebar");
         const overlay = document.getElementById("sidebarOverlay");
@@ -337,9 +478,11 @@
             if (isOpen) {
                 sidebar.classList.remove("open");
                 overlay.classList.add("hidden");
+                unlockScroll();
             } else {
                 sidebar.classList.add("open");
                 overlay.classList.remove("hidden");
+                lockScroll();
             }
         }
     }
@@ -349,6 +492,7 @@
         const overlay = document.getElementById("sidebarOverlay");
         if (sidebar) sidebar.classList.remove("open");
         if (overlay) overlay.classList.add("hidden");
+        unlockScroll();
     }
 
     // =========================================================================
@@ -529,7 +673,7 @@
         const activeTripsContainer = document.getElementById("dashboardActiveTrips");
         if (activeTripsContainer) {
             activeTripsContainer.innerHTML = `
-                <div class="p-8 text-center text-xs text-amber-800 bg-amber-50/60 border border-amber-200/80 rounded">
+                <div class="p-8 text-center text-xs text-amber-800 bg-amber-50/60 border border-amber-200/80 rounded-xl">
                     <p class="font-bold text-sm">No Campus Selected</p>
                     <p class="mt-1 text-slate-500">Please choose a campus from the dropdown in the top navigation to view active trips and dashboard statistics.</p>
                 </div>
@@ -539,7 +683,7 @@
         const recentAlertsContainer = document.getElementById("dashboardRecentAlerts");
         if (recentAlertsContainer) {
             recentAlertsContainer.innerHTML = `
-                <div class="p-8 text-center text-xs text-amber-800 bg-amber-50/60 border border-amber-200/80 rounded">
+                <div class="p-8 text-center text-xs text-amber-800 bg-amber-50/60 border border-amber-200/80 rounded-xl">
                     <p class="font-bold text-sm">No Campus Selected</p>
                     <p class="mt-1 text-slate-500">Please choose a campus from the dropdown in the top navigation to view recent alerts.</p>
                 </div>
@@ -579,17 +723,17 @@
                 activeTripsContainer.innerHTML = `<div class="p-6 text-center text-xs text-slate-400">No active trips currently in transit.</div>`;
             } else {
                 activeTripsContainer.innerHTML = data.active_trips.map(trip => `
-                    <div class="p-3 bg-slate-50 border border-slate-200/80 rounded flex items-center justify-between gap-2">
+                    <div class="kx-card-sub p-3 flex items-center justify-between gap-2">
                         <div>
                             <div class="flex items-center gap-2">
-                                <span class="w-2 h-2 rounded-full bg-ok/100 animate-pulse"></span>
-                                <span class="font-black text-slate-900 text-xs">${escapeHtml(trip.bus_number)}</span>
-                                <span class="text-slate-400">&bull;</span>
-                                <span class="text-slate-600 text-xs font-semibold">${escapeHtml(trip.route_name || 'Campus Route')}</span>
+                                <span class="w-2 h-2 rounded-full animate-pulse" style="background-color: var(--success);"></span>
+                                <span class="font-bold text-xs" style="color: var(--navy-900);">${escapeHtml(trip.bus_number)}</span>
+                                <span style="color: var(--border);">&bull;</span>
+                                <span class="text-xs font-semibold" style="color: var(--text-muted);">${escapeHtml(trip.route_name || 'Campus Route')}</span>
                             </div>
-                            <p class="text-[11px] text-slate-500 mt-0.5">Driver: <strong>${escapeHtml(trip.driver_name)}</strong> &bull; Started: ${formatDateTime(trip.started_at)}</p>
+                            <p class="text-[11px] mt-0.5" style="color: var(--text-muted);">Driver: <strong style="color: var(--text);">${escapeHtml(trip.driver_name)}</strong> &bull; Started: ${formatDateTime(trip.started_at)}</p>
                         </div>
-                        <button onclick="window.KambusAdmin.openBusModal(${trip.bus_id})" class="px-2.5 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg text-xs font-bold text-slate-700 shadow-2xs">
+                        <button onclick="window.KambusAdmin.openBusModal(${trip.bus_id})" class="btn-secondary" style="padding: 4px 10px; font-size: 11px;">
                             View Bus
                         </button>
                     </div>
@@ -604,15 +748,15 @@
                 recentAlertsContainer.innerHTML = `<div class="p-6 text-center text-xs text-slate-400">No recent alerts logged.</div>`;
             } else {
                 recentAlertsContainer.innerHTML = data.recent_alerts.slice(0, 4).map(alert => `
-                    <div class="py-2.5 flex items-start justify-between gap-3 text-xs">
+                    <div class="py-2.5 flex items-start justify-between gap-3 text-xs" style="border-bottom: 1px solid var(--border);">
                         <div class="min-w-0">
                             <div class="flex items-center gap-1.5">
-                                <span class="w-4 h-4 shrink-0 flex items-center justify-center">${alert.type === 'emergency_sos' ? '<svg class="w-4 h-4 text-danger"><use href="icons.svg#icon-alert"/></svg>' : '<svg class="w-4 h-4 text-warn"><use href="icons.svg#icon-alert"/></svg>'}</span>
-                                <span class="font-bold text-slate-900 truncate">${escapeHtml(alert.title)}</span>
+                                <span class="w-4 h-4 shrink-0 flex items-center justify-center">${alert.type === 'emergency_sos' ? '<svg class="w-4 h-4" style="color: var(--danger);"><use href="icons.svg#icon-alert"/></svg>' : '<svg class="w-4 h-4" style="color: var(--warning);"><use href="icons.svg#icon-alert"/></svg>'}</span>
+                                <span class="font-bold truncate" style="color: var(--text);">${escapeHtml(alert.title)}</span>
                             </div>
-                            <p class="text-slate-500 text-[11px] truncate mt-0.5">${escapeHtml(alert.message)}</p>
+                            <p class="text-[11px] truncate mt-0.5" style="color: var(--text-muted);">${escapeHtml(alert.message)}</p>
                         </div>
-                        <span class="text-[10px] text-slate-400 shrink-0">${formatDateTime(alert.created_at)}</span>
+                        <span class="text-[10px] shrink-0" style="color: var(--text-muted);">${formatDateTime(alert.created_at)}</span>
                     </div>
                 `).join("");
             }
@@ -653,7 +797,7 @@
 
         if (isPlatformSuperAdmin() && !getSelectedCampusId()) {
             cachedBuses = [];
-            container.innerHTML = `<div class="p-8 text-center text-xs text-amber-800 bg-amber-50/60 border border-amber-200/80 rounded col-span-full font-semibold">No campus selected. Please select a campus from the top navigation to view its bus fleet.</div>`;
+            container.innerHTML = `<div class="p-8 text-center text-xs text-amber-800 bg-amber-50/60 border border-amber-200/80 rounded-xl col-span-full font-semibold">No campus selected. Please select a campus from the top navigation to view its bus fleet.</div>`;
             return;
         }
 
@@ -673,16 +817,21 @@
         if (!container) return;
 
         if (buses.length === 0) {
-            container.innerHTML = `<div class="p-8 text-center text-xs text-slate-400 col-span-full">No buses registered in fleet. Click "Add Bus" to create one.</div>`;
+            container.innerHTML = `<div class="kx-empty-card text-xs text-slate-400 col-span-full">No buses registered in fleet. Click "Add Bus" to create one.</div>`;
             return;
         }
 
         container.innerHTML = buses.map(bus => `
-            <div class="bg-white border border-slate-200/90 rounded p-4 shadow-xs hover:border-brand/40 transition cursor-pointer flex flex-col justify-between" onclick="window.KambusAdmin.openBusModal(${bus.bus_id})">
+            <div class="kx-card kx-card-interactive p-4 flex flex-col justify-between" onclick="window.KambusAdmin.openBusModal(${bus.bus_id})">
                 <div>
                     <div class="flex items-start justify-between gap-2">
                         <div>
-                            <span class="text-base font-black text-slate-900">Bus ${escapeHtml(bus.bus_number)}</span>
+                            <div class="flex items-center gap-1.5 flex-wrap">
+                                <span class="text-base font-black text-slate-900">Bus ${escapeHtml(bus.bus_number)}</span>
+                                ${bus.gender_restriction === 'girls_only' ? '<span class="px-2 py-0.5 rounded text-[10px] font-black bg-pink-50 text-pink-700 border border-pink-200">♀ Girls Only</span>' :
+                                  bus.gender_restriction === 'boys_only' ? '<span class="px-2 py-0.5 rounded text-[10px] font-black bg-blue-50 text-blue-700 border border-blue-200">♂ Boys Only</span>' :
+                                  ''}
+                            </div>
                             <p class="text-[11px] font-mono text-slate-400">${escapeHtml(bus.registration_number || 'No reg number')}</p>
                         </div>
                         <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black inline-flex items-center gap-1 ${bus.trip_status === 'active' ? 'bg-ok/10 text-ok' : 'bg-surface text-ink-muted border border-line'}">
@@ -729,6 +878,8 @@
             document.getElementById("modalEditBusNumber").value = bus.bus_number || "";
             document.getElementById("modalEditBusReg").value = bus.registration_number || "";
             document.getElementById("modalEditBusStatus").value = bus.status || "active";
+            const genderEl = document.getElementById("modalEditBusGender");
+            if (genderEl) genderEl.value = bus.gender_restriction || "";
 
             const badge = document.getElementById("modalBusStatusBadge");
             if (badge) {
@@ -813,6 +964,7 @@
         const busNumber = document.getElementById("modalEditBusNumber")?.value.trim();
         const regNumber = document.getElementById("modalEditBusReg")?.value.trim();
         const status = document.getElementById("modalEditBusStatus")?.value;
+        const genderRestriction = document.getElementById("modalEditBusGender")?.value || null;
 
         if (!busNumber) {
             showToast("error", "Validation", "Bus Number is required.");
@@ -825,7 +977,8 @@
                 body: {
                     bus_number: busNumber,
                     registration_number: regNumber,
-                    status: status
+                    status: status,
+                    gender_restriction: genderRestriction
                 }
             });
             showToast("success", "Bus Updated", `Bus ${busNumber} properties updated successfully.`);
@@ -843,6 +996,7 @@
         const regNumber = form.registration_number.value.trim();
         const driverId = form.driver_id.value ? parseInt(form.driver_id.value) : null;
         const routeId = form.route_id.value ? parseInt(form.route_id.value) : null;
+        const genderRestriction = form.gender_restriction ? form.gender_restriction.value || null : null;
 
         try {
             await apiRequest("/admin/buses", {
@@ -852,7 +1006,8 @@
                     registration_number: regNumber,
                     driver_id: driverId,
                     route_id: routeId,
-                    status: "active"
+                    status: "active",
+                    gender_restriction: genderRestriction
                 }
             });
             showToast("success", "Bus Added", `Bus ${busNumber} registered successfully.`);
@@ -901,12 +1056,12 @@
         if (!container) return;
 
         if (drivers.length === 0) {
-            container.innerHTML = `<div class="p-8 text-center text-xs text-slate-400 col-span-full">No drivers registered. Click "Add Driver" to create one.</div>`;
+            container.innerHTML = `<div class="kx-empty-card text-xs text-slate-400 col-span-full">No drivers registered. Click "Add Driver" to create one.</div>`;
             return;
         }
 
         container.innerHTML = drivers.map(d => `
-            <div class="bg-white border border-slate-200/90 rounded p-4 shadow-xs hover:border-brand/40 transition flex flex-col justify-between cursor-pointer" onclick="window.KambusAdmin.openDriverModal(${d.driver_id})">
+            <div class="kx-card kx-card-interactive p-4 flex flex-col justify-between" onclick="window.KambusAdmin.openDriverModal(${d.driver_id})">
                 <div>
                     <div class="flex items-start justify-between gap-2">
                         <div>
@@ -1096,7 +1251,7 @@
 
         if (isPlatformSuperAdmin() && !getSelectedCampusId()) {
             cachedStudents = [];
-            container.innerHTML = `<div class="p-8 text-center text-xs text-amber-800 bg-amber-50/60 border border-amber-200/80 rounded font-semibold">No campus selected. Please select a campus from the top navigation to view student records.</div>`;
+            container.innerHTML = `<div class="p-8 text-center text-xs text-amber-800 bg-amber-50/60 border border-amber-200/80 rounded-xl font-semibold">No campus selected. Please select a campus from the top navigation to view student records.</div>`;
             return;
         }
 
@@ -1117,16 +1272,19 @@
             cachedStudents = students;
 
             if (students.length === 0) {
-                container.innerHTML = `<div class="p-8 text-center text-xs text-slate-400 bg-white border border-slate-200/90 rounded">No students matching criteria.</div>`;
+                container.innerHTML = `<div class="kx-empty-card text-xs text-slate-400">No students matching criteria.</div>`;
                 return;
             }
 
             container.innerHTML = `
-                <div class="bg-white border border-slate-200/90 rounded overflow-hidden shadow-xs">
+                <div class="kx-table-card">
                     <div class="overflow-x-auto">
                         <table class="w-full text-left text-xs border-collapse">
-                            <thead class="bg-slate-50 border-b border-slate-200/80 text-[11px] font-black text-slate-500 uppercase tracking-wider">
+                            <thead>
                                 <tr>
+                                    <th class="p-3.5 w-10 text-center">
+                                        <input type="checkbox" id="selectAllStudentsCheckbox" onchange="window.KambusAdmin.toggleSelectAllStudents(this.checked)" class="rounded cursor-pointer" style="border-color: var(--border);" title="Select All Students">
+                                    </th>
                                     <th class="p-3.5">Student</th>
                                     <th class="p-3.5">Roll No</th>
                                     <th class="p-3.5">Department</th>
@@ -1137,35 +1295,38 @@
                                     <th class="p-3.5 text-right">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-slate-100">
+                            <tbody>
                                 ${students.map(s => `
-                                    <tr class="hover:bg-slate-50/80 transition">
-                                        <td class="p-3.5">
-                                            <span class="font-bold text-slate-900">${escapeHtml(s.name)}</span>
-                                            <p class="text-[11px] text-slate-400 font-mono">${escapeHtml(s.phone)}</p>
-                                        </td>
-                                        <td class="p-3.5 font-mono font-bold text-brand uppercase">${escapeHtml(s.roll_number)}</td>
-                                        <td class="p-3.5 text-slate-600 font-semibold">${escapeHtml(s.department || '-')}</td>
-                                        <td class="p-3.5 capitalize text-slate-600 font-semibold">${escapeHtml(s.gender || '-')}</td>
-                                        <td class="p-3.5">
-                                            ${s.bus_number ? `<span class="px-2 py-0.5 bg-brand/10 border border-brand/20 rounded text-navy font-bold text-[11px]">Bus ${escapeHtml(s.bus_number)}</span>` : '<span class="text-slate-300">Unassigned</span>'}
+                                    <tr>
+                                        <td class="p-3.5 w-10 text-center" onclick="event.stopPropagation()">
+                                            <input type="checkbox" class="student-select-chk rounded cursor-pointer" data-student-id="${s.student_id}" ${selectedStudentIds.has(s.student_id) ? 'checked' : ''} onchange="window.KambusAdmin.toggleStudentSelect(${s.student_id}, this.checked)" style="border-color: var(--border);">
                                         </td>
                                         <td class="p-3.5">
-                                            ${s.stop_name ? `<span class="font-bold text-slate-700">${escapeHtml(s.stop_name)}</span>` : '<span class="text-slate-300">No Stop</span>'}
+                                            <span class="font-bold" style="color: var(--text);">${escapeHtml(s.name)}</span>
+                                            <p class="text-[11px] font-mono" style="color: var(--text-muted);">${escapeHtml(s.phone)}</p>
+                                        </td>
+                                        <td class="p-3.5 font-mono font-bold uppercase" style="color: var(--navy-700);">${escapeHtml(s.roll_number)}</td>
+                                        <td class="p-3.5 font-medium" style="color: var(--text);">${escapeHtml(s.department || '-')}</td>
+                                        <td class="p-3.5 capitalize font-medium" style="color: var(--text);">${escapeHtml(s.gender || '-')}</td>
+                                        <td class="p-3.5">
+                                            ${s.bus_number ? `<span class="badge-pill badge-pill-info">Bus ${escapeHtml(s.bus_number)}</span>` : '<span style="color: var(--text-muted); opacity: 0.6;">Unassigned</span>'}
                                         </td>
                                         <td class="p-3.5">
-                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-black ${s.travelling_today ? 'bg-ok/10 text-ok' : 'bg-danger/10 text-danger'}">
+                                            ${s.stop_name ? `<span class="font-medium" style="color: var(--text);">${escapeHtml(s.stop_name)}</span>` : '<span style="color: var(--text-muted); opacity: 0.6;">No Stop</span>'}
+                                        </td>
+                                        <td class="p-3.5">
+                                            <span class="badge-pill ${s.travelling_today ? 'badge-pill-success' : 'badge-pill-danger'}">
                                                 ${s.travelling_today ? 'Travelling' : 'Not Travelling'}
                                             </span>
                                         </td>
                                         <td class="p-3.5 text-right space-x-1">
-                                            <button type="button" onclick="window.KambusAdmin.openEditStudentModal(${Number(s.student_id)})" class="px-2.5 py-1 bg-slate-100 hover:bg-brand hover:text-white rounded-lg text-[11px] font-bold text-slate-700 transition">
+                                            <button type="button" onclick="window.KambusAdmin.openEditStudentModal(${Number(s.student_id)})" class="btn-secondary" style="padding: 4px 10px; font-size: 11px;">
                                                 Edit
                                             </button>
-                                            <button type="button" onclick="window.KambusAdmin.openAssignStudentModal(${s.student_id}, ${jsArg(s.name)}, ${s.bus_id || 'null'}, ${s.stop_id || 'null'})" class="px-2.5 py-1 bg-slate-100 hover:bg-brand hover:text-white rounded-lg text-[11px] font-bold text-slate-700 transition">
+                                            <button type="button" onclick="window.KambusAdmin.openAssignStudentModal(${s.student_id}, ${jsArg(s.name)}, ${s.bus_id || 'null'}, ${s.stop_id || 'null'})" class="btn-secondary" style="padding: 4px 10px; font-size: 11px;">
                                                 Assign
                                             </button>
-                                            <button type="button" onclick="window.KambusAdmin.deleteStudent(${s.student_id}, ${jsArg(s.roll_number)})" class="p-1 text-slate-300 hover:text-danger transition" title="Delete Student">
+                                            <button type="button" onclick="window.KambusAdmin.deleteStudent(${s.student_id}, ${jsArg(s.roll_number)})" class="p-1 hover:text-danger transition inline-flex items-center" title="Delete Student" style="color: var(--text-muted);">
                                                 <svg class="w-4 h-4 shrink-0" aria-hidden="true"><use href="icons.svg#icon-trash"/></svg>
                                             </button>
                                         </td>
@@ -1176,8 +1337,196 @@
                     </div>
                 </div>
             `;
+            updateBulkStudentToolbar();
         } catch (error) {
             container.innerHTML = `<div class="p-8 text-center text-xs text-red-500">Failed to load students: ${escapeHtml(error.message)}</div>`;
+        }
+    }
+
+    function toggleStudentSelect(studentId, isChecked) {
+        if (isChecked) {
+            selectedStudentIds.add(studentId);
+        } else {
+            selectedStudentIds.delete(studentId);
+        }
+        updateBulkStudentToolbar();
+    }
+
+    function toggleSelectAllStudents(isChecked) {
+        if (isChecked) {
+            cachedStudents.forEach(s => selectedStudentIds.add(s.student_id));
+        } else {
+            selectedStudentIds.clear();
+        }
+        document.querySelectorAll(".student-select-chk").forEach(chk => {
+            chk.checked = isChecked;
+        });
+        updateBulkStudentToolbar();
+    }
+
+    function clearStudentSelection() {
+        selectedStudentIds.clear();
+        const masterChk = document.getElementById("selectAllStudentsCheckbox");
+        if (masterChk) masterChk.checked = false;
+        document.querySelectorAll(".student-select-chk").forEach(chk => {
+            chk.checked = false;
+        });
+        updateBulkStudentToolbar();
+    }
+
+    function updateBulkStudentToolbar() {
+        const toolbar = document.getElementById("bulkStudentToolbar");
+        const countEl = document.getElementById("bulkStudentCount");
+        const masterChk = document.getElementById("selectAllStudentsCheckbox");
+        const count = selectedStudentIds.size;
+
+        if (masterChk && cachedStudents.length > 0) {
+            masterChk.checked = count > 0 && count === cachedStudents.length;
+            masterChk.indeterminate = count > 0 && count < cachedStudents.length;
+        }
+
+        if (toolbar) {
+            if (count > 0) {
+                toolbar.classList.remove("hidden");
+                if (countEl) countEl.textContent = `${count} student${count === 1 ? '' : 's'} selected`;
+            } else {
+                toolbar.classList.add("hidden");
+            }
+        }
+    }
+
+    async function openBulkAssignBusModal() {
+        if (selectedStudentIds.size === 0) {
+            showToast("warning", "No Selection", "Please select at least one student to reassign.");
+            return;
+        }
+
+        const countEl = document.getElementById("bulkAssignStudentCount");
+        if (countEl) countEl.textContent = selectedStudentIds.size;
+
+        const subtitleEl = document.getElementById("bulkAssignSubtitle");
+        if (subtitleEl) subtitleEl.textContent = `Reassigning ${selectedStudentIds.size} student${selectedStudentIds.size === 1 ? '' : 's'} to a target bus`;
+
+        const alertEl = document.getElementById("bulkAssignResultAlert");
+        if (alertEl) {
+            alertEl.className = "hidden p-3 rounded-lg border text-xs";
+            alertEl.innerHTML = "";
+        }
+
+        const busSelect = document.getElementById("bulkAssignBusSelect");
+        if (busSelect) {
+            busSelect.innerHTML = `<option value="">Loading buses...</option>`;
+            try {
+                if (cachedBuses.length === 0) {
+                    const data = await apiRequest("/admin/buses");
+                    cachedBuses = data.buses || [];
+                }
+                const activeBuses = cachedBuses.filter(b => b.is_active !== false && b.status !== "inactive");
+                if (activeBuses.length === 0) {
+                    busSelect.innerHTML = `<option value="">No active buses available</option>`;
+                } else {
+                    busSelect.innerHTML = `<option value="">-- Choose Target Bus --</option>` + activeBuses.map(b => {
+                        let restrLabel = "Mixed / Unrestricted";
+                        if (b.gender_restriction === "girls_only") restrLabel = "Girls Only";
+                        else if (b.gender_restriction === "boys_only") restrLabel = "Boys Only";
+                        return `<option value="${b.bus_id}">Bus ${escapeHtml(b.bus_number)} (${escapeHtml(b.route_name || 'No Route')}) — [${restrLabel}]</option>`;
+                    }).join("");
+                }
+            } catch (err) {
+                busSelect.innerHTML = `<option value="">Error loading buses</option>`;
+            }
+        }
+
+        const previewContainer = document.getElementById("bulkAssignStudentsPreview");
+        if (previewContainer) {
+            const selectedStudents = cachedStudents.filter(s => selectedStudentIds.has(s.student_id));
+            previewContainer.innerHTML = selectedStudents.map(s => `
+                <div class="py-1.5 flex items-center justify-between gap-2">
+                    <div class="flex items-center gap-1.5 min-w-0">
+                        <span class="font-bold text-slate-900 truncate">${escapeHtml(s.name)}</span>
+                        <span class="font-mono text-[10px] text-brand uppercase font-bold shrink-0">${escapeHtml(s.roll_number)}</span>
+                    </div>
+                    <div class="flex items-center gap-1.5 shrink-0">
+                        <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold ${s.gender === 'female' ? 'bg-pink-50 text-pink-700' : s.gender === 'male' ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-600'}">${escapeHtml(s.gender || 'unspecified')}</span>
+                        <span class="text-slate-400 text-[10px]">${s.bus_number ? `Bus ${escapeHtml(s.bus_number)}` : 'Unassigned'}</span>
+                    </div>
+                </div>
+            `).join("");
+        }
+
+        document.getElementById("bulkAssignBusModal")?.classList.remove("hidden");
+    }
+
+    async function submitBulkAssignBus(event) {
+        event.preventDefault();
+        const busSelect = document.getElementById("bulkAssignBusSelect");
+        const busId = busSelect?.value;
+        const submitBtn = document.getElementById("btnSubmitBulkAssign");
+        const alertEl = document.getElementById("bulkAssignResultAlert");
+
+        if (!busId) {
+            showToast("warning", "Select Bus", "Please choose a target bus.");
+            return;
+        }
+
+        if (selectedStudentIds.size === 0) {
+            showToast("warning", "No Selection", "No students selected.");
+            return;
+        }
+
+        const studentIds = Array.from(selectedStudentIds);
+        try {
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = "Reassigning...";
+            }
+            if (alertEl) {
+                alertEl.classList.add("hidden");
+                alertEl.innerHTML = "";
+            }
+
+            const res = await apiRequest("/admin/students/bulk-reassign-bus", {
+                method: "POST",
+                body: {
+                    student_ids: studentIds,
+                    bus_id: parseInt(busId)
+                }
+            });
+
+            if (res.failure_count === 0) {
+                showToast("success", "Bulk Reassignment Complete", `${res.success_count} student${res.success_count === 1 ? '' : 's'} assigned to Bus ${res.target_bus_number}.`);
+                document.getElementById("bulkAssignBusModal")?.classList.add("hidden");
+                clearStudentSelection();
+                loadStudents();
+            } else {
+                const failDetails = res.failed.map(f => `<li><strong>${escapeHtml(f.name)} (${escapeHtml(f.roll_number)})</strong>: ${escapeHtml(f.reason)}</li>`).join("");
+                if (alertEl) {
+                    alertEl.className = "p-3 rounded-lg border text-xs bg-amber-50 text-amber-900 border-amber-200 block space-y-1.5";
+                    alertEl.innerHTML = `
+                        <div class="font-bold flex items-center gap-1.5">
+                            <span class="text-amber-600">⚠</span>
+                            <span>${res.success_count} succeeded, ${res.failure_count} skipped due to restrictions:</span>
+                        </div>
+                        <ul class="list-disc pl-4 space-y-1 text-[11px] text-amber-800">
+                            ${failDetails}
+                        </ul>
+                    `;
+                }
+                showToast("warning", "Partial Reassignment", `${res.success_count} student(s) reassigned, ${res.failure_count} skipped.`);
+                clearStudentSelection();
+                loadStudents();
+            }
+        } catch (e) {
+            if (alertEl) {
+                alertEl.className = "p-3 rounded-lg border text-xs bg-danger/10 text-danger border-danger/20 block";
+                alertEl.textContent = e.message || "Failed to reassign students";
+            }
+            showToast("error", "Reassignment Failed", e.message);
+        } finally {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = "Apply Reassignment";
+            }
         }
     }
 
@@ -1371,7 +1720,7 @@
             cachedParents = parents;
 
             if (parents.length === 0) {
-                container.innerHTML = `<div class="p-8 text-center text-xs text-slate-400 bg-white border border-slate-200/90 rounded">No parents matching criteria.</div>`;
+                container.innerHTML = `<div class="kx-empty-card text-xs text-slate-400">No parents matching criteria.</div>`;
                 return;
             }
 
@@ -1405,6 +1754,9 @@
                                             </span>
                                         </td>
                                         <td class="p-3.5 text-right space-x-1">
+                                            <button type="button" onclick="window.KambusAdmin.openEditParentModal(${p.id})" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 rounded text-[11px] font-bold text-slate-700 transition" title="Edit Parent Profile">
+                                                Edit
+                                            </button>
                                             <button type="button" onclick="window.KambusAdmin.toggleParentChildren(${p.id}, ${jsArg(p.name)})" class="px-2.5 py-1 bg-slate-100 hover:bg-navy hover:text-white rounded text-[11px] font-bold text-slate-700 transition">
                                                 ${isExpanded ? 'Hide Children' : 'Children'}
                                             </button>
@@ -1626,6 +1978,84 @@
         }
     }
 
+    function openEditParentModal(parentId) {
+        const parent = cachedParents.find(p => p.id === parentId);
+        if (!parent) return;
+
+        const errorEl = document.getElementById("editParentError");
+        if (errorEl) {
+            errorEl.classList.add("hidden");
+            errorEl.textContent = "";
+        }
+
+        document.getElementById("editParentId").value = parent.id;
+        document.getElementById("editParentLoginId").textContent = `ID: ${parent.login_id || '-'}`;
+        document.getElementById("editParentName").value = parent.name || "";
+        document.getElementById("editParentPhone").value = parent.phone || "";
+        document.getElementById("editParentEmail").value = parent.email || "";
+        document.getElementById("editParentPassword").value = "";
+
+        document.getElementById("editParentModal")?.classList.remove("hidden");
+    }
+
+    async function submitEditParent(event) {
+        event.preventDefault();
+        const form = event.target;
+        const parentId = form.parent_id.value;
+        const name = form.name.value.trim();
+        const phone = form.phone.value.trim();
+        const email = form.email.value.trim();
+        const password = form.password.value;
+        const errorEl = document.getElementById("editParentError");
+        const submitBtn = document.getElementById("btnSubmitEditParent");
+
+        if (!name || !phone) {
+            if (errorEl) {
+                errorEl.textContent = "Name and phone number are required.";
+                errorEl.classList.remove("hidden");
+            }
+            return;
+        }
+
+        const body = {
+            name,
+            phone,
+            email: email || null
+        };
+        if (password) {
+            body.password = password;
+        }
+
+        try {
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = "Saving...";
+            }
+            if (errorEl) errorEl.classList.add("hidden");
+
+            await apiRequest(`/admin/parents/${parentId}`, {
+                method: "PATCH",
+                body
+            });
+
+            showToast("success", "Parent Updated", `Parent ${name} profile updated successfully.`);
+            document.getElementById("editParentModal")?.classList.add("hidden");
+            loadParents();
+        } catch (error) {
+            if (errorEl) {
+                errorEl.textContent = error.message || "Failed to update parent profile";
+                errorEl.classList.remove("hidden");
+            } else {
+                showToast("error", "Update Failed", error.message);
+            }
+        } finally {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = "Save Changes";
+            }
+        }
+    }
+
     function openLinkChildModal(parentId, parentName) {
         selectedLinkParentId = parentId;
         selectedLinkStudentId = null;
@@ -1804,7 +2234,7 @@
 
         if (isPlatformSuperAdmin() && !getSelectedCampusId()) {
             cachedStops = [];
-            container.innerHTML = `<div class="p-8 text-center text-xs text-amber-800 bg-amber-50/60 border border-amber-200/80 rounded font-semibold">No campus selected. Please select a campus from the top navigation to view its stops.</div>`;
+            container.innerHTML = `<div class="p-8 text-center text-xs text-amber-800 bg-amber-50/60 border border-amber-200/80 rounded-xl font-semibold">No campus selected. Please select a campus from the top navigation to view its stops.</div>`;
             return;
         }
 
@@ -1820,12 +2250,12 @@
             cachedStops = stops;
 
             if (stops.length === 0) {
-                container.innerHTML = `<div class="p-8 text-center text-xs text-slate-400 bg-white border border-slate-200/90 rounded">No stops found. Click "Add Stop" to create one.</div>`;
+                container.innerHTML = `<div class="kx-empty-card text-xs text-slate-400">No stops found. Click "Add Stop" to create one.</div>`;
                 return;
             }
 
             container.innerHTML = stops.map(s => `
-                <div class="bg-white border border-slate-200/90 rounded p-4 shadow-xs flex items-center justify-between gap-3 text-xs">
+                <div class="kx-card p-4 flex items-center justify-between gap-3 text-xs">
                     <div class="flex items-center gap-3">
                         <span class="w-8 h-8 rounded bg-brand/10 text-brand font-black flex items-center justify-center text-xs shrink-0">
                             #${s.stop_order}
@@ -1957,7 +2387,8 @@
         if (!editStopPickerMap) {
             editStopPickerMap = L.map("editStopPickerMapContainer").setView([lat, lng], 14);
             L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-                attribution: "&copy; OpenStreetMap contributors"
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                maxZoom: 19
             }).addTo(editStopPickerMap);
 
             editStopPickerMap.on("click", (e) => {
@@ -2121,7 +2552,8 @@
         if (!stopPickerMap) {
             stopPickerMap = L.map("stopPickerMapContainer").setView([lat, lng], 13);
             L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-                attribution: "&copy; OpenStreetMap contributors"
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                maxZoom: 19
             }).addTo(stopPickerMap);
 
             stopPickerMap.on("click", (e) => {
@@ -2253,7 +2685,7 @@
 
         if (isPlatformSuperAdmin() && !getSelectedCampusId()) {
             cachedRoutes = [];
-            container.innerHTML = `<div class="p-8 text-center text-xs text-amber-800 bg-amber-50/60 border border-amber-200/80 rounded font-semibold">No campus selected. Please select a campus from the top navigation to view its routes.</div>`;
+            container.innerHTML = `<div class="p-8 text-center text-xs text-amber-800 bg-amber-50/60 border border-amber-200/80 rounded-xl font-semibold">No campus selected. Please select a campus from the top navigation to view its routes.</div>`;
             return;
         }
 
@@ -2264,12 +2696,12 @@
             cachedRoutes = data.routes || [];
 
             if (cachedRoutes.length === 0) {
-                container.innerHTML = `<div class="p-8 text-center text-xs text-slate-400 bg-white border border-slate-200/90 rounded">No routes configured. Click "Create Route" to start.</div>`;
+                container.innerHTML = `<div class="kx-empty-card text-xs text-slate-400">No routes configured. Click "Create Route" to start.</div>`;
                 return;
             }
 
             container.innerHTML = cachedRoutes.map(r => `
-                <div class="bg-white border border-slate-200/90 rounded p-5 shadow-xs">
+                <div class="kx-card p-5">
                     <div class="flex items-start justify-between gap-3">
                         <div>
                             <div class="flex items-center gap-2">
@@ -2279,6 +2711,9 @@
                             <p class="text-xs text-slate-500 mt-1">${escapeHtml(r.description || 'No description provided')}</p>
                         </div>
                         <div class="flex items-center gap-2">
+                            <button type="button" onclick="window.KambusAdmin.openEditRouteModal(${r.route_id})" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded text-xs flex items-center gap-1 transition" title="Edit Route Details">
+                                <svg class="w-3.5 h-3.5 shrink-0" aria-hidden="true"><use href="icons.svg#icon-pen"/></svg> Edit
+                            </button>
                             <button type="button" onclick="window.KambusAdmin.previewRouteRoadMap(${r.route_id})" class="px-3 py-1.5 bg-brand hover:bg-brandDark text-white font-bold rounded text-xs flex items-center gap-1.5 shadow-2xs">
                                 <svg class="w-4 h-4 shrink-0 inline mr-1" aria-hidden="true"><use href="icons.svg#icon-route"/></svg> View Road Map
                             </button>
@@ -2366,6 +2801,57 @@
         }
     }
 
+    function openEditRouteModal(routeId) {
+        const route = cachedRoutes.find(r => r.route_id === routeId);
+        if (!route) return;
+
+        document.getElementById("editRouteId").value = route.route_id;
+        document.getElementById("editRouteName").value = route.name || "";
+        document.getElementById("editRouteDescription").value = route.description || "";
+
+        document.getElementById("editRouteModal")?.classList.remove("hidden");
+    }
+
+    async function submitEditRoute(event) {
+        event.preventDefault();
+        const form = event.target;
+        const routeId = form.route_id.value;
+        const name = form.name.value.trim();
+        const description = form.description.value.trim();
+        const submitBtn = document.getElementById("btnSubmitEditRoute");
+
+        if (!name) {
+            showToast("warning", "Validation", "Route name is required.");
+            return;
+        }
+
+        try {
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = "Saving...";
+            }
+
+            await apiRequest(`/admin/routes/${routeId}`, {
+                method: "PATCH",
+                body: {
+                    name,
+                    description: description || null
+                }
+            });
+
+            showToast("success", "Route Updated", `Route "${name}" updated successfully.`);
+            document.getElementById("editRouteModal")?.classList.add("hidden");
+            loadRoutes();
+        } catch (e) {
+            showToast("error", "Update Failed", e.message);
+        } finally {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = "Save Route";
+            }
+        }
+    }
+
     async function deleteRoute(routeId, routeName) {
         const confirmed = await confirm(`Are you sure you want to delete route "${routeName}"? Stops and bus links will be cleared.`);
         if (!confirmed) return;
@@ -2393,7 +2879,8 @@
             if (!routeMap) {
                 routeMap = L.map("routePreviewMap").setView(COLLEGE_COORDS, 13);
                 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-                    attribution: "&copy; OpenStreetMap contributors"
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                    maxZoom: 19
                 }).addTo(routeMap);
             } else {
                 routeMap.invalidateSize();
@@ -2535,7 +3022,7 @@
         }
 
         if (complaints.length === 0) {
-            container.innerHTML = `<div class="p-8 text-center text-xs text-slate-400 bg-white border border-slate-200/90 rounded">No complaints found matching the criteria.</div>`;
+            container.innerHTML = `<div class="kx-empty-card text-xs text-slate-400">No complaints found matching the criteria.</div>`;
             return;
         }
 
@@ -2546,7 +3033,7 @@
             const totalVotes = c.corroboration?.total_votes || 0;
 
             return `
-                <div class="bg-white border ${isCorroborated ? 'border-danger/20 bg-danger/10' : 'border-slate-200/90'} rounded p-5 shadow-xs space-y-3.5">
+                <div class="kx-card p-5 space-y-3.5 ${isCorroborated ? 'border-danger/30 bg-danger/10' : ''}">
                     <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-2.5">
                         <div>
                             <div class="flex items-center gap-2 flex-wrap">
@@ -2661,7 +3148,7 @@
             } else {
                 if (votersListEl) {
                     votersListEl.innerHTML = voters.map(v => `
-                        <div class="p-2.5 rounded border ${v.vote === 'yes' ? 'border-ok/20 bg-ok/10' : 'border-slate-200 bg-slate-50'} flex items-center justify-between text-xs">
+                        <div class="p-2.5 rounded-xl border ${v.vote === 'yes' ? 'border-ok/30 bg-ok/10' : 'border-slate-200 bg-slate-50'} flex items-center justify-between text-xs">
                             <div>
                                 <p class="font-bold text-slate-900">${escapeHtml(v.student_name)} <span class="text-slate-500 font-normal">(${escapeHtml(v.roll_number || '—')})</span></p>
                                 <p class="text-[10px] text-slate-400">Dept: ${escapeHtml(v.department || '—')} • Voted ${formatDateTime(v.created_at)}</p>
@@ -2859,7 +3346,8 @@
         if (!liveMap) {
             liveMap = L.map("adminLiveMap").setView(COLLEGE_COORDS, 13);
             L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-                attribution: "&copy; OpenStreetMap contributors"
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                maxZoom: 19
             }).addTo(liveMap);
 
             const collegeIcon = L.divIcon({
@@ -3271,7 +3759,7 @@
             if (list.length === 0) {
                 container.innerHTML = `
                     <div class="announcement-empty">
-                        <div class="text-2xl mb-2" aria-hidden="true">📣</div>
+                        <svg class="w-8 h-8 mx-auto text-ink-muted/50 mb-2" aria-hidden="true"><use href="icons.svg#icon-bullhorn"/></svg>
                         <p class="text-xs font-semibold text-navy">Nothing sent yet</p>
                         <p class="text-[11px] mt-1">Your next update will show up here.</p>
                     </div>`;
@@ -3315,7 +3803,7 @@
             }
 
             container.innerHTML = changes.map(change => `
-                <div class="p-3.5 bg-slate-50 border border-slate-200/80 rounded">
+                <div class="p-3.5 kx-card-sub">
                     <div class="flex items-center justify-between gap-2">
                         <span class="text-xs font-black text-slate-900">Bus ${escapeHtml(change.source_bus_number || "-")} → Bus ${escapeHtml(change.target_bus_number || "-")}</span>
                         <span class="px-2 py-0.5 rounded text-[10px] font-bold ${change.status === "active" ? "bg-ok/10 text-ok" : "bg-slate-200 text-slate-600"}">${escapeHtml(change.status)}</span>
@@ -3364,7 +3852,7 @@
             }
 
             container.innerHTML = alerts.map(a => `
-                <div class="p-4 border rounded ${a.type === 'emergency_sos' ? 'bg-danger/10 border-danger/20' : (a.type === 'detour_alert' ? 'bg-warn/10 border-warn/20' : 'bg-white border-slate-200')} shadow-sm flex items-start justify-between gap-3">
+                <div class="kx-card p-4 ${a.type === 'emergency_sos' ? 'bg-danger/10 border-danger/30' : (a.type === 'detour_alert' ? 'bg-warn/10 border-warn/30' : '')} shadow-xs flex items-start justify-between gap-3">
                     <div class="min-w-0">
                         <div class="flex items-center gap-2">
                             <span class="flex items-center justify-center w-5 h-5">${a.type === "emergency_sos" ? '<svg class="w-4 h-4 text-danger shrink-0" aria-hidden="true"><use href="icons.svg#icon-alert"/></svg>' : (a.type === "detour_alert" ? '<svg class="w-4 h-4 text-warn shrink-0" aria-hidden="true"><use href="icons.svg#icon-route"/></svg>' : '<svg class="w-4 h-4 text-navy shrink-0" aria-hidden="true"><use href="icons.svg#icon-bell"/></svg>')}</span>
@@ -3492,7 +3980,7 @@
             }
 
             container.innerHTML = logs.map(l => `
-                <div class="p-3.5 bg-white border border-slate-200/90 rounded flex items-center justify-between text-xs">
+                <div class="p-3.5 kx-card-sub flex items-center justify-between text-xs">
                     <div>
                         <span class="font-black text-slate-900">${escapeHtml(l.action)}</span>
                         <p class="text-slate-600 mt-0.5">${escapeHtml(l.details || "")}</p>
@@ -3681,6 +4169,9 @@
             document.querySelectorAll(".stop-select-dropdown").forEach(s => { s.innerHTML = `<option value="">-- Select Campus First --</option>`; });
         }
 
+        // Refresh campus entitlements for newly selected campus context
+        await loadAdminCampusEntitlements(parsedId);
+
         // Refresh whichever section is currently active
         switch (activeSection) {
             case "dashboard":
@@ -3798,7 +4289,7 @@
             updateCampusDropdowns(cachedCampuses);
 
             if (cachedCampuses.length === 0) {
-                container.innerHTML = `<div class="p-8 text-center text-xs text-slate-400 bg-white border border-slate-200/90 rounded">No campuses provisioned yet. Use Create Campus to add one.</div>`;
+                container.innerHTML = `<div class="kx-empty-card text-xs text-slate-400">No campuses provisioned yet. Use Create Campus to add one.</div>`;
                 return;
             }
 
@@ -3845,6 +4336,7 @@
                                         </td>
                                         <td class="p-3.5 text-slate-500">${formatDateTime(c.created_at)}</td>
                                         <td class="p-3.5 text-right space-x-1">
+                                            <button type="button" onclick="window.KambusAdmin.openEditCampusModal(${Number(c.id)})" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 rounded-lg text-[11px] font-bold text-slate-700 transition" title="Edit Campus Settings">Edit</button>
                                             <button type="button" onclick="window.KambusAdmin.openAddAdminForCampus(${Number(c.id)})" class="px-2.5 py-1 bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white rounded-lg text-[11px] font-bold border border-emerald-200 transition" title="Add Admin for this campus">+ Admin</button>
                                             <button type="button" onclick="window.KambusAdmin.toggleCampusStatus(${Number(c.id)}, ${Boolean(c.is_active)})" class="px-2.5 py-1 bg-slate-100 hover:bg-danger hover:text-white rounded-lg text-[11px] font-bold text-slate-700 transition">${c.is_active ? "Deactivate" : "Activate"}</button>
                                         </td>
@@ -3950,6 +4442,81 @@
         }
     }
 
+    function openEditCampusModal(campusId) {
+        const campus = cachedCampuses.find(c => c.id === campusId);
+        if (!campus) return;
+
+        const errDiv = document.getElementById("editCampusError");
+        if (errDiv) {
+            errDiv.classList.add("hidden");
+            errDiv.textContent = "";
+        }
+
+        document.getElementById("editCampusId").value = campus.id;
+        document.getElementById("editCampusSlug").textContent = `Code: ${campus.slug} (ID: ${campus.id})`;
+        document.getElementById("editCampusName").value = campus.name || "";
+        document.getElementById("editCampusPlanTier").value = (campus.plan_tier || "basic").toLowerCase();
+        document.getElementById("editCampusType").value = (campus.campus_type || campus.type || "college").toLowerCase();
+        document.getElementById("editCampusLogo").value = campus.logo_url || "";
+
+        document.getElementById("editCampusModal")?.classList.remove("hidden");
+    }
+
+    async function submitEditCampus(event) {
+        event.preventDefault();
+        const form = event.target;
+        const campusId = form.campus_id.value;
+        const name = form.name.value.trim();
+        const plan_tier = form.plan_tier.value;
+        const campus_type = form.campus_type.value;
+        const logo_url = form.logo_url.value.trim() || null;
+        const errDiv = document.getElementById("editCampusError");
+        const submitBtn = document.getElementById("btnSubmitEditCampus");
+
+        if (!name) {
+            if (errDiv) {
+                errDiv.textContent = "Campus name cannot be empty.";
+                errDiv.classList.remove("hidden");
+            }
+            return;
+        }
+
+        try {
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = "Saving...";
+            }
+            if (errDiv) errDiv.classList.add("hidden");
+
+            await apiRequest(`/super-admin/campuses/${campusId}`, {
+                method: "PATCH",
+                body: {
+                    name,
+                    plan_tier,
+                    campus_type,
+                    type: campus_type,
+                    logo_url
+                }
+            });
+
+            showToast("success", "Campus Updated", `Campus "${name}" properties updated successfully.`);
+            document.getElementById("editCampusModal")?.classList.add("hidden");
+            await loadCampuses();
+            await loadTopCampusSwitcher();
+        } catch (e) {
+            if (errDiv) {
+                errDiv.textContent = e.message || "Failed to update campus.";
+                errDiv.classList.remove("hidden");
+            }
+            showToast("error", "Update Failed", e.message);
+        } finally {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = "Save Changes";
+            }
+        }
+    }
+
     async function toggleCampusStatus(campusId, isCurrentlyActive) {
         const target = cachedCampuses.find(c => c.id === campusId);
         const name = target ? target.name : `Campus ${campusId}`;
@@ -3996,7 +4563,7 @@
             cachedAdmins = Array.isArray(data) ? data : [];
 
             if (cachedAdmins.length === 0) {
-                container.innerHTML = `<div class="p-8 text-center text-xs text-slate-400 bg-white border border-slate-200/90 rounded">No admins yet. Use Add Admin to create one.</div>`;
+                container.innerHTML = `<div class="kx-empty-card text-xs text-slate-400">No admins yet. Use Add Admin to create one.</div>`;
                 return;
             }
 
@@ -4224,6 +4791,7 @@
         if (!checkAuth()) return;
 
         setupSuperAdminNav();
+        loadAdminCampusEntitlements();
         initSuperAdminCampusSelector();
         initAdminWebSocket();
         showSection("dashboard");
@@ -4305,7 +4873,7 @@
             if (statBusRelated) statBusRelated.textContent = cachedMessages.filter(m => m.category === "bus-related").length;
 
             if (cachedMessages.length === 0) {
-                container.innerHTML = `<div class="p-8 text-center text-xs text-slate-400 bg-white border border-slate-200/90 rounded">No student messages found.</div>`;
+                container.innerHTML = `<div class="kx-empty-card text-xs text-slate-400">No student messages found.</div>`;
                 return;
             }
 
@@ -4321,7 +4889,7 @@
                 const dateStr = m.created_at ? new Date(m.created_at).toLocaleString() : "-";
 
                 return `
-                    <div class="bg-surface border ${isUnread ? 'border-amber-300 shadow-xs' : 'border-line'} rounded p-4 flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                    <div class="kx-card p-4 flex flex-col sm:flex-row sm:items-start justify-between gap-3 ${isUnread ? 'border-amber-300' : ''}">
                         <div class="space-y-1.5 flex-1 min-w-0">
                             <div class="flex items-center gap-2 flex-wrap">
                                 <span class="text-xs font-bold text-navy">${escapeHtml(m.student_name)}</span>
@@ -4354,7 +4922,65 @@
         }
     }
 
+    // =========================================================================
+    // GLOBAL MODAL & DRAWER DISMISS LISTENERS (FIX-2)
+    // =========================================================================
+    const activeModalStack = [];
+
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" || e.key === "Esc") {
+            const visibleFromStack = activeModalStack.filter(m => !m.classList.contains("hidden") && document.body.contains(m));
+            const openModals = visibleFromStack.length > 0 ? visibleFromStack : Array.from(document.querySelectorAll('[data-modal="true"]:not(.hidden)'));
+            if (openModals.length > 0) {
+                // Close only the topmost open modal (last opened)
+                const topmost = openModals[openModals.length - 1];
+                const hasCloseBtn = topmost.querySelector('button, [onclick*="hidden"], .close, [aria-label*="Close"]');
+                if (hasCloseBtn) {
+                    topmost.classList.add("hidden");
+                    const idx = activeModalStack.indexOf(topmost);
+                    if (idx !== -1) activeModalStack.splice(idx, 1);
+                    unlockScroll();
+                }
+            } else if (document.getElementById("adminSidebar")?.classList.contains("open")) {
+                closeMobileSidebar();
+            }
+        }
+    });
+
+    document.addEventListener("click", (e) => {
+        // Backdrop click on genuine modal overlay with close button
+        if (e.target && e.target.matches && e.target.matches('[data-modal="true"]')) {
+            const hasCloseBtn = e.target.querySelector('button, [onclick*="hidden"], .close, [aria-label*="Close"]');
+            if (hasCloseBtn) {
+                e.target.classList.add("hidden");
+                const idx = activeModalStack.indexOf(e.target);
+                if (idx !== -1) activeModalStack.splice(idx, 1);
+                unlockScroll();
+            }
+        }
+        // Sync scroll lock with active modals on any button/interactive click
+        setTimeout(() => {
+            document.querySelectorAll('[data-modal="true"]:not(.hidden)').forEach(m => {
+                if (!activeModalStack.includes(m)) activeModalStack.push(m);
+            });
+            for (let i = activeModalStack.length - 1; i >= 0; i--) {
+                if (activeModalStack[i].classList.contains("hidden")) {
+                    activeModalStack.splice(i, 1);
+                }
+            }
+            const hasOpenModal = document.querySelector('[data-modal="true"]:not(.hidden)');
+            const sidebarOpen = document.getElementById("adminSidebar")?.classList.contains("open");
+            if (hasOpenModal || sidebarOpen) {
+                lockScroll();
+            } else {
+                unlockScroll();
+            }
+        }, 15);
+    });
+
     window.KambusAdmin = {
+        lockScroll,
+        unlockScroll,
         showSection,
         toggleMobileSidebar,
         closeMobileSidebar,
@@ -4368,7 +4994,10 @@
         submitUpdateBusGeneralProps,
         deleteBus,
         submitAddBus,
-        openAddDriverModal: () => document.getElementById("addDriverModal")?.classList.remove("hidden"),
+        openAddDriverModal: () => {
+            lockScroll();
+            document.getElementById("addDriverModal")?.classList.remove("hidden");
+        },
         openDriverModal,
         openEditDriverModal,
         deleteDriver,
@@ -4382,9 +5011,16 @@
         submitEditStudent,
         deleteStudent,
         submitAddStudent,
+        toggleStudentSelect,
+        toggleSelectAllStudents,
+        clearStudentSelection,
+        openBulkAssignBusModal,
+        submitBulkAssignBus,
         loadParents,
         openAddParentModal,
         submitAddParent,
+        openEditParentModal,
+        submitEditParent,
         openLinkChildModal,
         onSearchLinkStudents,
         selectLinkStudent,
@@ -4414,6 +5050,8 @@
         submitResetAdminPassword,
         loadCampuses,
         openCreateCampusModal,
+        openEditCampusModal,
+        submitEditCampus,
         handleNewCampusTypeChange,
         submitCreateCampus,
         toggleCampusStatus,
@@ -4421,6 +5059,8 @@
         openAllotAdminModal,
         submitAllotAdminCampus,
         submitAddRoute,
+        openEditRouteModal,
+        submitEditRoute,
         deleteRoute,
         reorderRouteStop,
         previewRouteRoadMap,

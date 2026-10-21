@@ -22,5 +22,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "kambus-rider"
+rootProject.name = "KAMBUS"
 include(":app")

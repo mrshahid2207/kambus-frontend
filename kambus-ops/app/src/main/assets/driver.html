@@ -368,7 +368,7 @@
 
     <main class="flex-1 flex flex-col p-4 max-w-lg mx-auto w-full space-y-4 pb-8">
 
-        <section id="waitRequestCard" class="hidden bg-surface border border-warn text-navy rounded p-4 space-y-2">
+        <section id="waitRequestCard" class="hidden kx-card border-warn text-navy p-4 space-y-2">
             <div class="flex items-center justify-between gap-3">
                 <div class="min-w-0 flex-1">
                     <div class="flex items-center gap-1.5">
@@ -387,18 +387,18 @@
                     </div>
                 </div>
 
-                <button type="button" id="skipWaitBtn" class="shrink-0 bg-surface border border-line text-navy font-semibold text-xs px-3 py-1.5 rounded hover:bg-bg transition-colors flex items-center gap-1.5">
+                <button type="button" id="skipWaitBtn" class="shrink-0 bg-surface border border-line text-navy font-semibold text-xs px-3 py-1.5 rounded-lg hover:bg-bg transition-colors flex items-center gap-1.5">
                     <svg class="w-3.5 h-3.5" aria-hidden="true"><use href="icons.svg#icon-forward-step"/></svg>
                     <span data-i18n="skip">Skip</span>
                 </button>
-                <button type="button" id="completeWaitBtn" class="hidden shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs px-3 py-1.5 rounded transition-colors flex items-center gap-1.5 shadow-sm">
+                <button type="button" id="completeWaitBtn" class="hidden shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 shadow-sm">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
                     <span data-i18n="wait_continue_now">Student Boarded</span>
                 </button>
             </div>
         </section>
 
-        <div id="mapContainer" class="relative rounded overflow-hidden border border-line bg-surface h-64 sm:h-80 w-full shrink-0">
+        <div id="mapContainer" class="relative rounded-xl overflow-hidden border border-line bg-surface h-64 sm:h-80 w-full shrink-0 shadow-xs">
             <div id="routeMap"></div>
 
             <div id="routeStatusBadge" class="absolute top-3 left-3 z-[400] bg-surface/95 text-navy text-xs font-semibold px-2.5 py-1 rounded border border-line flex items-center gap-1.5 pointer-events-none">
@@ -407,13 +407,13 @@
             </div>
 
             <div class="absolute bottom-3 right-3 z-[400] flex items-center gap-2">
-                <button type="button" id="cameraModeToggleBtn" class="px-2.5 py-1.5 bg-navy text-white border border-navy font-semibold text-xs rounded flex items-center gap-1.5 hover:opacity-90 transition-all shadow-sm" aria-label="Toggle camera mode" title="Current: Bearing-Up Nav Camera (Click for Flat Overview)">
+                <button type="button" id="cameraModeToggleBtn" class="px-2.5 py-1.5 bg-navy text-white border border-navy font-semibold text-xs rounded-lg flex items-center gap-1.5 hover:opacity-90 transition-all shadow-sm" aria-label="Toggle camera mode" title="Current: Bearing-Up Nav Camera (Click for Flat Overview)">
                     <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="currentColor">
                         <polygon points="12 2 19 21 12 17 5 21 12 2"/>
                     </svg>
                     <span id="cameraModeText" data-i18n="nav_mode">Nav Mode</span>
                 </button>
-                <button type="button" id="recenterBtn" class="px-2.5 py-1.5 bg-surface border border-line text-navy font-semibold text-xs rounded flex items-center gap-1.5 hover:bg-bg transition-colors shadow-sm" aria-label="Recenter map">
+                <button type="button" id="recenterBtn" class="px-2.5 py-1.5 bg-surface border border-line text-navy font-semibold text-xs rounded-lg flex items-center gap-1.5 hover:bg-bg transition-colors shadow-sm" aria-label="Recenter map">
                     <svg class="w-3.5 h-3.5" aria-hidden="true"><use href="icons.svg#icon-location-crosshairs"/></svg>
                     <span data-i18n="recenter">Recenter</span>
                 </button>
@@ -421,7 +421,7 @@
         </div>
 
         <div id="preTripView" class="space-y-4 flex-1 flex flex-col">
-            <div class="bg-surface border border-line rounded p-4 space-y-3">
+            <div class="kx-card p-4 space-y-3">
                 <div class="flex items-center justify-between">
                     <span class="text-xs font-semibold uppercase tracking-wider text-ink-muted" data-i18n="assigned_route">
                         Assigned Route
@@ -447,12 +447,12 @@
             <div class="space-y-2" role="group" aria-label="Trip type">
                 <p class="text-xs font-semibold uppercase tracking-wider text-ink-muted" data-i18n="select_trip_type">Select trip type</p>
                 <div class="grid grid-cols-2 gap-2">
-                    <button type="button" id="morningTripTypeBtn" class="trip-type-btn py-2.5 rounded border border-line bg-bg text-navy text-sm font-semibold transition-colors" aria-pressed="false" data-i18n="morning">Morning</button>
-                    <button type="button" id="eveningTripTypeBtn" class="trip-type-btn py-2.5 rounded border border-line bg-bg text-navy text-sm font-semibold transition-colors" aria-pressed="false" data-i18n="evening">Evening</button>
+                    <button type="button" id="morningTripTypeBtn" class="trip-type-btn py-2.5 rounded-lg border border-line bg-bg text-navy text-sm font-semibold transition-colors" aria-pressed="false" data-i18n="morning">Morning</button>
+                    <button type="button" id="eveningTripTypeBtn" class="trip-type-btn py-2.5 rounded-lg border border-line bg-bg text-navy text-sm font-semibold transition-colors" aria-pressed="false" data-i18n="evening">Evening</button>
                 </div>
             </div>
 
-            <button type="button" id="startTripBtn" disabled class="w-full py-3.5 bg-navy hover:bg-brand active:bg-brand disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold text-base rounded transition-colors flex items-center justify-center gap-2">
+            <button type="button" id="startTripBtn" disabled class="w-full py-3.5 bg-navy hover:bg-brand active:bg-brand disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold text-base rounded-xl transition-colors flex items-center justify-center gap-2 shadow-xs">
                 <svg id="startTripIcon" class="w-4 h-4" aria-hidden="true"><use href="icons.svg#icon-play"/></svg>
                 <span id="startTripText" class="tracking-wide uppercase font-semibold" data-i18n="start_trip_select">
                     Select Trip Type
@@ -460,8 +460,8 @@
             </button>
 
             <div class="grid grid-cols-2 gap-3">
-                <button type="button" onclick="verifyStudentPass()" class="p-3 bg-surface hover:bg-bg border border-line rounded flex items-center gap-3 text-navy transition-colors text-left">
-                    <div class="w-9 h-9 rounded bg-bg border border-line flex items-center justify-center shrink-0 text-navy">
+                <button type="button" onclick="verifyStudentPass()" class="p-3 bg-surface hover:bg-bg border border-line rounded-xl shadow-xs hover:border-brand/40 flex items-center gap-3 text-navy transition-all text-left">
+                    <div class="w-9 h-9 rounded-lg bg-bg border border-line flex items-center justify-center shrink-0 text-navy">
                         <svg class="w-4 h-4" aria-hidden="true"><use href="icons.svg#icon-qrcode"/></svg>
                     </div>
                     <div class="min-w-0">
@@ -470,8 +470,8 @@
                     </div>
                 </button>
 
-                <button type="button" onclick="reportDetour()" class="p-3 bg-surface hover:bg-bg border border-line rounded flex items-center gap-3 text-navy transition-colors text-left">
-                    <div class="w-9 h-9 rounded bg-bg border border-line flex items-center justify-center shrink-0 text-warn">
+                <button type="button" onclick="reportDetour()" class="p-3 bg-surface hover:bg-bg border border-line rounded-xl shadow-xs hover:border-brand/40 flex items-center gap-3 text-navy transition-all text-left">
+                    <div class="w-9 h-9 rounded-lg bg-bg border border-line flex items-center justify-center shrink-0 text-warn">
                         <svg class="w-4 h-4" aria-hidden="true"><use href="icons.svg#icon-route"/></svg>
                     </div>
                     <div class="min-w-0">
@@ -484,7 +484,7 @@
 
         <div id="activeTripView" class="hidden space-y-2 flex-1 flex flex-col justify-between">
             <!-- 1. Next Stop Card (Driver moment-to-moment essential) -->
-            <section class="bg-surface border border-line rounded p-3 space-y-1.5 shadow-2xs">
+            <section class="kx-card p-3 space-y-1.5 shadow-xs">
                 <div class="flex items-center justify-between text-xs uppercase tracking-wider text-ink-muted">
                     <span class="flex items-center gap-1.5 text-navy font-semibold text-xs">
                         <svg class="w-3.5 h-3.5 text-brand" aria-hidden="true"><use href="icons.svg#icon-map-pin"/></svg> <span data-i18n="next_stop_header">Next Stop</span>
@@ -515,7 +515,7 @@
             </section>
 
             <!-- 2. Secondary/Summary Info (Single-line collapsed summary by default, expandable on tap) -->
-            <div id="tripSummaryCollapsible" class="border border-line rounded bg-surface overflow-hidden shadow-2xs">
+            <div id="tripSummaryCollapsible" class="kx-card overflow-hidden shadow-xs">
                 <button type="button" id="summaryToggleBtn" onclick="toggleTripSummary()" class="w-full px-3 py-2 flex items-center justify-between text-xs text-navy hover:bg-bg/60 transition-colors" aria-expanded="false" aria-controls="summaryDetailsContent">
                     <div class="flex items-center gap-1.5 sm:gap-2 min-w-0 text-[11px] sm:text-xs whitespace-nowrap overflow-hidden">
                         <span class="font-semibold text-navy flex items-center gap-1 shrink-0">
@@ -543,7 +543,7 @@
                 <!-- Expanded Content (Full Cards & Progress Strip) -->
                 <div id="summaryDetailsContent" class="hidden border-t border-line p-2.5 space-y-2 bg-bg/40">
                     <div class="grid grid-cols-2 gap-2">
-                        <div class="bg-surface border border-line rounded p-2.5 flex flex-col justify-between">
+                        <div class="kx-card-sub p-2.5 flex flex-col justify-between">
                             <div class="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
                                 <span id="collegeEtaLabel">ETA to College</span>
                             </div>
@@ -557,7 +557,7 @@
                             </div>
                         </div>
 
-                        <div class="bg-surface border border-line rounded p-2.5 flex flex-col justify-between">
+                        <div class="kx-card-sub p-2.5 flex flex-col justify-between">
                             <div class="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
                                 <span data-i18n="today">Today</span>
                             </div>
@@ -572,7 +572,7 @@
                         </div>
                     </div>
 
-                    <section class="bg-surface border border-line rounded p-2.5">
+                    <section class="kx-card-sub p-2.5">
                         <div class="flex items-center justify-between text-xs font-medium">
                             <span id="progressPassedText" class="text-ok flex items-center gap-1">
                                 <svg class="w-3.5 h-3.5" aria-hidden="true"><use href="icons.svg#icon-check"/></svg> 0 passed
@@ -590,24 +590,24 @@
 
             <!-- 3. Driver Action Row (Scan Pass / Detour / SOS) -->
             <div class="grid grid-cols-3 gap-2">
-                <button type="button" onclick="verifyStudentPass()" class="py-2.5 px-2 bg-surface hover:bg-bg border border-line rounded flex items-center justify-center gap-1.5 text-navy text-xs font-semibold transition-colors shadow-2xs">
+                <button type="button" onclick="verifyStudentPass()" class="py-2.5 px-2 bg-surface hover:bg-bg border border-line rounded-xl flex items-center justify-center gap-1.5 text-navy text-xs font-semibold transition-all shadow-xs">
                     <svg class="w-4 h-4 shrink-0 text-navy" aria-hidden="true"><use href="icons.svg#icon-qrcode"/></svg>
                     <span class="truncate" data-i18n="scan_pass_btn">Scan Pass</span>
                 </button>
 
-                <button type="button" onclick="reportDetour()" class="py-2.5 px-2 bg-surface hover:bg-bg border border-line rounded flex items-center justify-center gap-1.5 text-navy text-xs font-semibold transition-colors shadow-2xs">
+                <button type="button" onclick="reportDetour()" class="py-2.5 px-2 bg-surface hover:bg-bg border border-line rounded-xl flex items-center justify-center gap-1.5 text-navy text-xs font-semibold transition-all shadow-xs">
                     <svg class="w-4 h-4 shrink-0 text-warn" aria-hidden="true"><use href="icons.svg#icon-route"/></svg>
                     <span class="truncate" data-i18n="detour_btn">Detour</span>
                 </button>
 
-                <button type="button" onclick="triggerEmergencySOS()" class="py-2.5 px-2 bg-danger hover:opacity-90 rounded flex items-center justify-center gap-1.5 text-white text-xs font-semibold transition-opacity shadow-2xs">
+                <button type="button" onclick="triggerEmergencySOS()" class="py-2.5 px-2 bg-danger hover:opacity-90 rounded-xl flex items-center justify-center gap-1.5 text-white text-xs font-semibold transition-all shadow-xs">
                     <svg class="w-4 h-4 shrink-0 text-white" aria-hidden="true"><use href="icons.svg#icon-alert"/></svg>
                     <span data-i18n="sos_btn">SOS</span>
                 </button>
             </div>
 
             <!-- 4. Active Trip Status & End Trip Bar (Visible without scrolling) -->
-            <div class="bg-surface border border-line rounded p-2.5 sm:p-3 flex items-center justify-between gap-3 mt-auto shadow-2xs">
+            <div class="kx-card p-2.5 sm:p-3 flex items-center justify-between gap-3 mt-auto shadow-xs">
                 <div class="flex items-center gap-2">
                     <span class="w-2.5 h-2.5 bg-ok rounded-full animate-pulse shrink-0"></span>
                     <span class="text-xs font-bold tracking-wider uppercase text-ok" data-i18n="trip_active">
@@ -615,7 +615,7 @@
                     </span>
                 </div>
 
-                <button type="button" id="endTripBtn" class="bg-danger hover:opacity-90 text-white text-xs font-semibold px-4 py-2 rounded transition-opacity flex items-center gap-1.5 shrink-0">
+                <button type="button" id="endTripBtn" class="bg-danger hover:opacity-90 text-white text-xs font-semibold px-4 py-2 rounded-lg transition-opacity flex items-center gap-1.5 shrink-0">
                     <svg class="w-3.5 h-3.5 shrink-0" aria-hidden="true"><use href="icons.svg#icon-stop"/></svg>
                     <span data-i18n="end_trip">End Trip</span>
                 </button>
@@ -632,18 +632,18 @@
     </footer>
 
     <div id="passScannerModal" class="hidden fixed inset-0 z-[2000] bg-navy/60 flex items-center justify-center p-4">
-        <div class="w-full max-w-sm rounded bg-surface border border-line p-5 space-y-4 max-h-[92vh] overflow-y-auto">
+        <div class="w-full max-w-sm kx-modal-window p-5 space-y-4 max-h-[92vh] overflow-y-auto">
             <div class="flex items-center justify-between border-b border-line pb-3">
                 <div class="flex items-center gap-2">
                     <svg class="w-4 h-4 text-navy" aria-hidden="true"><use href="icons.svg#icon-qrcode"/></svg>
                     <h3 class="text-sm font-semibold text-navy" data-i18n="scan_pass_modal_title">Scan Student Pass</h3>
                 </div>
-                <button type="button" onclick="closePassScannerModal()" class="w-7 h-7 rounded border border-line bg-bg text-ink-muted flex items-center justify-center hover:text-navy">
+                <button type="button" onclick="closePassScannerModal()" class="w-7 h-7 rounded-lg border border-line bg-bg text-ink-muted flex items-center justify-center hover:text-navy">
                     <svg class="w-3.5 h-3.5" aria-hidden="true"><use href="icons.svg#icon-xmark"/></svg>
                 </button>
             </div>
 
-            <div class="relative w-full h-48 bg-navy rounded overflow-hidden flex flex-col items-center justify-center text-white text-center p-3 border border-line">
+            <div class="relative w-full h-48 bg-navy rounded-xl overflow-hidden flex flex-col items-center justify-center text-white text-center p-3 border border-line">
                 <video id="scannerVideo" class="hidden absolute inset-0 w-full h-full object-cover" autoplay playsinline muted></video>
                 <div id="quaggaViewport" class="hidden absolute inset-0 w-full h-full overflow-hidden"></div>
                 <div class="scanner-laser hidden" id="scannerLaser"></div>
@@ -652,33 +652,33 @@
                     <svg class="w-8 h-8 text-tint mx-auto" aria-hidden="true"><use href="icons.svg#icon-camera"/></svg>
                     <p class="text-xs text-white/80" data-i18n="scanner_instruction">Position student barcode in front of camera</p>
                     <div class="flex gap-2 justify-center pt-1">
-                        <button type="button" onclick="startCameraScanner()" class="px-3 py-1 bg-brand text-white text-xs font-semibold rounded transition-colors hover:bg-navy" data-i18n="start_camera">
+                        <button type="button" onclick="startCameraScanner()" class="px-3 py-1 bg-brand text-white text-xs font-semibold rounded-lg transition-colors hover:bg-navy" data-i18n="start_camera">
                             Start Camera
                         </button>
-                        <label class="px-3 py-1 bg-surface/20 hover:bg-surface/30 text-white text-xs font-semibold rounded cursor-pointer transition-colors">
+                        <label class="px-3 py-1 bg-surface/20 hover:bg-surface/30 text-white text-xs font-semibold rounded-lg cursor-pointer transition-colors">
                             <span data-i18n="upload">Upload</span>
                             <input type="file" id="qrFileInput" accept="image/*" class="hidden" onchange="handleQrFileUpload(event)">
                         </label>
                     </div>
                 </div>
 
-                <div class="absolute inset-x-8 inset-y-5 border border-tint/50 border-dashed rounded pointer-events-none"></div>
+                <div class="absolute inset-x-8 inset-y-5 border border-tint/50 border-dashed rounded-lg pointer-events-none"></div>
             </div>
 
             <form onsubmit="handleManualPassLookup(event)" class="space-y-2">
                 <label class="text-[11px] font-semibold text-ink-muted uppercase tracking-wider" data-i18n="or_enter_roll">Or Enter Roll Number</label>
                 <div class="flex gap-2">
                     <input type="text" id="manualRollInput" placeholder="e.g. 21KIT123"
-                           class="flex-1 px-3 py-2 text-xs font-mono uppercase border border-line rounded bg-bg text-navy focus:border-brand focus:outline-none">
-                    <button type="submit" id="verifyPassSubmitBtn" class="px-4 py-2 bg-navy hover:bg-brand text-white text-xs font-semibold rounded transition-colors" data-i18n="verify">
+                           class="flex-1 px-3 py-2 text-xs font-mono uppercase border border-line rounded-lg bg-bg text-navy focus:border-brand focus:outline-none">
+                    <button type="submit" id="verifyPassSubmitBtn" class="px-4 py-2 bg-navy hover:bg-brand text-white text-xs font-semibold rounded-lg transition-colors" data-i18n="verify">
                         Verify
                     </button>
                 </div>
             </form>
 
-            <div id="passResultCard" class="hidden rounded border border-ok/30 bg-ok/10 p-3.5 space-y-2">
+            <div id="passResultCard" class="hidden rounded-xl border border-ok/30 bg-ok/10 p-3.5 space-y-2 shadow-xs">
                 <div class="flex items-center justify-between">
-                    <span id="passBadgeStatus" class="text-[11px] font-semibold uppercase text-ok bg-ok/10 border border-ok/30 px-2 py-0.5 rounded" data-i18n="pass_valid_active">
+                    <span id="passBadgeStatus" class="text-[11px] font-semibold uppercase text-ok bg-ok/10 border border-ok/30 px-2 py-0.5 rounded-lg" data-i18n="pass_valid_active">
                         Pass Valid & Active
                     </span>
                     <span id="passVerifiedTime" class="text-[11px] text-ok tabular-nums" data-i18n="just_now">Just now</span>
@@ -693,7 +693,7 @@
                 </div>
             </div>
 
-            <div id="passErrorCard" class="hidden rounded border border-danger/30 bg-danger/10 p-3.5 space-y-1 text-xs text-danger">
+            <div id="passErrorCard" class="hidden rounded-xl border border-danger/30 bg-danger/10 p-3.5 space-y-1 text-xs text-danger shadow-xs">
                 <div class="flex items-center gap-1.5 font-semibold text-sm">
                     <svg class="w-4 h-4 text-danger" aria-hidden="true"><use href="icons.svg#icon-alert"/></svg>
                     <span id="passErrorTitle" data-i18n="invalid_pass">Invalid Pass</span>
@@ -704,13 +704,13 @@
     </div>
 
     <div id="detourModal" class="hidden fixed inset-0 z-[2000] bg-navy/60 flex items-center justify-center p-4">
-        <div class="w-full max-w-sm rounded bg-surface border border-line p-5 space-y-4">
+        <div class="w-full max-w-sm kx-modal-window p-5 space-y-4">
             <div class="flex items-center justify-between border-b border-line pb-3">
                 <div class="flex items-center gap-2">
                     <svg class="w-4 h-4 text-warn" aria-hidden="true"><use href="icons.svg#icon-route"/></svg>
                     <h3 class="text-sm font-semibold text-navy" data-i18n="report_detour_modal_title">Report Route Detour</h3>
                 </div>
-                <button type="button" onclick="closeDetourModal()" class="w-7 h-7 rounded border border-line bg-bg text-ink-muted flex items-center justify-center hover:text-navy">
+                <button type="button" onclick="closeDetourModal()" class="w-7 h-7 rounded-lg border border-line bg-bg text-ink-muted flex items-center justify-center hover:text-navy">
                     <svg class="w-3.5 h-3.5" aria-hidden="true"><use href="icons.svg#icon-xmark"/></svg>
                 </button>
             </div>
@@ -718,16 +718,16 @@
             <div class="space-y-2">
                 <label class="text-xs font-semibold text-ink-muted uppercase tracking-wider" data-i18n="reason_for_detour">Reason for Detour</label>
                 <div class="grid grid-cols-2 gap-2 text-xs">
-                    <button type="button" class="detourReasonBtn py-2 px-2.5 rounded border border-warn bg-warn/10 text-warn font-semibold text-left" onclick="selectDetourReason(this, 'Road Construction')" data-i18n="detour_road_work">
+                    <button type="button" class="detourReasonBtn py-2 px-2.5 rounded-lg border border-warn bg-warn/10 text-warn font-semibold text-left" onclick="selectDetourReason(this, 'Road Construction')" data-i18n="detour_road_work">
                         Road Work
                     </button>
-                    <button type="button" class="detourReasonBtn py-2 px-2.5 rounded border border-line bg-bg text-ink-muted font-medium text-left" onclick="selectDetourReason(this, 'Heavy Traffic')" data-i18n="detour_traffic_jam">
+                    <button type="button" class="detourReasonBtn py-2 px-2.5 rounded-lg border border-line bg-bg text-ink-muted font-medium text-left" onclick="selectDetourReason(this, 'Heavy Traffic')" data-i18n="detour_traffic_jam">
                         Traffic Jam
                     </button>
-                    <button type="button" class="detourReasonBtn py-2 px-2.5 rounded border border-line bg-bg text-ink-muted font-medium text-left" onclick="selectDetourReason(this, 'Waterlogging')" data-i18n="detour_weather">
+                    <button type="button" class="detourReasonBtn py-2 px-2.5 rounded-lg border border-line bg-bg text-ink-muted font-medium text-left" onclick="selectDetourReason(this, 'Waterlogging')" data-i18n="detour_weather">
                         Weather
                     </button>
-                    <button type="button" class="detourReasonBtn py-2 px-2.5 rounded border border-line bg-bg text-ink-muted font-medium text-left" onclick="selectDetourReason(this, 'Road Blocked')" data-i18n="detour_road_closed">
+                    <button type="button" class="detourReasonBtn py-2 px-2.5 rounded-lg border border-line bg-bg text-ink-muted font-medium text-left" onclick="selectDetourReason(this, 'Road Blocked')" data-i18n="detour_road_closed">
                         Road Closed
                     </button>
                 </div>
@@ -736,27 +736,27 @@
             <div class="space-y-2">
                 <label class="text-xs font-semibold text-ink-muted uppercase tracking-wider" data-i18n="estimated_delay">Estimated Delay</label>
                 <div class="grid grid-cols-4 gap-2 text-xs text-center font-semibold">
-                    <button type="button" class="detourDelayBtn py-1.5 rounded border border-line bg-bg text-ink-muted" onclick="selectDetourDelay(this, 5)">+5m</button>
-                    <button type="button" class="detourDelayBtn py-1.5 rounded border border-warn bg-warn/10 text-warn font-semibold" onclick="selectDetourDelay(this, 10)">+10m</button>
-                    <button type="button" class="detourDelayBtn py-1.5 rounded border border-line bg-bg text-ink-muted" onclick="selectDetourDelay(this, 15)">+15m</button>
-                    <button type="button" class="detourDelayBtn py-1.5 rounded border border-line bg-bg text-ink-muted" onclick="selectDetourDelay(this, 20)">+20m</button>
+                    <button type="button" class="detourDelayBtn py-1.5 rounded-lg border border-line bg-bg text-ink-muted" onclick="selectDetourDelay(this, 5)">+5m</button>
+                    <button type="button" class="detourDelayBtn py-1.5 rounded-lg border border-warn bg-warn/10 text-warn font-semibold" onclick="selectDetourDelay(this, 10)">+10m</button>
+                    <button type="button" class="detourDelayBtn py-1.5 rounded-lg border border-line bg-bg text-ink-muted" onclick="selectDetourDelay(this, 15)">+15m</button>
+                    <button type="button" class="detourDelayBtn py-1.5 rounded-lg border border-line bg-bg text-ink-muted" onclick="selectDetourDelay(this, 20)">+20m</button>
                 </div>
             </div>
 
-            <button type="button" id="submitDetourBtn" onclick="submitDetourReport()" class="w-full py-2.5 bg-navy hover:bg-brand text-white text-xs font-semibold rounded transition-colors" data-i18n="broadcast_detour_btn">
+            <button type="button" id="submitDetourBtn" onclick="submitDetourReport()" class="w-full py-2.5 bg-navy hover:bg-brand text-white text-xs font-semibold rounded-lg transition-colors shadow-xs" data-i18n="broadcast_detour_btn">
                 Broadcast Detour to Students & Admin
             </button>
         </div>
     </div>
 
     <div id="sosModal" class="hidden fixed inset-0 z-[2100] bg-navy/70 flex items-center justify-center p-4">
-        <div class="w-full max-w-sm rounded bg-surface border border-line p-5 space-y-4">
+        <div class="w-full max-w-sm kx-modal-window p-5 space-y-4">
             <div class="flex items-center justify-between border-b border-line pb-3">
                 <div class="flex items-center gap-2 text-danger">
                     <svg class="w-4 h-4" aria-hidden="true"><use href="icons.svg#icon-alert"/></svg>
                     <h3 class="text-sm font-semibold" data-i18n="sos_modal_title">Emergency SOS / Breakdown</h3>
                 </div>
-                <button type="button" onclick="closeSosModal()" class="w-7 h-7 rounded border border-line bg-bg text-ink-muted flex items-center justify-center hover:text-navy">
+                <button type="button" onclick="closeSosModal()" class="w-7 h-7 rounded-lg border border-line bg-bg text-ink-muted flex items-center justify-center hover:text-navy">
                     <svg class="w-3.5 h-3.5" aria-hidden="true"><use href="icons.svg#icon-xmark"/></svg>
                 </button>
             </div>
@@ -764,22 +764,22 @@
             <div class="space-y-2">
                 <label class="text-xs font-semibold text-ink-muted uppercase tracking-wider" data-i18n="select_incident_type">Select Incident Type</label>
                 <div class="grid grid-cols-2 gap-2 text-xs">
-                    <button type="button" class="sosTypeBtn py-2 px-2.5 rounded border border-danger bg-danger/10 text-danger font-semibold text-left" onclick="selectSosType(this, 'Vehicle Breakdown')" data-i18n="sos_breakdown">
+                    <button type="button" class="sosTypeBtn py-2 px-2.5 rounded-lg border border-danger bg-danger/10 text-danger font-semibold text-left" onclick="selectSosType(this, 'Vehicle Breakdown')" data-i18n="sos_breakdown">
                         Breakdown
                     </button>
-                    <button type="button" class="sosTypeBtn py-2 px-2.5 rounded border border-line bg-bg text-ink-muted font-medium text-left" onclick="selectSosType(this, 'Medical Emergency')" data-i18n="sos_medical">
+                    <button type="button" class="sosTypeBtn py-2 px-2.5 rounded-lg border border-line bg-bg text-ink-muted font-medium text-left" onclick="selectSosType(this, 'Medical Emergency')" data-i18n="sos_medical">
                         Medical
                     </button>
-                    <button type="button" class="sosTypeBtn py-2 px-2.5 rounded border border-line bg-bg text-ink-muted font-medium text-left" onclick="selectSosType(this, 'Accident')" data-i18n="sos_accident">
+                    <button type="button" class="sosTypeBtn py-2 px-2.5 rounded-lg border border-line bg-bg text-ink-muted font-medium text-left" onclick="selectSosType(this, 'Accident')" data-i18n="sos_accident">
                         Accident
                     </button>
-                    <button type="button" class="sosTypeBtn py-2 px-2.5 rounded border border-line bg-bg text-ink-muted font-medium text-left" onclick="selectSosType(this, 'Security Alert')" data-i18n="sos_security">
+                    <button type="button" class="sosTypeBtn py-2 px-2.5 rounded-lg border border-line bg-bg text-ink-muted font-medium text-left" onclick="selectSosType(this, 'Security Alert')" data-i18n="sos_security">
                         Security
                     </button>
                 </div>
             </div>
 
-            <div class="bg-bg border border-line rounded p-3 space-y-2 text-xs">
+            <div class="kx-card-sub p-3 space-y-2 text-xs">
                 <div class="flex items-center justify-between">
                     <span class="text-ink-muted" data-i18n="college_transport_cell">College Transport Cell</span>
                     <a href="tel:08702564888" class="font-mono font-semibold text-navy flex items-center gap-1">
@@ -794,7 +794,7 @@
                 </div>
             </div>
 
-            <button type="button" id="submitSosBtn" onclick="submitEmergencySos()" class="w-full py-3 bg-danger hover:opacity-90 text-white text-xs font-semibold rounded transition-opacity flex items-center justify-center gap-2">
+            <button type="button" id="submitSosBtn" onclick="submitEmergencySos()" class="w-full py-3 bg-danger hover:opacity-90 text-white text-xs font-semibold rounded-lg transition-opacity flex items-center justify-center gap-2 shadow-xs">
                 <svg class="w-4 h-4" aria-hidden="true"><use href="icons.svg#icon-alert"/></svg>
                 <span data-i18n="transmit_sos_btn">Transmit Emergency SOS</span>
             </button>

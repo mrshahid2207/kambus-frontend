@@ -2826,11 +2826,13 @@ function renderDirectionArrows(mapInstance, arrowLayer, polylinePoints, color = 
 // WAIT REQUESTS: AUTO-ACCEPT BY DEFAULT & COUNTDOWN CONTROLLER
 // ========================================================================
 
+let isWaitPollInFlight = false;
+
 function startWaitRequestsPolling() {
     if (!hasDriverEntitlement("wait_request")) return;
     stopWaitRequestsPolling();
     loadActiveWaitRequests();
-    waitRequestPollTimer = setInterval(loadActiveWaitRequests, 4000);
+    waitRequestPollTimer = setInterval(loadActiveWaitRequests, 8000);
 }
 
 function stopWaitRequestsPolling() {
@@ -2838,15 +2840,17 @@ function stopWaitRequestsPolling() {
     if (waitCountdownInterval) clearInterval(waitCountdownInterval);
     waitRequestPollTimer = null;
     waitCountdownInterval = null;
+    isWaitPollInFlight = false;
 }
 
 async function loadActiveWaitRequests() {
-    if (!isTripActive) return;
+    if (!isTripActive || isWaitPollInFlight) return;
     if (!hasDriverEntitlement("wait_request")) return;
 
     const token = getToken();
     if (!token) return;
 
+    isWaitPollInFlight = true;
     try {
         const response = await fetch(`${API_BASE}/driver/wait-requests`, {
             headers: {
@@ -2866,6 +2870,8 @@ async function loadActiveWaitRequests() {
         }
     } catch (e) {
         console.warn("Wait requests poll error:", e);
+    } finally {
+        isWaitPollInFlight = false;
     }
 }
 
@@ -2978,11 +2984,8 @@ async function handleSkipActiveWait() {
     const firstStudentRequestId = activeWaitRequest.students?.[0]?.request_id;
     if (!firstStudentRequestId) return;
 
-    const skipBtn = document.getElementById("skipWaitBtn");
-    if (skipBtn) {
-        skipBtn.disabled = true;
-        skipBtn.innerHTML = `<svg class="w-3.5 h-3.5 animate-spin shrink-0" aria-hidden="true"><use href="icons.svg#icon-spinner"/></svg>`;
-    }
+    // Optimistic UI: Hide card immediately so button feels instantaneous
+    hideActiveWaitCard();
 
     const token = getToken();
 
@@ -3000,9 +3003,8 @@ async function handleSkipActiveWait() {
             KambusNotify.notify({
                 type: "warning",
                 title: t("toast_wait_skipped"),
-                message: t("toast_wait_skipped_msg", { stop: activeWaitRequest.stop_name || "" })
+                message: t("toast_wait_skipped_msg", { stop: activeWaitRequest?.stop_name || "" })
             });
-            hideActiveWaitCard();
             setTimeout(loadActiveWaitRequests, 500);
         } else {
             throw new Error(data.detail || t("toast_skip_failed_msg"));
@@ -3013,11 +3015,7 @@ async function handleSkipActiveWait() {
             title: t("toast_skip_failed"),
             message: e.message || t("toast_skip_failed_msg")
         });
-    } finally {
-        if (skipBtn) {
-            skipBtn.disabled = false;
-            skipBtn.innerHTML = `<svg class="w-3 h-3 shrink-0" aria-hidden="true"><use href="icons.svg#icon-forward-step"/></svg><span>${t("skip")}</span>`;
-        }
+        loadActiveWaitRequests();
     }
 }
 
@@ -3027,11 +3025,8 @@ async function handleCompleteActiveWait() {
     const firstStudentRequestId = activeWaitRequest.students?.[0]?.request_id;
     if (!firstStudentRequestId) return;
 
-    const completeBtn = document.getElementById("completeWaitBtn");
-    if (completeBtn) {
-        completeBtn.disabled = true;
-        completeBtn.innerHTML = `<svg class="w-3.5 h-3.5 animate-spin shrink-0" aria-hidden="true"><use href="icons.svg#icon-spinner"/></svg>`;
-    }
+    // Optimistic UI: Hide card immediately so button feels instantaneous
+    hideActiveWaitCard();
 
     const token = getToken();
 
@@ -3051,7 +3046,6 @@ async function handleCompleteActiveWait() {
                 title: t("toast_student_boarded"),
                 message: t("toast_student_boarded_msg")
             });
-            hideActiveWaitCard();
             setTimeout(loadActiveWaitRequests, 500);
         } else {
             throw new Error(data.detail || t("toast_complete_wait_failed_msg"));
@@ -3062,11 +3056,7 @@ async function handleCompleteActiveWait() {
             title: t("toast_failed") || "Failed",
             message: e.message || t("toast_complete_wait_failed_msg")
         });
-    } finally {
-        if (completeBtn) {
-            completeBtn.disabled = false;
-            completeBtn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg><span>${t("wait_continue_now")}</span>`;
-        }
+        loadActiveWaitRequests();
     }
 }
 
@@ -3431,12 +3421,12 @@ async function handleManualPassLookup(event) {
         return;
     }
 
-    await verifyStudentPassBackend(rawQuery);
+    await verifyStudentPassBackend(rawQuery, true);
 }
 window.handleManualPassLookup = handleManualPassLookup;
 
 // REAL BACKEND PASS VERIFICATION
-async function verifyStudentPassBackend(queryStr) {
+async function verifyStudentPassBackend(queryStr, isManual = false) {
     queryStr = typeof queryStr === "string" ? queryStr.trim() : "";
     if (/^data:image\//i.test(queryStr)) {
         console.error("[PassScanner] refused image frame data as a verification query");
@@ -3461,20 +3451,27 @@ async function verifyStudentPassBackend(queryStr) {
 
     const token = getToken();
     try {
-        console.info("[PassScanner] scan-pass request query:", queryStr);
+        console.info("[PassScanner] scan-pass request query:", queryStr, "isManual:", isManual);
+        const isJwt = !isManual && (queryStr.match(/\./g) || []).length === 2;
+        const payload = {
+            latitude: lastPosition ? lastPosition.latitude : null,
+            longitude: lastPosition ? lastPosition.longitude : null
+        };
+        if (isJwt) {
+            payload.token = queryStr;
+            payload.query = queryStr;
+        } else {
+            payload.roll_number = queryStr;
+            payload.query = queryStr;
+        }
+
         const response = await fetch(`${API_BASE}/driver/scan-pass`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
                 "Authorization": `Bearer ${token}`
             },
-            body: JSON.stringify({
-                token: queryStr,
-                query: queryStr,
-                roll_number: queryStr,
-                latitude: lastPosition ? lastPosition.latitude : null,
-                longitude: lastPosition ? lastPosition.longitude : null
-            })
+            body: JSON.stringify(payload)
         });
 
         const data = await response.json();
@@ -3524,12 +3521,17 @@ async function verifyStudentPassBackend(queryStr) {
 
         } else {
             // FAILED / INVALID PASS
+            const detailMsg = (typeof data?.detail === "string" && data.detail.trim())
+                ? data.detail.trim()
+                : (Array.isArray(data?.detail) && data.detail[0]?.msg ? data.detail[0].msg : null);
+            const displayError = detailMsg || t("student_not_found_assigned");
+
             if (resultCard) resultCard.classList.add("hidden");
             if (errorCard) {
                 const errTitle = document.getElementById("passErrorTitle");
                 const errMsg = document.getElementById("passErrorMessage");
                 if (errTitle) errTitle.textContent = t("invalid_pass_title");
-                if (errMsg) errMsg.textContent = data.detail || t("student_not_found_assigned");
+                if (errMsg) errMsg.textContent = displayError;
                 errorCard.classList.remove("hidden");
             }
 
@@ -3538,7 +3540,7 @@ async function verifyStudentPassBackend(queryStr) {
             KambusNotify.notify({
                 type: "error",
                 title: t("toast_pass_invalid"),
-                message: data.detail || t("toast_pass_invalid_msg")
+                message: displayError
             });
         }
     } catch (err) {
