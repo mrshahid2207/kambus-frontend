@@ -60,18 +60,13 @@
             position: relative;
             width: 100%;
             min-height: auto;
-            background-color: var(--banner-navy-bot);
-            background-image: 
-                repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.045) 0, rgba(255, 255, 255, 0.045) 1px, transparent 1px, transparent 18px),
-                linear-gradient(180deg, var(--banner-navy-top) 0%, var(--banner-navy-bot) 100%);
-            background-repeat: no-repeat;
-            background-size: cover;
-            background-position: center;
+            background-color: var(--banner-navy-top);
+            background-image: none;
             display: flex;
             flex-direction: column;
             padding: 0 28px;
             padding-top: max(44px, calc(18px + env(safe-area-inset-top, 0px)));
-            padding-bottom: 52px;
+            padding-bottom: 32px;
             box-sizing: border-box;
             overflow: hidden;
             z-index: 1;
@@ -267,17 +262,15 @@
         .form-panel {
             position: relative;
             z-index: 2;
-            margin-top: -28px;
+            margin-top: 0;
             background-color: var(--form-bg);
-            border-top-left-radius: 28px;
-            border-top-right-radius: 28px;
-            padding: 24px 28px;
+            border-top: 4px solid #F5A623;
+            padding: 28px 28px;
             padding-bottom: max(32px, calc(24px + env(safe-area-inset-bottom, 0px)));
             flex: 1;
             display: flex;
             flex-direction: column;
-            box-shadow: 0 -6px 24px rgba(10, 20, 30, 0.08);
-        }
+            }
 
         /* Segmented Role Control */
         .segmented-role {
@@ -630,745 +623,799 @@
             color: #256B4C;
             flex-shrink: 0;
         }
+            /* ===== KAMBUS flat login: keep this block LAST inside <style> ===== */
+        .login-banner { background: #14283A !important; background-image: none !important; border-radius: 0 !important; padding-bottom: 28px !important; }
+        .banner-highlights { display: none !important; }
+        .banner-intro, .banner-bottom { margin-top: 20px; margin-bottom: 0; }
+        .form-panel { margin-top: 0 !important; border-radius: 0 !important; box-shadow: none !important; border-top: 4px solid #F5A623; padding-top: 24px; }
+        .role-btn.is-active { background: #14283A; color: #ffffff; box-shadow: none; }
+        .input-row:focus-within { border-color: #14283A; box-shadow: 0 0 0 3px rgba(245, 166, 35, 0.35); }
+        .submit-btn { background-color: #F5A623; color: #14283A; font-weight: 700; }
+        .submit-btn:hover:not(:disabled) { background-color: #E0951A; }
+        .field-hint { font-size: 13px; }
     </style>
 </head>
 <body>
 
-    <!-- Preserved campus badge context for existing JS logic -->
-    <div id="campusBadge" style="display: none;" aria-hidden="true">
-        <span id="campusName">Signing in to KITS Warangal</span>
-    </div>
+<!-- Preserved campus badge context for existing JS logic -->
+<div id="campusBadge" style="display: none;" aria-hidden="true">
+    <span id="campusName">Signing in to KITS Warangal</span>
+</div>
 
-    <div class="login-viewport">
-        <!-- Top Banner (~340px high) -->
-        <header class="login-banner" id="loginBanner">
-            <!-- Top Row: Logo Tile + Wordmark on Left, Language Chip on Right -->
-            <div class="banner-top-row">
-                <div class="brand-cluster" aria-label="KAMBUS Operations">
-                    <div class="logo-tile">
-                        <img src="kambus-logo.svg" alt="KAMBUS Logo" width="32" height="32">
-                    </div>
-                    <span class="brand-wordmark">KAMBUS</span>
+<div class="login-viewport">
+    <!-- Top Banner (~340px high) -->
+    <header class="login-banner" id="loginBanner">
+        <!-- Top Row: Logo Tile + Wordmark on Left, Language Chip on Right -->
+        <div class="banner-top-row">
+            <div class="brand-cluster" aria-label="KAMBUS Operations">
+                <div class="logo-tile">
+                    <img src="kambus-logo.svg" alt="KAMBUS Logo" width="32" height="32">
                 </div>
-
-                <button type="button" id="languageChipBtn" onclick="openLanguageSheet()" class="lang-chip" aria-haspopup="dialog" aria-expanded="false" aria-label="Select language">
-                    <span id="currentLangLabel">EN ▾</span>
-                </button>
+                <span class="brand-wordmark">KAMBUS</span>
             </div>
 
-            <!-- Headline & Dynamic Sub Line (Above the 3 features) -->
-            <div class="banner-intro" id="bannerIntro">
-                <h1 id="loginHeadline" class="banner-headline">Welcome back.</h1>
-                <p id="loginSubline" class="banner-subline">Start your trip or manage the KITS Warangal fleet.</p>
-            </div>
-
-            <!-- Highlights List (3 features) -->
-            <div class="banner-highlights" id="bannerHighlights" aria-label="Key features">
-                <div class="highlight-row">
-                    <div class="highlight-tile" aria-hidden="true">
-                        <svg class="highlight-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                            <circle cx="12" cy="12" r="7"/>
-                            <line x1="12" y1="2" x2="12" y2="5" stroke-linecap="square"/>
-                            <line x1="12" y1="19" x2="12" y2="22" stroke-linecap="square"/>
-                            <line x1="2" y1="12" x2="5" y2="12" stroke-linecap="square"/>
-                            <line x1="19" y1="12" x2="22" y2="12" stroke-linecap="square"/>
-                        </svg>
-                    </div>
-                    <span class="highlight-text" id="highlightRow1">Start trips with live GPS tracking</span>
-                </div>
-                <div class="highlight-row">
-                    <div class="highlight-tile" aria-hidden="true">
-                        <svg class="highlight-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                            <rect x="3" y="3" width="7" height="7" stroke-linecap="square" stroke-linejoin="miter"/>
-                            <rect x="14" y="3" width="7" height="7" stroke-linecap="square" stroke-linejoin="miter"/>
-                            <rect x="3" y="14" width="7" height="7" stroke-linecap="square" stroke-linejoin="miter"/>
-                            <rect x="14" y="14" width="3" height="3"/>
-                            <rect x="18" y="14" width="3" height="3"/>
-                            <rect x="14" y="18" width="3" height="3"/>
-                            <rect x="18" y="18" width="3" height="3"/>
-                        </svg>
-                    </div>
-                    <span class="highlight-text" id="highlightRow2">Scan and verify student passes</span>
-                </div>
-                <div class="highlight-row">
-                    <div class="highlight-tile" aria-hidden="true">
-                        <svg class="highlight-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                            <polygon points="12 2 1 21 23 21" stroke-linecap="square" stroke-linejoin="miter"/>
-                            <line x1="12" y1="9" x2="12" y2="13" stroke-linecap="square"/>
-                            <line x1="12" y1="17" x2="12.01" y2="17" stroke-linecap="square"/>
-                        </svg>
-                    </div>
-                    <span class="highlight-text" id="highlightRow3">Report detours and SOS instantly</span>
-                </div>
-            </div>
-        </header>
-
-        <!-- Form Panel: starts at y=312px overlapping banner -->
-        <main class="form-panel">
-            <!-- Segmented Role Selector: Driver vs Admin -->
-            <div class="segmented-role" id="roleTabs" role="tablist" aria-label="Select login role">
-                <button type="button" class="role-btn is-active" id="tabDriver" data-role="driver" role="tab" aria-selected="true" onclick="setRole('driver')">
-                    <span id="roleDriverText">Driver</span>
-                </button>
-                <button type="button" class="role-btn" id="tabAdmin" data-role="admin" role="tab" aria-selected="false" onclick="setRole('admin')">
-                    <span id="roleAdminText">Admin</span>
-                </button>
-            </div>
-
-            <!-- Login Form -->
-            <form id="loginForm" onsubmit="handleLogin(event)" novalidate>
-                <!-- Identifier Field (Phone with +91 prefix for Driver, Admin ID for Admin) -->
-                <div class="field-group">
-                    <label id="identityLabel" for="username" class="field-label">Phone number</label>
-                    <div class="input-row" id="identityInputWrapper">
-                        <div id="phonePrefix" class="prefix-block">+91</div>
-                        <span id="adminIcon" style="display: none;" aria-hidden="true"></span>
-                        <input type="tel" id="username" name="username" required autocomplete="tel" inputmode="tel" maxlength="10"
-                               placeholder="10-digit mobile number" enterkeyhint="next"
-                               class="text-input">
-                    </div>
-                    <p id="identityHint" class="field-hint">Enter your registered 10-digit mobile number</p>
-                </div>
-
-                <!-- Password Field -->
-                <div class="field-group">
-                    <label for="password" class="field-label" id="passwordLabel">Password</label>
-                    <div class="input-row">
-                        <input type="password" id="password" name="password" required autocomplete="current-password"
-                               placeholder="Enter password" enterkeyhint="go"
-                               class="text-input" style="border-radius: 11px 0 0 11px;">
-                        <button type="button" onclick="togglePasswordVisibility('password', 'passwordToggleIcon')" aria-label="Show or hide password" aria-pressed="false" class="pw-toggle-btn">
-                            <svg id="passwordToggleIcon" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
-                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                                <circle cx="12" cy="12" r="3"/>
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Remember Me Checkbox -->
-                <div class="remember-row">
-                    <label for="rememberMe" class="remember-label">
-                        <input type="checkbox" id="rememberMe" class="custom-checkbox">
-                        <span class="remember-text" id="rememberMeText">Remember me</span>
-                    </label>
-                </div>
-
-                <!-- Error Alert Banner -->
-                <div id="loginError" class="login-error" role="alert" aria-live="polite">
-                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
-                        <circle cx="12" cy="12" r="10"/>
-                        <line x1="12" y1="8" x2="12" y2="12"/>
-                        <line x1="12" y1="16" x2="12.01" y2="16"/>
-                    </svg>
-                    <span></span>
-                </div>
-
-                <!-- Sign In Button -->
-                <button type="submit" id="btnSubmit" class="submit-btn">
-                    <span id="btnSubmitText">Sign In</span>
-                </button>
-            </form>
-
-            <!-- Centered Help Line -->
-            <p id="loginHelpText" class="help-line">Need help? Contact your transport office</p>
-        </main>
-    </div>
-
-    <!-- Language Selection Bottom Sheet -->
-    <div id="languageSheetBackdrop" class="sheet-backdrop hidden" onclick="handleLanguageBackdropClick(event)" role="dialog" aria-modal="true" aria-labelledby="langSheetTitle">
-        <div id="languageSheetPanel" class="sheet-panel" onclick="event.stopPropagation()">
-            <div class="sheet-header">
-                <h3 id="langSheetTitle" class="sheet-title">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"/></svg>
-                    <span>Select Language</span>
-                </h3>
-                <button type="button" onclick="closeLanguageSheet()" class="sheet-close-btn" aria-label="Close language selector">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-                </button>
-            </div>
-
-            <!-- English Option -->
-            <button type="button" onclick="selectLanguageFromSheet('en')" class="lang-sheet-row" data-lang="en">
-                <div style="display: flex; align-items: center;">
-                    <span class="lang-row-name">English</span>
-                    <span class="lang-row-tag">Default</span>
-                </div>
-                <svg class="lang-check-icon hidden" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-            </button>
-
-            <!-- Hindi Option -->
-            <button type="button" onclick="selectLanguageFromSheet('hi')" class="lang-sheet-row" data-lang="hi">
-                <span class="lang-row-name">हिन्दी</span>
-                <svg class="lang-check-icon hidden" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-            </button>
-
-            <!-- Telugu Option -->
-            <button type="button" onclick="selectLanguageFromSheet('te')" class="lang-sheet-row" data-lang="te">
-                <span class="lang-row-name">తెలుగు</span>
-                <svg class="lang-check-icon hidden" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+            <button type="button" id="languageChipBtn" onclick="openLanguageSheet()" class="lang-chip" aria-haspopup="dialog" aria-expanded="false" aria-label="Select language">
+                <span id="currentLangLabel">EN ▾</span>
             </button>
         </div>
+
+        <!-- Headline & Dynamic Sub Line (Above the 3 features) -->
+        <div class="banner-intro" id="bannerIntro">
+            <h1 id="loginHeadline" class="banner-headline">Welcome back.</h1>
+            <p id="loginSubline" class="banner-subline">Start your trip or manage the KITS Warangal fleet.</p>
+        </div>
+
+        <!-- Highlights List (3 features) -->
+        <div class="banner-highlights" id="bannerHighlights" aria-label="Key features">
+            <div class="highlight-row">
+                <div class="highlight-tile" aria-hidden="true">
+                    <svg class="highlight-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <circle cx="12" cy="12" r="7"/>
+                        <line x1="12" y1="2" x2="12" y2="5" stroke-linecap="square"/>
+                        <line x1="12" y1="19" x2="12" y2="22" stroke-linecap="square"/>
+                        <line x1="2" y1="12" x2="5" y2="12" stroke-linecap="square"/>
+                        <line x1="19" y1="12" x2="22" y2="12" stroke-linecap="square"/>
+                    </svg>
+                </div>
+                <span class="highlight-text" id="highlightRow1">Start trips with live GPS tracking</span>
+            </div>
+            <div class="highlight-row">
+                <div class="highlight-tile" aria-hidden="true">
+                    <svg class="highlight-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <rect x="3" y="3" width="7" height="7" stroke-linecap="square" stroke-linejoin="miter"/>
+                        <rect x="14" y="3" width="7" height="7" stroke-linecap="square" stroke-linejoin="miter"/>
+                        <rect x="3" y="14" width="7" height="7" stroke-linecap="square" stroke-linejoin="miter"/>
+                        <rect x="14" y="14" width="3" height="3"/>
+                        <rect x="18" y="14" width="3" height="3"/>
+                        <rect x="14" y="18" width="3" height="3"/>
+                        <rect x="18" y="18" width="3" height="3"/>
+                    </svg>
+                </div>
+                <span class="highlight-text" id="highlightRow2">Scan and verify student passes</span>
+            </div>
+            <div class="highlight-row">
+                <div class="highlight-tile" aria-hidden="true">
+                    <svg class="highlight-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <polygon points="12 2 1 21 23 21" stroke-linecap="square" stroke-linejoin="miter"/>
+                        <line x1="12" y1="9" x2="12" y2="13" stroke-linecap="square"/>
+                        <line x1="12" y1="17" x2="12.01" y2="17" stroke-linecap="square"/>
+                    </svg>
+                </div>
+                <span class="highlight-text" id="highlightRow3">Report detours and SOS instantly</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Form Panel: starts at y=312px overlapping banner -->
+    <main class="form-panel">
+        <!-- Segmented Role Selector: Driver vs Admin -->
+        <div class="segmented-role" id="roleTabs" role="tablist" aria-label="Select login role">
+            <button type="button" class="role-btn is-active" id="tabDriver" data-role="driver" role="tab" aria-selected="true" onclick="setRole('driver')">
+                <span id="roleDriverText">Driver</span>
+            </button>
+            <button type="button" class="role-btn" id="tabAdmin" data-role="admin" role="tab" aria-selected="false" onclick="setRole('admin')">
+                <span id="roleAdminText">Admin</span>
+            </button>
+        </div>
+
+        <!-- Login Form -->
+        <form id="loginForm" onsubmit="handleLogin(event)" novalidate>
+            <!-- Identifier Field (Phone with +91 prefix for Driver, Admin ID for Admin) -->
+            <div class="field-group">
+                <label id="identityLabel" for="username" class="field-label">Phone number</label>
+                <div class="input-row" id="identityInputWrapper">
+                    <div id="phonePrefix" class="prefix-block">+91</div>
+                    <span id="adminIcon" style="display: none;" aria-hidden="true"></span>
+                    <input type="tel" id="username" name="username" required autocomplete="tel" inputmode="tel" maxlength="10"
+                           placeholder="10-digit mobile number" enterkeyhint="next"
+                           class="text-input">
+                </div>
+                <p id="identityHint" class="field-hint">Enter your registered 10-digit mobile number</p>
+            </div>
+
+            <!-- Password Field -->
+            <div class="field-group">
+                <label for="password" class="field-label" id="passwordLabel">Password</label>
+                <div class="input-row">
+                    <input type="password" id="password" name="password" required autocomplete="current-password"
+                           placeholder="Enter password" enterkeyhint="go"
+                           class="text-input" style="border-radius: 11px 0 0 11px;">
+                    <button type="button" onclick="togglePasswordVisibility('password', 'passwordToggleIcon')" aria-label="Show or hide password" aria-pressed="false" class="pw-toggle-btn">
+                        <svg id="passwordToggleIcon" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Remember Me Checkbox -->
+            <div class="remember-row">
+                <label for="rememberMe" class="remember-label">
+                    <input type="checkbox" id="rememberMe" class="custom-checkbox">
+                    <span class="remember-text" id="rememberMeText">Remember me</span>
+                </label>
+            </div>
+
+            <!-- Error Alert Banner -->
+            <div id="loginError" class="login-error" role="alert" aria-live="polite">
+                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="8" x2="12" y2="12"/>
+                    <line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+                <span></span>
+            </div>
+
+            <!-- Sign In Button -->
+            <button type="submit" id="btnSubmit" class="submit-btn">
+                <span id="btnSubmitText">Sign In</span>
+            </button>
+        </form>
+
+        <!-- Centered Help Line -->
+        <p id="loginHelpText" class="help-line">Need help? Contact your transport office</p>
+    </main>
+</div>
+
+<!-- Language Selection Bottom Sheet -->
+<div id="languageSheetBackdrop" class="sheet-backdrop hidden" onclick="handleLanguageBackdropClick(event)" role="dialog" aria-modal="true" aria-labelledby="langSheetTitle">
+    <div id="languageSheetPanel" class="sheet-panel" onclick="event.stopPropagation()">
+        <div class="sheet-header">
+            <h3 id="langSheetTitle" class="sheet-title">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"/></svg>
+                <span>Select Language</span>
+            </h3>
+            <button type="button" onclick="closeLanguageSheet()" class="sheet-close-btn" aria-label="Close language selector">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+
+        <!-- English Option -->
+        <button type="button" onclick="selectLanguageFromSheet('en')" class="lang-sheet-row" data-lang="en">
+            <div style="display: flex; align-items: center;">
+                <span class="lang-row-name">English</span>
+                <span class="lang-row-tag">Default</span>
+            </div>
+            <svg class="lang-check-icon hidden" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+        </button>
+
+        <!-- Hindi Option -->
+        <button type="button" onclick="selectLanguageFromSheet('hi')" class="lang-sheet-row" data-lang="hi">
+            <span class="lang-row-name">हिन्दी</span>
+            <svg class="lang-check-icon hidden" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+        </button>
+
+        <!-- Telugu Option -->
+        <button type="button" onclick="selectLanguageFromSheet('te')" class="lang-sheet-row" data-lang="te">
+            <span class="lang-row-name">తెలుగు</span>
+            <svg class="lang-check-icon hidden" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+        </button>
     </div>
+</div>
 
-    <script>
-        const API_BASE = "https://kambus-backend.onrender.com";
-        let currentRole = "driver";
+<script>
+    const API_BASE = "https://kambus-backend.onrender.com";
+    let currentRole = "driver";
 
-        /* Multilingual Localization Dictionary */
-        const LOGIN_TRANSLATIONS = {
-            en: {
-                login_headline: "Welcome back.",
-                login_sub: "Start your trip or manage the {campus} fleet.",
-                role_driver: "Driver",
-                role_admin: "Admin",
-                label_phone: "Phone number",
-                label_admin_id: "Admin ID",
-                placeholder_phone: "10-digit mobile number",
-                placeholder_admin_id: "Enter admin ID or username",
-                hint_phone: "Enter your registered 10-digit mobile number",
-                hint_admin_id: "Enter your administrator ID or username",
-                label_password: "Password",
-                placeholder_password: "Enter password",
-                remember_me: "Remember me",
-                sign_in: "Sign In",
-                signing_in: "Signing In...",
-                login_help: "Need help? Contact your transport office",
-                select_language: "Select Language",
-                highlight_gps_trips: "Start trips with live GPS tracking",
-                highlight_scan_passes: "Scan and verify student passes",
-                highlight_sos_detours: "Report detours and SOS instantly"
-            },
-            hi: {
-                login_headline: "वापसी पर स्वागत है।",
-                login_sub: "अपनी यात्रा शुरू करें या {campus} बेड़े का प्रबंधन करें।",
-                role_driver: "ड्राइवर",
-                role_admin: "एडमिन",
-                label_phone: "फ़ोन नंबर",
-                label_admin_id: "एडमिन आईडी",
-                placeholder_phone: "10-अंकीय मोबाइल नंबर",
-                placeholder_admin_id: "एडमिन आईडी या उपयोगकर्ता नाम दर्ज करें",
-                hint_phone: "अपना पंजीकृत 10-अंकीय मोबाइल नंबर दर्ज करें",
-                hint_admin_id: "अपना व्यवस्थापक आईडी या उपयोगकर्ता नाम दर्ज करें",
-                label_password: "पासवर्ड",
-                placeholder_password: "पासवर्ड दर्ज करें",
-                remember_me: "मुझे याद रखें",
-                sign_in: "साइन इन",
-                signing_in: "साइन इन हो रहा है...",
-                login_help: "मदद चाहिए? अपने परिवहन कार्यालय से संपर्क करें",
-                select_language: "भाषा चुनें",
-                highlight_gps_trips: "लाइव जीपीएस ट्रैकिंग के साथ ट्रिप शुरू करें",
-                highlight_scan_passes: "छात्र पास स्कैन और सत्यापित करें",
-                highlight_sos_detours: "मार्ग परिवर्तन और एसओएस तुरंत रिपोर्ट करें"
-            },
-            te: {
-                login_headline: "స్వాగతం.",
-                login_sub: "మీ ట్రిప్‌ను ప్రారంభించండి లేదా {campus} బస్సులను నిర్వహించండి.",
-                role_driver: "డ్రైవర్",
-                role_admin: "అడ్మిన్",
-                label_phone: "ఫోన్ నంబర్",
-                label_admin_id: "అడ్మిన్ ఐడీ",
-                placeholder_phone: "10 అంకెల మొబైల్ నంబర్",
-                placeholder_admin_id: "అడ్మిన్ ఐడీ లేదా యూజర్‌నేమ్ నమోదు చేయండి",
-                hint_phone: "మీ నమోదిత 10 అంకెల మొబైల్ నంబర్‌ను నమోదు చేయండి",
-                hint_admin_id: "మీ అడ్మినిస్ట్రేటర్ ఐడీని నమోదు చేయండి",
-                label_password: "పాస్‌వర్డ్",
-                placeholder_password: "పాస్‌వర్డ్ నమోదు చేయండి",
-                remember_me: "నన్ను గుర్తుంచుకో",
-                sign_in: "సైన్ ఇన్",
-                signing_in: "సైన్ ఇన్ అవుతోంది...",
-                login_help: "సహాయం కావాలా? మీ రవాణా కార్యాలయాన్ని సంప్రదించండి",
-                select_language: "భాషను ఎంచుకోండి",
-                highlight_gps_trips: "లైవ్ జీపీఎస్ ట్రాకింగ్‌తో ట్రిప్‌లను ప్రారంభించండి",
-                highlight_scan_passes: "విద్యార్థుల పాస్‌లను స్కాన్ చేసి ధృవీకరించండి",
-                highlight_sos_detours: "దారి మళ్లింపులు మరియు SOS వెంటనే నివేదించండి"
+    /* Multilingual Localization Dictionary */
+    const LOGIN_TRANSLATIONS = {
+        en: {
+            login_headline: "Welcome back.",
+            login_sub: "Start your trip or manage the {campus} fleet.",
+            role_driver: "Driver",
+            role_admin: "Admin",
+            label_phone: "Phone number",
+            label_admin_id: "Admin ID",
+            placeholder_phone: "10-digit mobile number",
+            placeholder_admin_id: "Enter admin ID or username",
+            hint_phone: "Enter your registered 10-digit mobile number",
+            hint_admin_id: "Enter your administrator ID or username",
+            label_password: "Password",
+            placeholder_password: "Enter password",
+            remember_me: "Remember me",
+            sign_in: "Sign In",
+            signing_in: "Signing In...",
+            login_help: "Need help? Contact your transport office",
+            select_language: "Select Language",
+            highlight_gps_trips: "Start trips with live GPS tracking",
+            highlight_scan_passes: "Scan and verify student passes",
+            highlight_sos_detours: "Report detours and SOS instantly"
+        },
+        hi: {
+            login_headline: "वापसी पर स्वागत है।",
+            login_sub: "अपनी यात्रा शुरू करें या {campus} बेड़े का प्रबंधन करें।",
+            role_driver: "ड्राइवर",
+            role_admin: "एडमिन",
+            label_phone: "फ़ोन नंबर",
+            label_admin_id: "एडमिन आईडी",
+            placeholder_phone: "10-अंकीय मोबाइल नंबर",
+            placeholder_admin_id: "एडमिन आईडी या उपयोगकर्ता नाम दर्ज करें",
+            hint_phone: "अपना पंजीकृत 10-अंकीय मोबाइल नंबर दर्ज करें",
+            hint_admin_id: "अपना व्यवस्थापक आईडी या उपयोगकर्ता नाम दर्ज करें",
+            label_password: "पासवर्ड",
+            placeholder_password: "पासवर्ड दर्ज करें",
+            remember_me: "मुझे याद रखें",
+            sign_in: "साइन इन",
+            signing_in: "साइन इन हो रहा है...",
+            login_help: "मदद चाहिए? अपने परिवहन कार्यालय से संपर्क करें",
+            select_language: "भाषा चुनें",
+            highlight_gps_trips: "लाइव जीपीएस ट्रैकिंग के साथ ट्रिप शुरू करें",
+            highlight_scan_passes: "छात्र पास स्कैन और सत्यापित करें",
+            highlight_sos_detours: "मार्ग परिवर्तन और एसओएस तुरंत रिपोर्ट करें"
+        },
+        te: {
+            login_headline: "స్వాగతం.",
+            login_sub: "మీ ట్రిప్‌ను ప్రారంభించండి లేదా {campus} బస్సులను నిర్వహించండి.",
+            role_driver: "డ్రైవర్",
+            role_admin: "అడ్మిన్",
+            label_phone: "ఫోన్ నంబర్",
+            label_admin_id: "అడ్మిన్ ఐడీ",
+            placeholder_phone: "10 అంకెల మొబైల్ నంబర్",
+            placeholder_admin_id: "అడ్మిన్ ఐడీ లేదా యూజర్‌నేమ్ నమోదు చేయండి",
+            hint_phone: "మీ నమోదిత 10 అంకెల మొబైల్ నంబర్‌ను నమోదు చేయండి",
+            hint_admin_id: "మీ అడ్మినిస్ట్రేటర్ ఐడీని నమోదు చేయండి",
+            label_password: "పాస్‌వర్డ్",
+            placeholder_password: "పాస్‌వర్డ్ నమోదు చేయండి",
+            remember_me: "నన్ను గుర్తుంచుకో",
+            sign_in: "సైన్ ఇన్",
+            signing_in: "సైన్ ఇన్ అవుతోంది...",
+            login_help: "సహాయం కావాలా? మీ రవాణా కార్యాలయాన్ని సంప్రదించండి",
+            select_language: "భాషను ఎంచుకోండి",
+            highlight_gps_trips: "లైవ్ జీపీఎస్ ట్రాకింగ్‌తో ట్రిప్‌లను ప్రారంభించండి",
+            highlight_scan_passes: "విద్యార్థుల పాస్‌లను స్కాన్ చేసి ధృవీకరించండి",
+            highlight_sos_detours: "దారి మళ్లింపులు మరియు SOS వెంటనే నివేదించండి"
+        }
+    };
+
+    const LANG_CHIP_LABELS = {
+        en: "EN ▾",
+        hi: "हिं ▾",
+        te: "తె ▾"
+    };
+
+    let currentLanguage = (function () {
+        try {
+            const urlParams = new URLSearchParams(window.location.search);
+            const qLang = urlParams.get("lang");
+            if (qLang && (qLang === "en" || qLang === "hi" || qLang === "te")) {
+                return qLang;
             }
+            const saved = localStorage.getItem("kambus_driver_lang") || localStorage.getItem("kambus_lang");
+            if (saved && (saved === "en" || saved === "hi" || saved === "te")) {
+                return saved;
+            }
+        } catch (_) {}
+        return "en";
+    })();
+
+    function t(key, params = {}) {
+        const dict = LOGIN_TRANSLATIONS[currentLanguage] || LOGIN_TRANSLATIONS.en;
+        let str = dict[key] || LOGIN_TRANSLATIONS.en[key] || key;
+        if (params && typeof params === "object") {
+            for (const [k, v] of Object.entries(params)) {
+                str = str.replaceAll(`{${k}}`, v);
+            }
+        }
+        return str;
+    }
+
+    function getCampusName() {
+        return localStorage.getItem("kambus_campus_name") || "KITS Warangal";
+    }
+
+    function initCampusBadge() {
+        const campusName = getCampusName();
+        const el = document.getElementById("campusName");
+        if (el) {
+            el.textContent = `Signing in to ${campusName}`;
+        }
+    }
+
+    function applyTranslations() {
+        const campus = getCampusName();
+        const headline = document.getElementById("loginHeadline");
+        const subline = document.getElementById("loginSubline");
+        const roleDriver = document.getElementById("roleDriverText");
+        const roleAdmin = document.getElementById("roleAdminText");
+        const passwordLabel = document.getElementById("passwordLabel");
+        const passwordInput = document.getElementById("password");
+        const rememberMeText = document.getElementById("rememberMeText");
+        const btnSubmit = document.getElementById("btnSubmit");
+        const btnSubmitText = document.getElementById("btnSubmitText");
+        const helpText = document.getElementById("loginHelpText");
+        const langTitle = document.querySelector("#langSheetTitle span");
+
+        if (headline) headline.textContent = t("login_headline");
+        if (subline) subline.textContent = t("login_sub", { campus });
+        if (roleDriver) roleDriver.textContent = t("role_driver");
+        if (roleAdmin) roleAdmin.textContent = t("role_admin");
+        if (passwordLabel) passwordLabel.textContent = t("label_password");
+        if (passwordInput) passwordInput.placeholder = t("placeholder_password");
+        if (rememberMeText) rememberMeText.textContent = t("remember_me");
+        if (btnSubmitText && !btnSubmit?.disabled) btnSubmitText.textContent = t("sign_in");
+        if (helpText) helpText.textContent = t("login_help");
+        if (langTitle) langTitle.textContent = t("select_language");
+
+        const hl1 = document.getElementById("highlightRow1");
+        const hl2 = document.getElementById("highlightRow2");
+        const hl3 = document.getElementById("highlightRow3");
+        if (hl1) hl1.textContent = t("highlight_gps_trips");
+        if (hl2) hl2.textContent = t("highlight_scan_passes");
+        if (hl3) hl3.textContent = t("highlight_sos_detours");
+
+        // Update role-specific fields
+        updateRoleFields();
+
+        // Update language chip label
+        const chipLabel = document.getElementById("currentLangLabel");
+        if (chipLabel) {
+            chipLabel.textContent = LANG_CHIP_LABELS[currentLanguage] || "EN ▾";
+        }
+    }
+
+    function setLanguage(lang) {
+        if (!LOGIN_TRANSLATIONS[lang]) return;
+        currentLanguage = lang;
+        try {
+            localStorage.setItem("kambus_driver_lang", lang);
+            localStorage.setItem("kambus_lang", lang);
+        } catch (_) {}
+        document.documentElement.lang = lang;
+        applyTranslations();
+        syncLanguageSheetUI();
+    }
+
+    /* Banner Photo Detection */
+    function checkBannerPhoto() {
+        const banner = document.getElementById("loginBanner");
+        if (!banner) return;
+
+        const testJpg = new Image();
+        testJpg.onload = function() {
+            banner.style.backgroundImage = "linear-gradient(180deg, rgba(20, 40, 58, 0.65) 0%, rgba(31, 51, 69, 0.72) 100%), url('login-banner.jpg')";
         };
-
-        const LANG_CHIP_LABELS = {
-            en: "EN ▾",
-            hi: "हिं ▾",
-            te: "తె ▾"
+        testJpg.onerror = function() {
+            const testWebp = new Image();
+            testWebp.onload = function() {
+                banner.style.backgroundImage = "linear-gradient(180deg, rgba(20, 40, 58, 0.65) 0%, rgba(31, 51, 69, 0.72) 100%), url('login-banner.webp')";
+            };
+            testWebp.src = "login-banner.webp";
         };
+        testJpg.src = "login-banner.jpg";
+    }
 
-        let currentLanguage = (function () {
+    function updateRoleFields() {
+        const label = document.getElementById("identityLabel");
+        const input = document.getElementById("username");
+        const prefix = document.getElementById("phonePrefix");
+        const hint = document.getElementById("identityHint");
+
+        if (currentRole === "admin") {
+            if (label) label.textContent = t("label_admin_id");
+            if (prefix) prefix.style.display = "none";
+            if (input) {
+                input.type = "text";
+                input.inputMode = "text";
+                input.maxLength = 64;
+                input.placeholder = t("placeholder_admin_id");
+                input.autocomplete = "username";
+                input.style.borderTopLeftRadius = "11px";
+                input.style.borderBottomLeftRadius = "11px";
+            }
+            if (hint) hint.textContent = t("hint_admin_id");
+        } else {
+            if (label) label.textContent = t("label_phone");
+            if (prefix) prefix.style.display = "flex";
+            if (input) {
+                input.type = "tel";
+                input.inputMode = "tel";
+                input.maxLength = 10;
+                input.placeholder = t("placeholder_phone");
+                input.autocomplete = "tel";
+                input.style.borderTopLeftRadius = "0";
+                input.style.borderBottomLeftRadius = "0";
+            }
+            if (hint) hint.textContent = t("hint_phone");
+        }
+    }
+
+    function setRole(role) {
+        currentRole = role;
+        const tabDriver = document.getElementById("tabDriver");
+        const tabAdmin = document.getElementById("tabAdmin");
+
+        hideLoginError();
+
+        if (role === "admin") {
+            tabDriver?.classList.remove("is-active");
+            tabDriver?.setAttribute("aria-selected", "false");
+            tabAdmin?.classList.add("is-active");
+            tabAdmin?.setAttribute("aria-selected", "true");
+        } else {
+            tabAdmin?.classList.remove("is-active");
+            tabAdmin?.setAttribute("aria-selected", "false");
+            tabDriver?.classList.add("is-active");
+            tabDriver?.setAttribute("aria-selected", "true");
+        }
+
+        updateRoleFields();
+    }
+
+    /* Language Bottom Sheet Interactivity */
+    function syncLanguageSheetUI() {
+        document.querySelectorAll(".lang-sheet-row").forEach(row => {
+            const rowLang = row.getAttribute("data-lang");
+            const isActive = rowLang === currentLanguage;
+            const check = row.querySelector(".lang-check-icon");
+            if (check) check.classList.toggle("hidden", !isActive);
+            row.classList.toggle("is-active", isActive);
+            row.setAttribute("aria-selected", String(isActive));
+        });
+    }
+
+    function openLanguageSheet() {
+        const backdrop = document.getElementById("languageSheetBackdrop");
+        if (!backdrop) return;
+        syncLanguageSheetUI();
+        backdrop.classList.remove("hidden");
+        const chipBtn = document.getElementById("languageChipBtn");
+        if (chipBtn) chipBtn.setAttribute("aria-expanded", "true");
+        document.body.style.overflow = "hidden";
+        try {
+            window.history.pushState({ kambus_sheet: "language" }, "");
+        } catch (_) {}
+    }
+
+    function closeLanguageSheet(fromPopState) {
+        const backdrop = document.getElementById("languageSheetBackdrop");
+        if (!backdrop || backdrop.classList.contains("hidden")) return;
+        backdrop.classList.add("hidden");
+        const chipBtn = document.getElementById("languageChipBtn");
+        if (chipBtn) chipBtn.setAttribute("aria-expanded", "false");
+        document.body.style.overflow = "";
+        if (!fromPopState) {
             try {
-                const urlParams = new URLSearchParams(window.location.search);
-                const qLang = urlParams.get("lang");
-                if (qLang && (qLang === "en" || qLang === "hi" || qLang === "te")) {
-                    return qLang;
-                }
-                const saved = localStorage.getItem("kambus_driver_lang") || localStorage.getItem("kambus_lang");
-                if (saved && (saved === "en" || saved === "hi" || saved === "te")) {
-                    return saved;
+                if (window.history.state && window.history.state.kambus_sheet === "language") {
+                    window.history.back();
                 }
             } catch (_) {}
-            return "en";
-        })();
-
-        function t(key, params = {}) {
-            const dict = LOGIN_TRANSLATIONS[currentLanguage] || LOGIN_TRANSLATIONS.en;
-            let str = dict[key] || LOGIN_TRANSLATIONS.en[key] || key;
-            if (params && typeof params === "object") {
-                for (const [k, v] of Object.entries(params)) {
-                    str = str.replaceAll(`{${k}}`, v);
-                }
-            }
-            return str;
         }
+    }
 
-        function getCampusName() {
-            return localStorage.getItem("kambus_campus_name") || "KITS Warangal";
-        }
-
-        function initCampusBadge() {
-            const campusName = getCampusName();
-            const el = document.getElementById("campusName");
-            if (el) {
-                el.textContent = `Signing in to ${campusName}`;
-            }
-        }
-
-        function applyTranslations() {
-            const campus = getCampusName();
-            const headline = document.getElementById("loginHeadline");
-            const subline = document.getElementById("loginSubline");
-            const roleDriver = document.getElementById("roleDriverText");
-            const roleAdmin = document.getElementById("roleAdminText");
-            const passwordLabel = document.getElementById("passwordLabel");
-            const passwordInput = document.getElementById("password");
-            const rememberMeText = document.getElementById("rememberMeText");
-            const btnSubmit = document.getElementById("btnSubmit");
-            const btnSubmitText = document.getElementById("btnSubmitText");
-            const helpText = document.getElementById("loginHelpText");
-            const langTitle = document.querySelector("#langSheetTitle span");
-
-            if (headline) headline.textContent = t("login_headline");
-            if (subline) subline.textContent = t("login_sub", { campus });
-            if (roleDriver) roleDriver.textContent = t("role_driver");
-            if (roleAdmin) roleAdmin.textContent = t("role_admin");
-            if (passwordLabel) passwordLabel.textContent = t("label_password");
-            if (passwordInput) passwordInput.placeholder = t("placeholder_password");
-            if (rememberMeText) rememberMeText.textContent = t("remember_me");
-            if (btnSubmitText && !btnSubmit?.disabled) btnSubmitText.textContent = t("sign_in");
-            if (helpText) helpText.textContent = t("login_help");
-            if (langTitle) langTitle.textContent = t("select_language");
-
-            const hl1 = document.getElementById("highlightRow1");
-            const hl2 = document.getElementById("highlightRow2");
-            const hl3 = document.getElementById("highlightRow3");
-            if (hl1) hl1.textContent = t("highlight_gps_trips");
-            if (hl2) hl2.textContent = t("highlight_scan_passes");
-            if (hl3) hl3.textContent = t("highlight_sos_detours");
-
-            // Update role-specific fields
-            updateRoleFields();
-
-            // Update language chip label
-            const chipLabel = document.getElementById("currentLangLabel");
-            if (chipLabel) {
-                chipLabel.textContent = LANG_CHIP_LABELS[currentLanguage] || "EN ▾";
-            }
-        }
-
-        function setLanguage(lang) {
-            if (!LOGIN_TRANSLATIONS[lang]) return;
-            currentLanguage = lang;
-            try {
-                localStorage.setItem("kambus_driver_lang", lang);
-                localStorage.setItem("kambus_lang", lang);
-            } catch (_) {}
-            document.documentElement.lang = lang;
-            applyTranslations();
-            syncLanguageSheetUI();
-        }
-
-        /* Banner Photo Detection */
-        function checkBannerPhoto() {
-            const banner = document.getElementById("loginBanner");
-            if (!banner) return;
-
-            const testJpg = new Image();
-            testJpg.onload = function() {
-                banner.style.backgroundImage = "linear-gradient(180deg, rgba(20, 40, 58, 0.65) 0%, rgba(31, 51, 69, 0.72) 100%), url('login-banner.jpg')";
-            };
-            testJpg.onerror = function() {
-                const testWebp = new Image();
-                testWebp.onload = function() {
-                    banner.style.backgroundImage = "linear-gradient(180deg, rgba(20, 40, 58, 0.65) 0%, rgba(31, 51, 69, 0.72) 100%), url('login-banner.webp')";
-                };
-                testWebp.src = "login-banner.webp";
-            };
-            testJpg.src = "login-banner.jpg";
-        }
-
-        function updateRoleFields() {
-            const label = document.getElementById("identityLabel");
-            const input = document.getElementById("username");
-            const prefix = document.getElementById("phonePrefix");
-            const hint = document.getElementById("identityHint");
-
-            if (currentRole === "admin") {
-                if (label) label.textContent = t("label_admin_id");
-                if (prefix) prefix.style.display = "none";
-                if (input) {
-                    input.type = "text";
-                    input.inputMode = "text";
-                    input.maxLength = 64;
-                    input.placeholder = t("placeholder_admin_id");
-                    input.autocomplete = "username";
-                    input.style.borderTopLeftRadius = "11px";
-                    input.style.borderBottomLeftRadius = "11px";
-                }
-                if (hint) hint.textContent = t("hint_admin_id");
-            } else {
-                if (label) label.textContent = t("label_phone");
-                if (prefix) prefix.style.display = "flex";
-                if (input) {
-                    input.type = "tel";
-                    input.inputMode = "tel";
-                    input.maxLength = 10;
-                    input.placeholder = t("placeholder_phone");
-                    input.autocomplete = "tel";
-                    input.style.borderTopLeftRadius = "0";
-                    input.style.borderBottomLeftRadius = "0";
-                }
-                if (hint) hint.textContent = t("hint_phone");
-            }
-        }
-
-        function setRole(role) {
-            currentRole = role;
-            const tabDriver = document.getElementById("tabDriver");
-            const tabAdmin = document.getElementById("tabAdmin");
-
-            hideLoginError();
-
-            if (role === "admin") {
-                tabDriver?.classList.remove("is-active");
-                tabDriver?.setAttribute("aria-selected", "false");
-                tabAdmin?.classList.add("is-active");
-                tabAdmin?.setAttribute("aria-selected", "true");
-            } else {
-                tabAdmin?.classList.remove("is-active");
-                tabAdmin?.setAttribute("aria-selected", "false");
-                tabDriver?.classList.add("is-active");
-                tabDriver?.setAttribute("aria-selected", "true");
-            }
-
-            updateRoleFields();
-        }
-
-        /* Language Bottom Sheet Interactivity */
-        function syncLanguageSheetUI() {
-            document.querySelectorAll(".lang-sheet-row").forEach(row => {
-                const rowLang = row.getAttribute("data-lang");
-                const isActive = rowLang === currentLanguage;
-                const check = row.querySelector(".lang-check-icon");
-                if (check) check.classList.toggle("hidden", !isActive);
-                row.classList.toggle("is-active", isActive);
-                row.setAttribute("aria-selected", String(isActive));
-            });
-        }
-
-        function openLanguageSheet() {
-            const backdrop = document.getElementById("languageSheetBackdrop");
-            if (!backdrop) return;
-            syncLanguageSheetUI();
-            backdrop.classList.remove("hidden");
-            const chipBtn = document.getElementById("languageChipBtn");
-            if (chipBtn) chipBtn.setAttribute("aria-expanded", "true");
-            document.body.style.overflow = "hidden";
-            try {
-                window.history.pushState({ kambus_sheet: "language" }, "");
-            } catch (_) {}
-        }
-
-        function closeLanguageSheet(fromPopState) {
-            const backdrop = document.getElementById("languageSheetBackdrop");
-            if (!backdrop || backdrop.classList.contains("hidden")) return;
-            backdrop.classList.add("hidden");
-            const chipBtn = document.getElementById("languageChipBtn");
-            if (chipBtn) chipBtn.setAttribute("aria-expanded", "false");
-            document.body.style.overflow = "";
-            if (!fromPopState) {
-                try {
-                    if (window.history.state && window.history.state.kambus_sheet === "language") {
-                        window.history.back();
-                    }
-                } catch (_) {}
-            }
-        }
-
-        function handleLanguageBackdropClick(event) {
-            if (event.target === document.getElementById("languageSheetBackdrop")) {
-                closeLanguageSheet();
-            }
-        }
-
-        function selectLanguageFromSheet(lang) {
-            setLanguage(lang);
+    function handleLanguageBackdropClick(event) {
+        if (event.target === document.getElementById("languageSheetBackdrop")) {
             closeLanguageSheet();
         }
+    }
 
-        window.addEventListener("keydown", function(e) {
-            if (e.key === "Escape" || e.key === "Esc") {
-                closeLanguageSheet();
-            }
-        });
+    function selectLanguageFromSheet(lang) {
+        setLanguage(lang);
+        closeLanguageSheet();
+    }
 
-        window.addEventListener("popstate", function(e) {
-            closeLanguageSheet(true);
-        });
+    window.addEventListener("keydown", function(e) {
+        if (e.key === "Escape" || e.key === "Esc") {
+            closeLanguageSheet();
+        }
+    });
 
-        function setupKeyboardListener() {
-            function checkKeyboard() {
-                if (window.visualViewport) {
-                    const isKeyboard = window.visualViewport.height < window.innerHeight - 120 || window.visualViewport.height < 550;
-                    if (isKeyboard) {
-                        document.body.classList.add("keyboard-open");
-                    } else {
-                        document.body.classList.remove("keyboard-open");
-                    }
-                }
-            }
+    window.addEventListener("popstate", function(e) {
+        closeLanguageSheet(true);
+    });
 
+    function setupKeyboardListener() {
+        function checkKeyboard() {
             if (window.visualViewport) {
-                window.visualViewport.addEventListener("resize", checkKeyboard);
-                window.visualViewport.addEventListener("scroll", checkKeyboard);
-            }
-            window.addEventListener("resize", () => {
-                if (!window.visualViewport) {
-                    if (window.innerHeight < 550) {
-                        document.body.classList.add("keyboard-open");
-                    } else {
-                        document.body.classList.remove("keyboard-open");
-                    }
+                const isKeyboard = window.visualViewport.height < window.innerHeight - 120 || window.visualViewport.height < 550;
+                if (isKeyboard) {
+                    document.body.classList.add("keyboard-open");
+                } else {
+                    document.body.classList.remove("keyboard-open");
                 }
-            });
-
-            const inputs = document.querySelectorAll("input, select, textarea");
-            inputs.forEach(input => {
-                input.addEventListener("focus", () => {
-                    if (window.innerHeight < 750 || (window.visualViewport && window.visualViewport.height < 600)) {
-                        document.body.classList.add("keyboard-open");
-                    }
-                });
-                input.addEventListener("blur", () => {
-                    setTimeout(() => {
-                        const active = document.activeElement;
-                        if (!active || (active.tagName !== "INPUT" && active.tagName !== "TEXTAREA")) {
-                            document.body.classList.remove("keyboard-open");
-                        }
-                    }, 100);
-                });
-            });
+            }
         }
 
-        document.addEventListener("DOMContentLoaded", () => {
-            initCampusBadge();
-            checkBannerPhoto();
-            applyTranslations();
-            setupKeyboardListener();
-
-            const isRemembered = localStorage.getItem("kambus_remember") === "true";
-            const savedIdentifier = localStorage.getItem("kambus_saved_identifier");
-            const savedRole = localStorage.getItem("kambus_saved_role");
-            const rememberCheckbox = document.getElementById("rememberMe");
-
-            if (savedRole === "admin") {
-                setRole("admin");
-            } else {
-                setRole("driver");
-            }
-
-            if (isRemembered && rememberCheckbox) {
-                rememberCheckbox.checked = true;
-                if (savedIdentifier) {
-                    const usernameInput = document.getElementById("username");
-                    if (usernameInput) usernameInput.value = savedIdentifier;
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener("resize", checkKeyboard);
+            window.visualViewport.addEventListener("scroll", checkKeyboard);
+        }
+        window.addEventListener("resize", () => {
+            if (!window.visualViewport) {
+                if (window.innerHeight < 550) {
+                    document.body.classList.add("keyboard-open");
+                } else {
+                    document.body.classList.remove("keyboard-open");
                 }
             }
         });
 
-        function showLoginError(message) {
-            const banner = document.getElementById("loginError");
-            if (!banner) return;
-            banner.querySelector("span").textContent = message;
-            banner.classList.add("visible");
+        const inputs = document.querySelectorAll("input, select, textarea");
+        inputs.forEach(input => {
+            input.addEventListener("focus", () => {
+                if (window.innerHeight < 750 || (window.visualViewport && window.visualViewport.height < 600)) {
+                    document.body.classList.add("keyboard-open");
+                }
+            });
+            input.addEventListener("blur", () => {
+                setTimeout(() => {
+                    const active = document.activeElement;
+                    if (!active || (active.tagName !== "INPUT" && active.tagName !== "TEXTAREA")) {
+                        document.body.classList.remove("keyboard-open");
+                    }
+                }, 100);
+            });
+        });
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        initCampusBadge();
+        checkBannerPhoto();
+        applyTranslations();
+        setupKeyboardListener();
+
+        const isRemembered = localStorage.getItem("kambus_remember") === "true";
+        const savedIdentifier = localStorage.getItem("kambus_saved_identifier");
+        const savedRole = localStorage.getItem("kambus_saved_role");
+        const rememberCheckbox = document.getElementById("rememberMe");
+
+        if (savedRole === "admin") {
+            setRole("admin");
+        } else {
+            setRole("driver");
         }
 
-        function hideLoginError() {
-            const banner = document.getElementById("loginError");
-            if (banner) banner.classList.remove("visible");
-        }
-
-        function togglePasswordVisibility(inputId, iconId) {
-            const passwordInput = document.getElementById(inputId);
-            const toggleIcon = document.getElementById(iconId);
-            if (!passwordInput || !toggleIcon) return;
-
-            const isPassword = passwordInput.type === "password";
-            passwordInput.type = isPassword ? "text" : "password";
-            if (isPassword) {
-                toggleIcon.innerHTML = `
-                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
-                    <line x1="1" y1="1" x2="23" y2="23"/>
-                `;
-            } else {
-                toggleIcon.innerHTML = `
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                    <circle cx="12" cy="12" r="3"/>
-                `;
+        if (isRemembered && rememberCheckbox) {
+            rememberCheckbox.checked = true;
+            if (savedIdentifier) {
+                const usernameInput = document.getElementById("username");
+                if (usernameInput) usernameInput.value = savedIdentifier;
             }
-            const toggleButton = toggleIcon.closest("button");
-            if (toggleButton) toggleButton.setAttribute("aria-pressed", String(isPassword));
         }
+    });
 
-        async function handleLogin(e) {
-            e.preventDefault();
-            hideLoginError();
+    function showLoginError(message) {
+        const banner = document.getElementById("loginError");
+        if (!banner) return;
+        banner.querySelector("span").textContent = message;
+        banner.classList.add("visible");
+    }
 
-            let identifier = document.getElementById("username").value.trim();
-            const password = document.getElementById("password").value;
-            const rememberMe = document.getElementById("rememberMe")?.checked || false;
-            const button = document.getElementById("btnSubmit");
+    function hideLoginError() {
+        const banner = document.getElementById("loginError");
+        if (banner) banner.classList.remove("visible");
+    }
 
-            if (!identifier || !password) {
-                const fieldName = currentRole === "driver" ? t("label_phone").toLowerCase() : t("label_admin_id");
-                notifyUser("warn", "Required Fields", `Please enter your ${fieldName} and password.`);
-                return;
-            }
+    function togglePasswordVisibility(inputId, iconId) {
+        const passwordInput = document.getElementById(inputId);
+        const toggleIcon = document.getElementById(iconId);
+        if (!passwordInput || !toggleIcon) return;
 
-            // Clean phone number prefix if driver entered +91 or spaces
-            if (currentRole === "driver") {
-                const digits = identifier.replace(/\D/g, "");
-                if (digits.length === 12 && digits.startsWith("91")) {
-                    identifier = digits.slice(2);
-                } else if (digits.length === 10) {
-                    identifier = digits;
+        const isPassword = passwordInput.type === "password";
+        passwordInput.type = isPassword ? "text" : "password";
+        if (isPassword) {
+            toggleIcon.innerHTML = `
+                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                <line x1="1" y1="1" x2="23" y2="23"/>
+            `;
+        } else {
+            toggleIcon.innerHTML = `
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+            `;
+        }
+        const toggleButton = toggleIcon.closest("button");
+        if (toggleButton) toggleButton.setAttribute("aria-pressed", String(isPassword));
+    }
+
+    function getOrCreateDeviceId() {
+        try {
+            if (window.AndroidSession && typeof window.AndroidSession.getDeviceId === "function") {
+                const devId = window.AndroidSession.getDeviceId();
+                if (devId && devId.length > 5) {
+                    localStorage.setItem("kambus_device_id", devId);
+                    return devId;
                 }
             }
+        } catch (e) {
+            console.warn("Could not retrieve device ID from native bridge:", e);
+        }
 
-            const originalButtonContent = button.innerHTML;
-            button.disabled = true;
-            button.innerHTML = `
-                <span>${t("signing_in")}</span>
-                <svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true" style="animation: spin 1s linear infinite;"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" stroke-dasharray="32" stroke-dashoffset="16" fill="none"/></svg>
-            `;
+        let devId = localStorage.getItem("kambus_device_id");
+        if (!devId) {
+            if (window.crypto && typeof window.crypto.randomUUID === "function") {
+                devId = window.crypto.randomUUID();
+            } else {
+                devId = "dev-" + Math.random().toString(36).substring(2, 15) + "-" + Date.now().toString(36);
+            }
+            localStorage.setItem("kambus_device_id", devId);
+        }
+        return devId;
+    }
 
-            try {
-                let response = await fetch(`${API_BASE}/auth/login/ops`, {
+    async function handleLogin(e) {
+        e.preventDefault();
+        hideLoginError();
+
+        let identifier = document.getElementById("username").value.trim();
+        const password = document.getElementById("password").value;
+        const rememberMe = document.getElementById("rememberMe")?.checked || false;
+        const button = document.getElementById("btnSubmit");
+        const deviceId = getOrCreateDeviceId();
+
+        if (!identifier || !password) {
+            const fieldName = currentRole === "driver" ? t("label_phone").toLowerCase() : t("label_admin_id");
+            notifyUser("warn", "Required Fields", `Please enter your ${fieldName} and password.`);
+            return;
+        }
+
+        // Clean phone number prefix if driver entered +91 or spaces
+        if (currentRole === "driver") {
+            const digits = identifier.replace(/\D/g, "");
+            if (digits.length === 12 && digits.startsWith("91")) {
+                identifier = digits.slice(2);
+            } else if (digits.length === 10) {
+                identifier = digits;
+            }
+        }
+
+        const originalButtonContent = button.innerHTML;
+        button.disabled = true;
+        button.innerHTML = `
+            <span>${t("signing_in")}</span>
+            <svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true" style="animation: spin 1s linear infinite;"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" stroke-dasharray="32" stroke-dashoffset="16" fill="none"/></svg>
+        `;
+
+        try {
+            let response = await fetch(`${API_BASE}/auth/login/ops`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    identifier: identifier,
+                    password: password,
+                    device_id: deviceId
+                })
+            });
+
+            // Fallback while remote backend is completing its redeploy
+            if (response.status === 404) {
+                response = await fetch(`${API_BASE}/auth/login`, {
                     method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        identifier: identifier,
-                        password: password
-                    })
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ identifier: identifier, password: password, role: currentRole, device_id: deviceId })
                 });
-
-                // Fallback while remote backend is completing its redeploy
-                if (response.status === 404) {
-                    response = await fetch(`${API_BASE}/auth/login`, {
+                if (response.status === 401) {
+                    const fallbackRole = currentRole === "driver" ? "admin" : "driver";
+                    const altTry = await fetch(`${API_BASE}/auth/login`, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ identifier: identifier, password: password, role: currentRole })
+                        body: JSON.stringify({ identifier: identifier, password: password, role: fallbackRole, device_id: deviceId })
                     });
-                    if (response.status === 401) {
-                        const fallbackRole = currentRole === "driver" ? "admin" : "driver";
-                        const altTry = await fetch(`${API_BASE}/auth/login`, {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ identifier: identifier, password: password, role: fallbackRole })
-                        });
-                        if (altTry.ok) {
-                            response = altTry;
-                        }
+                    if (altTry.ok) {
+                        response = altTry;
                     }
                 }
+            }
 
-                const data = await response.json();
+            const data = await response.json();
 
-                if (!response.ok) {
-                    let errorTitle = "Invalid Credentials";
-                    let errorMsg = data.detail || "Please check your login details and try again.";
+            if (!response.ok) {
+                let errorTitle = "Invalid Credentials";
+                let errorMsg = data.detail || "Please check your login details and try again.";
 
-                    if (response.status === 403) {
-                        errorTitle = "Access Denied";
-                        errorMsg = data.detail || "Your account is not authorized or is inactive.";
-                    } else if (response.status === 429) {
-                        errorTitle = "Too Many Attempts";
-                        errorMsg = data.detail || "Account temporarily locked. Please try again later.";
-                    } else if (response.status >= 500) {
-                        errorTitle = "Server Unavailable";
-                        errorMsg = "Please try again in a few moments.";
-                    }
-
-                    throw new Error(errorMsg);
+                if (response.status === 403) {
+                    errorTitle = "Access Denied";
+                    errorMsg = data.detail || "Your account is not authorized or is inactive.";
+                } else if (response.status === 429) {
+                    errorTitle = "Too Many Attempts";
+                    errorMsg = data.detail || "Account temporarily locked. Please try again later.";
+                } else if (response.status >= 500) {
+                    errorTitle = "Server Unavailable";
+                    errorMsg = "Please try again in a few moments.";
                 }
 
-                if (!data.access_token) {
-                    throw new Error("Authentication response was incomplete.");
-                }
+                throw new Error(errorMsg);
+            }
 
-                localStorage.setItem("kambus_token", data.access_token);
-                localStorage.setItem("kambus_role", data.role);
-                localStorage.setItem("kambus_user_id", data.user_id);
-                if (data.student) {
-                    localStorage.setItem("kambus_student_dashboard", JSON.stringify(data.student));
-                }
-                if (data.driver) {
-                    localStorage.setItem("kambus_driver_dashboard", JSON.stringify(data.driver));
-                }
-                if (data.ops) {
-                    localStorage.setItem("kambus_ops_dashboard", JSON.stringify(data.ops));
-                }
+            if (!data.access_token) {
+                throw new Error("Authentication response was incomplete.");
+            }
 
-                if (rememberMe) {
-                    localStorage.setItem("kambus_remember", "true");
-                    localStorage.setItem("kambus_saved_identifier", identifier);
-                    localStorage.setItem("kambus_saved_role", currentRole);
+            localStorage.setItem("kambus_token", data.access_token);
+            localStorage.setItem("kambus_role", data.role);
+            localStorage.setItem("kambus_user_id", data.user_id);
+            if (data.student) {
+                localStorage.setItem("kambus_student_dashboard", JSON.stringify(data.student));
+            }
+            if (data.driver) {
+                localStorage.setItem("kambus_driver_dashboard", JSON.stringify(data.driver));
+            }
+            if (data.ops) {
+                localStorage.setItem("kambus_ops_dashboard", JSON.stringify(data.ops));
+            }
+
+            // Persist session to Android EncryptedSharedPreferences
+            if (window.AndroidSession && typeof window.AndroidSession.saveSession === "function") {
+                try {
+                    window.AndroidSession.saveSession(
+                        data.access_token,
+                        data.role,
+                        String(data.user_id || ""),
+                        JSON.stringify({
+                            driver: data.driver || null,
+                            ops: data.ops || null
+                        })
+                    );
+                } catch (e) {
+                    console.error("Failed to persist session to native secure storage:", e);
+                }
+            }
+
+            if (rememberMe) {
+                localStorage.setItem("kambus_remember", "true");
+                localStorage.setItem("kambus_saved_identifier", identifier);
+                localStorage.setItem("kambus_saved_role", currentRole);
+            } else {
+                localStorage.setItem("kambus_remember", "false");
+                localStorage.removeItem("kambus_saved_identifier");
+                localStorage.removeItem("kambus_saved_role");
+            }
+
+            notifyUser("ok", "Signed In", "Welcome to KAMBUS.");
+
+            setTimeout(() => {
+                if (data.role === "driver") {
+                    window.location.href = "driver.html";
+                } else if (data.role === "admin") {
+                    window.location.href = "admin.html";
                 } else {
-                    localStorage.setItem("kambus_remember", "false");
-                    localStorage.removeItem("kambus_saved_identifier");
-                    localStorage.removeItem("kambus_saved_role");
+                    window.location.href = currentRole === "admin" ? "admin.html" : "driver.html";
                 }
+            }, 150);
 
-                notifyUser("ok", "Signed In", "Welcome to KAMBUS.");
+        } catch (error) {
+            let displayMsg = error.message;
+            let displayTitle = "Invalid Credentials";
 
-                setTimeout(() => {
-                    if (data.role === "driver") {
-                        window.location.href = "driver.html";
-                    } else if (data.role === "admin") {
-                        window.location.href = "admin.html";
-                    } else {
-                        window.location.href = currentRole === "admin" ? "admin.html" : "driver.html";
-                    }
-                }, 150);
-
-            } catch (error) {
-                let displayMsg = error.message;
-                let displayTitle = "Invalid Credentials";
-
-                if (error.name === "TypeError" || error.message.includes("fetch") || error.message.includes("network")) {
-                    displayTitle = "Connection Error";
-                    displayMsg = "Please check your internet connection and try again.";
-                }
-
-                notifyUser("danger", displayTitle, displayMsg);
-                showLoginError(displayMsg);
-                button.disabled = false;
-                button.innerHTML = originalButtonContent;
+            if (error.name === "TypeError" || error.message.includes("fetch") || error.message.includes("network")) {
+                displayTitle = "Connection Error";
+                displayMsg = "Please check your internet connection and try again.";
             }
-        }
 
-        function notifyUser(type, title, message) {
-            if (typeof KambusNotify !== "undefined" && KambusNotify.notify) {
-                KambusNotify.notify({ type, title, message });
-            }
+            notifyUser("danger", displayTitle, displayMsg);
+            showLoginError(displayMsg);
+            button.disabled = false;
+            button.innerHTML = originalButtonContent;
         }
-    </script>
+    }
+
+    function notifyUser(type, title, message) {
+        if (typeof KambusNotify !== "undefined" && KambusNotify.notify) {
+            KambusNotify.notify({ type, title, message });
+        }
+    }
+</script>
 </body>
 </html>

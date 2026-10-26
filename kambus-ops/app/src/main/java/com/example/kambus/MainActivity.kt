@@ -41,6 +41,7 @@ import java.util.Locale
 class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
 
     private lateinit var webView: WebView
+    private lateinit var sessionManager: SecureSessionManager
     private var tts: TextToSpeech? = null
     private var pendingGeoCallback: GeolocationPermissions.Callback? = null
     private var pendingGeoOrigin: String? = null
@@ -63,6 +64,48 @@ class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
         private const val LOCATION_PERMISSION_REQUEST = 100
         private const val CAMERA_PERMISSION_REQUEST = 101
         private const val NOTIFICATION_PERMISSION_REQUEST = 102
+    }
+
+    inner class AndroidSessionBridge {
+        @JavascriptInterface
+        fun saveSession(token: String, role: String, userId: String, metadataJson: String?) {
+            sessionManager.saveSession(token, role, userId, metadataJson)
+        }
+
+        @JavascriptInterface
+        fun clearSession() {
+            sessionManager.clearSession()
+        }
+
+        @JavascriptInterface
+        fun isSessionValid(): Boolean {
+            return sessionManager.isSessionValid()
+        }
+
+        @JavascriptInterface
+        fun getSession(): String {
+            return sessionManager.getSessionJson()
+        }
+
+        @JavascriptInterface
+        fun getToken(): String? {
+            return if (sessionManager.isSessionValid()) sessionManager.getToken() else null
+        }
+
+        @JavascriptInterface
+        fun getRole(): String? {
+            return if (sessionManager.isSessionValid()) sessionManager.getRole() else null
+        }
+
+        @JavascriptInterface
+        fun getUserId(): String? {
+            return if (sessionManager.isSessionValid()) sessionManager.getUserId() else null
+        }
+
+        @JavascriptInterface
+        fun getDeviceId(): String {
+            return sessionManager.getDeviceId()
+        }
     }
 
     inner class AndroidTTSBridge {
@@ -93,6 +136,7 @@ class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
+        sessionManager = SecureSessionManager(this)
         ContextCompat.registerReceiver(
             this,
             fcmReceiver,
@@ -158,6 +202,7 @@ class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
         webView.setBackgroundColor(android.graphics.Color.TRANSPARENT)
 
         webView.addJavascriptInterface(AndroidTTSBridge(), "AndroidTTS")
+        webView.addJavascriptInterface(AndroidSessionBridge(), "AndroidSession")
 
         webView.webViewClient = object : WebViewClient() {
             override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
@@ -447,7 +492,7 @@ class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
         webView.evaluateJavascript(
             """
             (function () {
-              var jwt = localStorage.getItem('kambus_token');
+              var jwt = (window.AndroidSession && typeof window.AndroidSession.getToken === 'function' && window.AndroidSession.getToken()) || localStorage.getItem('kambus_token');
               if (!jwt) return;
                 fetch('https://kambus-backend.onrender.com/notifications/device-token', {
                 method: 'POST', headers: {'Content-Type':'application/json','Authorization':'Bearer ' + jwt},

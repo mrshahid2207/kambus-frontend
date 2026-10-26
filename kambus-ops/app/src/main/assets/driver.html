@@ -444,6 +444,15 @@
                 </div>
             </div>
 
+            <!-- Pre-trip Stop List Preview -->
+            <div id="preTripRouteStopListCard" class="kx-card p-3 space-y-2 hidden">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold uppercase tracking-wider text-ink-muted" data-i18n="route_stops_header">Route Stops</span>
+                    <span id="preTripStopListCount" class="text-xs font-mono text-ink-muted bg-bg border border-line px-2 py-0.5 rounded">0 stops</span>
+                </div>
+                <div id="preTripRouteStopList" class="space-y-1.5 max-h-48 overflow-y-auto"></div>
+            </div>
+
             <div class="space-y-2" role="group" aria-label="Trip type">
                 <p class="text-xs font-semibold uppercase tracking-wider text-ink-muted" data-i18n="select_trip_type">Select trip type</p>
                 <div class="grid grid-cols-2 gap-2">
@@ -585,6 +594,15 @@
                             </span>
                         </div>
                     </section>
+
+                    <!-- Route Stops List -->
+                    <div class="pt-1 border-t border-line">
+                        <div class="flex items-center justify-between pb-1 px-0.5">
+                            <span class="text-[11px] font-semibold uppercase tracking-wider text-ink-muted" data-i18n="route_stops_header">Route Stops</span>
+                            <span id="routeStopsCountBadge" class="text-[10px] font-mono text-ink-muted bg-surface border border-line px-1.5 py-0.5 rounded">0 stops</span>
+                        </div>
+                        <div id="driverRouteStopList" class="space-y-1.5 max-h-48 overflow-y-auto pr-0.5"></div>
+                    </div>
                 </div>
             </div>
 
@@ -798,6 +816,34 @@
                 <svg class="w-4 h-4" aria-hidden="true"><use href="icons.svg#icon-alert"/></svg>
                 <span data-i18n="transmit_sos_btn">Transmit Emergency SOS</span>
             </button>
+        </div>
+    <!-- Trusted Device Confirmation Modal -->
+    <div id="trustedDeviceModal" class="hidden fixed inset-0 z-[2300] bg-navy/60 backdrop-blur-xs flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="trustedDeviceTitle">
+        <div class="w-full max-w-sm kx-modal-window p-5 space-y-4">
+            <div class="flex items-center justify-between border-b border-line pb-3">
+                <div class="flex items-center gap-2">
+                    <svg class="w-4 h-4 text-brand" aria-hidden="true"><use href="icons.svg#icon-check"/></svg>
+                    <h3 id="trustedDeviceTitle" class="text-sm font-semibold text-navy" data-i18n="trusted_device_title">Trust this device?</h3>
+                </div>
+                <button type="button" onclick="dismissTrustedDeviceModal()" class="w-7 h-7 rounded-lg border border-line bg-bg text-ink-muted flex items-center justify-center hover:text-navy" aria-label="Dismiss">
+                    <svg class="w-3.5 h-3.5" aria-hidden="true"><use href="icons.svg#icon-xmark"/></svg>
+                </button>
+            </div>
+
+            <div class="p-3.5 rounded-xl bg-tint/10 border border-tint/30 text-xs text-navy leading-relaxed">
+                <p id="trustedDevicePromptText" data-i18n="trusted_device_prompt">
+                    Do you trust this device? If yes, this becomes your primary device and other sessions will be signed out.
+                </p>
+            </div>
+
+            <div class="flex flex-col gap-2 pt-1">
+                <button type="button" id="confirmTrustDeviceBtn" onclick="confirmTrustedDevice()" class="w-full py-2.5 bg-brand hover:bg-navy text-white text-xs font-semibold rounded-lg transition-colors shadow-xs" data-i18n="trusted_device_confirm">
+                    Yes, trust this device
+                </button>
+                <button type="button" id="dismissTrustDeviceBtn" onclick="dismissTrustedDeviceModal()" class="w-full py-2 bg-bg hover:bg-line/40 text-ink-muted text-xs font-medium rounded-lg transition-colors border border-line" data-i18n="trusted_device_dismiss">
+                    Not now
+                </button>
+            </div>
         </div>
     </div>
 

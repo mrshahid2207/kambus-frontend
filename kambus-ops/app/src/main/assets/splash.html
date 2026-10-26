@@ -21,17 +21,58 @@
     </style>
 </head>
 <body class="bg-navy w-full h-full min-h-screen flex flex-col items-center justify-center p-6 select-none overflow-hidden">
-    <main id="splashContent" class="splash-fade flex flex-col items-center justify-center gap-4">
-        <img src="brand/mark-white.svg" alt="KAMBUS" class="w-16 h-16">
-        <img src="brand/wordmark-white.svg" alt="KAMBUS" class="h-6">
+    <main id="splashContent" class="splash-fade flex flex-col items-center justify-center">
+        <img src="kambus-logo.svg" alt="KAMBUS" class="w-16 h-16" width="64" height="64">
     </main>
     <script>
         (function () {
             "use strict";
             function route() {
-                var token = localStorage.getItem("kambus_token") || localStorage.getItem("token");
-                var role = localStorage.getItem("kambus_role") || localStorage.getItem("role");
+                var token = null;
+                var role = null;
+                var userId = null;
+                var metadata = null;
+
+                // 1. Check native EncryptedSharedPreferences via AndroidSession bridge
+                if (window.AndroidSession && typeof window.AndroidSession.isSessionValid === "function") {
+                    try {
+                        if (window.AndroidSession.isSessionValid()) {
+                            var rawSession = window.AndroidSession.getSession();
+                            var session = rawSession ? JSON.parse(rawSession) : null;
+                            if (session && session.token && session.role) {
+                                token = session.token;
+                                role = session.role;
+                                userId = session.user_id;
+                                metadata = session.metadata;
+                            }
+                        } else {
+                            window.AndroidSession.clearSession();
+                            localStorage.removeItem("kambus_token");
+                            localStorage.removeItem("kambus_role");
+                            localStorage.removeItem("kambus_user_id");
+                            localStorage.removeItem("kambus_driver_dashboard");
+                            localStorage.removeItem("kambus_ops_dashboard");
+                        }
+                    } catch (e) {
+                        console.error("Error checking AndroidSession:", e);
+                    }
+                }
+
+                // 2. Fall back to localStorage (browser / PWA fallback)
+                if (!token || !role) {
+                    token = localStorage.getItem("kambus_token") || localStorage.getItem("token");
+                    role = localStorage.getItem("kambus_role") || localStorage.getItem("role");
+                    userId = localStorage.getItem("kambus_user_id");
+                }
+
                 if (token && role) {
+                    localStorage.setItem("kambus_token", token);
+                    localStorage.setItem("kambus_role", role);
+                    if (userId) localStorage.setItem("kambus_user_id", userId);
+                    if (metadata) {
+                        if (metadata.driver) localStorage.setItem("kambus_driver_dashboard", JSON.stringify(metadata.driver));
+                        if (metadata.ops) localStorage.setItem("kambus_ops_dashboard", JSON.stringify(metadata.ops));
+                    }
                     if (role === "driver") {
                         window.location.replace("driver.html");
                         return;
@@ -41,6 +82,7 @@
                         return;
                     }
                 }
+
                 setTimeout(function () {
                     var el = document.getElementById("splashContent");
                     if (el) el.classList.add("fade-out");

@@ -44,7 +44,12 @@
     // =========================================================================
 
     function getToken() {
-        return localStorage.getItem("kambus_token") || localStorage.getItem("token") || "";
+        let token = localStorage.getItem("kambus_token") || localStorage.getItem("token") || "";
+        if (!token && window.AndroidSession && typeof window.AndroidSession.getToken === "function") {
+            token = window.AndroidSession.getToken() || "";
+            if (token) localStorage.setItem("kambus_token", token);
+        }
+        return token;
     }
 
     function isSuperAdmin() {
@@ -226,6 +231,9 @@
                     localStorage.removeItem("kambus_token");
                     localStorage.removeItem("kambus_role");
                     localStorage.removeItem("kambus_ops_dashboard");
+                    if (window.AndroidSession && typeof window.AndroidSession.clearSession === "function") {
+                        try { window.AndroidSession.clearSession(); } catch (_) {}
+                    }
                     window.location.href = "index.html";
                     return;
                 }
@@ -329,6 +337,15 @@
         updateNavBadge("temp-stop-logs", "Top", hasAdminEntitlement("temporary_stop_change"));
         updateNavBadge("notifications", "Top", hasAdminEntitlement("admin_broadcasts"));
         updateNavBadge("messages", "Premium", hasAdminEntitlement("student_to_admin_query"));
+
+        // If currently viewing a section that was gated, reload that section view immediately
+        if (activeSection === "temp-stop-logs" && hasAdminEntitlement("temporary_stop_change")) {
+            loadTemporaryStopLogs();
+        } else if (activeSection === "notifications" && hasAdminEntitlement("admin_broadcasts")) {
+            initAnnouncementComposer();
+        } else if (activeSection === "messages" && hasAdminEntitlement("student_to_admin_query")) {
+            loadMessages();
+        }
     }
 
     // =========================================================================
@@ -402,6 +419,9 @@
                 }
                 loadTemporaryStopLogs();
                 break;
+            case "permanent-stop-requests":
+                loadPermanentStopRequests();
+                break;
             case "live-map":
                 setTimeout(initLiveMap, 100);
                 break;
@@ -447,6 +467,9 @@
                 break;
             case "admins":
                 loadAdmins();
+                break;
+            case "sessions":
+                loadSessions();
                 break;
             case "search":
                 document.getElementById("globalSearchInput")?.focus();
@@ -986,6 +1009,27 @@
             loadBuses();
         } catch (error) {
             showToast("error", "Update Failed", error.message);
+        }
+    }
+
+    function replaceCurrentBus() {
+        if (!currentViewingBusId) return;
+        const busId = currentViewingBusId;
+        document.getElementById("busDetailsModal")?.classList.add("hidden");
+        unlockScroll();
+        showSection("section-announcements");
+        const templateSelect = document.getElementById("announcementTemplateSelect");
+        if (templateSelect) {
+            templateSelect.value = "TEMPLATE_B";
+            updateAnnouncementTemplateFields();
+            setTimeout(() => {
+                const sourceSelect = document.getElementById("annFieldSourceBus");
+                if (sourceSelect) {
+                    sourceSelect.value = String(busId);
+                    previewAnnouncementText();
+                    calculateAffectedStudents();
+                }
+            }, 100);
         }
     }
 
@@ -2437,6 +2481,9 @@
 
     function getAnnouncementStyle(templateType) {
         const type = String(templateType || "").toUpperCase();
+        if (type === "CUSTOM") {
+            return { className: "announcement-card--general", icon: "📢", label: "Custom" };
+        }
         if (["TEMPLATE_C", "TEMPLATE_H"].includes(type)) {
             return { className: "announcement-card--urgent", icon: "⚠️", label: "Heads up" };
         }
@@ -2472,6 +2519,9 @@
         localStorage.removeItem("kambus_user_id");
         localStorage.removeItem("kambus_active_campus_id");
         localStorage.removeItem("kambus_ops_dashboard");
+        if (window.AndroidSession && typeof window.AndroidSession.clearSession === "function") {
+            try { window.AndroidSession.clearSession(); } catch (_) {}
+        }
         window.location.href = "index.html";
     }
 
@@ -3290,8 +3340,142 @@
             await apiRequest(`/admin/temporary-stop-requests/${requestId}`, { method: "DELETE" });
             showToast("success", "Deleted", "Temporary stop change deleted.");
             loadTemporaryStopLogs();
+            if (typeof loadPermanentStopRequests === "function") loadPermanentStopRequests();
         } catch (e) {
             showToast("error", "Delete Failed", e.message);
+        }
+    }
+
+    // =========================================================================
+    // 6e. PERMANENT STOP CHANGE REQUESTS
+    // =========================================================================
+
+    let cachedPermanentStopRequests = [];
+
+    async function loadPermanentStopRequests() {
+        const container = document.getElementById("permStopRequestsList");
+        const badge = document.getElementById("permStopNavBadge");
+        if (container) {
+            container.innerHTML = `<tr><td colspan="8" class="p-8 text-center text-xs text-slate-400">Loading permanent stop change requests...</td></tr>`;
+        }
+
+        try {
+            const data = await apiRequest("/admin/permanent-stop-requests");
+            cachedPermanentStopRequests = Array.isArray(data) ? data : [];
+            const pendingCount = cachedPermanentStopRequests.filter(r => r.status === "pending_admin_approval").length;
+            if (badge) {
+                if (pendingCount > 0) {
+                    badge.textContent = String(pendingCount);
+                    badge.classList.remove("hidden");
+                } else {
+                    badge.classList.add("hidden");
+                }
+            }
+            filterPermanentStopRequests();
+        } catch (e) {
+            if (container) {
+                container.innerHTML = `<tr><td colspan="8" class="p-8 text-center text-xs text-danger">Failed to load permanent stop change requests: ${escapeHtml(e.message)}</td></tr>`;
+            }
+        }
+    }
+
+    function filterPermanentStopRequests() {
+        const container = document.getElementById("permStopRequestsList");
+        if (!container) return;
+
+        const filterStatus = document.getElementById("permStopFilterStatus")?.value || "all";
+        let requests = [...cachedPermanentStopRequests];
+
+        if (filterStatus !== "all") {
+            requests = requests.filter(r => r.status === filterStatus);
+        }
+
+        if (requests.length === 0) {
+            container.innerHTML = `<tr><td colspan="8" class="p-8 text-center text-xs text-slate-400">No permanent stop change requests found.</td></tr>`;
+            return;
+        }
+
+        container.innerHTML = requests.map(r => {
+            const statusBadge = r.status === "approved"
+                ? '<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800">APPROVED</span>'
+                : r.status === "pending_admin_approval"
+                ? '<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-800">PENDING APPROVAL</span>'
+                : r.status === "rejected"
+                ? '<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-100 text-rose-800">REJECTED</span>'
+                : `<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-slate-100 text-slate-600">${escapeHtml(r.status.toUpperCase())}</span>`;
+
+            const reasonDisplay = r.admin_notes
+                ? `<span class="text-slate-700 font-medium">${escapeHtml(r.reason || '—')}</span><div class="text-[10px] text-rose-600 mt-0.5 font-semibold">Note: ${escapeHtml(r.admin_notes)}</div>`
+                : `<span class="text-slate-600">${escapeHtml(r.reason || '—')}</span>`;
+
+            const isPending = r.status === "pending_admin_approval" || r.status === "pending";
+            const reqId = Number(r.request_id || r.id);
+            const actions = isPending
+                ? `
+                    <button type="button" onclick="window.KambusAdmin.approvePermanentStopRequest(${reqId})" style="display:inline-flex;align-items:center;justify-content:center;background:#059669;color:#ffffff;padding:5px 10px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;border:none;margin-right:6px;box-shadow:0 1px 2px rgba(0,0,0,0.05);" title="Approve Request">Approve</button>
+                    <button type="button" onclick="window.KambusAdmin.rejectPermanentStopRequest(${reqId})" style="display:inline-flex;align-items:center;justify-content:center;background:#dc2626;color:#ffffff;padding:5px 10px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;border:none;box-shadow:0 1px 2px rgba(0,0,0,0.05);" title="Reject Request">Reject</button>
+                  `
+                : `
+                    <span class="text-[11px] text-slate-400 font-semibold">—</span>
+                  `;
+
+            let desiredDisplay = `<span class="font-bold text-navy">${escapeHtml(r.desired_stop_name || '—')}</span>`;
+            if (r.morning_stop_name || r.evening_stop_name) {
+                const parts = [];
+                if (r.morning_stop_name) {
+                    parts.push(`<div class="text-[11px]"><span class="text-emerald-700 font-bold uppercase text-[10px]">Morning:</span> <span class="font-bold text-slate-800">${escapeHtml(r.morning_stop_name)}</span></div>`);
+                }
+                if (r.evening_stop_name) {
+                    parts.push(`<div class="text-[11px]"><span class="text-rose-700 font-bold uppercase text-[10px]">Evening:</span> <span class="font-bold text-slate-800">${escapeHtml(r.evening_stop_name)}</span></div>`);
+                }
+                desiredDisplay = parts.join("");
+            }
+            if (r.selected_latitude && r.selected_longitude) {
+                desiredDisplay += `<div class="text-[10px] text-slate-400 font-mono mt-0.5">📍 ${Number(r.selected_latitude).toFixed(5)}, ${Number(r.selected_longitude).toFixed(5)}</div>`;
+            }
+
+            return `
+                <tr class="border-b border-slate-100 hover:bg-slate-50/50">
+                    <td class="px-4 py-3 font-bold text-slate-900">
+                        ${escapeHtml(r.student_name)}
+                        <span class="text-slate-400 font-normal">(${escapeHtml(r.student_roll_number || '—')})</span>
+                    </td>
+                    <td class="px-4 py-3 text-slate-600">${escapeHtml(r.original_stop_name || '—')}</td>
+                    <td class="px-4 py-3">${desiredDisplay}</td>
+                    <td class="px-4 py-3 font-bold text-slate-800">${escapeHtml(r.target_bus_number ? 'Bus ' + r.target_bus_number : '—')}</td>
+                    <td class="px-4 py-3 font-mono text-[11px] text-slate-500">${escapeHtml(r.effective_date || '—')}</td>
+                    <td class="px-4 py-3 text-xs max-w-xs">${reasonDisplay}</td>
+                    <td class="px-4 py-3">${statusBadge}</td>
+                    <td class="px-4 py-3 text-right whitespace-nowrap">${actions}</td>
+                </tr>
+            `;
+        }).join("");
+    }
+
+    async function approvePermanentStopRequest(requestId) {
+        try {
+            await apiRequest(`/admin/permanent-stop-requests/${requestId}/approve`, { method: "POST" });
+            showToast("success", "Approved", "Permanent stop change approved. Student regular stop updated.");
+            loadPermanentStopRequests();
+            if (typeof loadTemporaryStopLogs === "function") loadTemporaryStopLogs();
+        } catch (e) {
+            showToast("error", "Approval Failed", e.message);
+        }
+    }
+
+    async function rejectPermanentStopRequest(requestId) {
+        try {
+            const reason = prompt("Enter reason for rejection (optional):");
+            if (reason === null) return;
+            await apiRequest(`/admin/permanent-stop-requests/${requestId}/reject`, {
+                method: "POST",
+                body: JSON.stringify({ reason: reason.trim() || undefined })
+            });
+            showToast("info", "Rejected", "Permanent stop change request rejected.");
+            loadPermanentStopRequests();
+            if (typeof loadTemporaryStopLogs === "function") loadTemporaryStopLogs();
+        } catch (e) {
+            showToast("error", "Rejection Failed", e.message);
         }
     }
 
@@ -3476,21 +3660,31 @@
         calculateAffectedStudents();
     }
 
+    async function loadAnnouncementStudentsDropdown() {
+        const studentSelect = document.getElementById("announcementTargetStudent");
+        if (!studentSelect || studentSelect.options.length > 1) return;
+        try {
+            const data = await apiRequest("/admin/students");
+            const students = data.students || [];
+            studentSelect.innerHTML = '<option value="">-- Select Student --</option>' +
+                students.map(s => `<option value="${s.id || s.student_id}">${escapeHtml(s.name || s.student_name)} (${escapeHtml(s.roll_number)})</option>`).join("");
+        } catch (e) {
+            console.warn("Failed to load students for announcement target:", e);
+        }
+    }
+
     function onAnnouncementTargetTypeChanged() {
         const targetType = document.getElementById("announcementTargetType")?.value || "all";
         const busCol = document.getElementById("targetBusCol");
         const routeCol = document.getElementById("targetRouteCol");
+        const studentCol = document.getElementById("targetStudentCol");
 
-        if (busCol && routeCol) {
-            if (targetType === "bus") {
-                busCol.classList.remove("hidden");
-                routeCol.classList.add("hidden");
-            } else if (targetType === "route") {
-                routeCol.classList.remove("hidden");
-                busCol.classList.add("hidden");
-            } else {
-                busCol.classList.add("hidden");
-                routeCol.classList.add("hidden");
+        if (busCol) busCol.classList.toggle("hidden", targetType !== "bus");
+        if (routeCol) routeCol.classList.toggle("hidden", targetType !== "route");
+        if (studentCol) {
+            studentCol.classList.toggle("hidden", targetType !== "student");
+            if (targetType === "student") {
+                loadAnnouncementStudentsDropdown();
             }
         }
         calculateAffectedStudents();
@@ -3499,13 +3693,16 @@
 
     function updateAnnouncementTemplateFields() {
         const select = document.getElementById("announcementTemplateSelect");
-        const templateKey = select?.value || "TEMPLATE_A";
+        const templateKey = select?.value || "CUSTOM";
         const container = document.getElementById("templateFieldsContainer");
         if (!container) return;
 
         let fieldsHtml = "";
 
         switch (templateKey) {
+            case "CUSTOM":
+                fieldsHtml = `<p class="text-xs text-ink-muted">Compose your custom announcement headline and message below.</p>`;
+                break;
             case "TEMPLATE_A":
                 fieldsHtml = `
                     <div class="grid grid-cols-2 gap-3">
@@ -3521,6 +3718,7 @@
                 `;
                 break;
             case "TEMPLATE_B":
+            case "TEMPLATE_D":
                 fieldsHtml = `
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
@@ -3546,6 +3744,12 @@
                             <input type="date" id="annFieldEndDate" value="${new Date().toISOString().split('T')[0]}" class="w-full p-2.5 border border-slate-300 rounded text-xs" onchange="window.KambusAdmin.previewAnnouncementText()">
                         </div>
                     </div>
+                    <div class="mt-2.5">
+                        <label class="flex items-center gap-2 text-xs text-navy font-semibold cursor-pointer">
+                            <input type="checkbox" id="annFieldMarkUnderRepair" class="rounded border-slate-300">
+                            <span>Mark source bus as under repair / inactive</span>
+                        </label>
+                    </div>
                 `;
                 break;
             case "TEMPLATE_C":
@@ -3554,20 +3758,6 @@
                     <div>
                         <label class="block text-xs font-bold text-slate-700 mb-1">Effective Date</label>
                         <input type="date" id="annFieldDate" value="${new Date().toISOString().split('T')[0]}" class="w-full p-2.5 border border-slate-300 rounded text-xs" oninput="window.KambusAdmin.previewAnnouncementText()">
-                    </div>
-                `;
-                break;
-            case "TEMPLATE_D":
-                fieldsHtml = `
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-xs font-bold text-slate-700 mb-1">Replacement Bus</label>
-                            <input type="text" id="annFieldReplacementBus" placeholder="e.g. 8" value="8" class="w-full p-2.5 border border-slate-300 rounded text-xs" oninput="window.KambusAdmin.previewAnnouncementText()">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-700 mb-1">Date</label>
-                            <input type="date" id="annFieldDate" value="${new Date().toISOString().split('T')[0]}" class="w-full p-2.5 border border-slate-300 rounded text-xs" oninput="window.KambusAdmin.previewAnnouncementText()">
-                        </div>
                     </div>
                 `;
                 break;
@@ -3591,7 +3781,7 @@
         }
 
         container.innerHTML = fieldsHtml;
-        if (templateKey === "TEMPLATE_B") {
+        if (templateKey === "TEMPLATE_B" || templateKey === "TEMPLATE_D") {
             loadBusesDropdown().then(previewAnnouncementText);
         }
         previewAnnouncementText();
@@ -3599,7 +3789,10 @@
 
     function previewAnnouncementText() {
         const select = document.getElementById("announcementTemplateSelect");
-        const templateKey = select?.value || "TEMPLATE_A";
+        const templateKey = select?.value || "CUSTOM";
+        if (templateKey === "CUSTOM") {
+            return;
+        }
         const config = ANNOUNCEMENT_TEMPLATES[templateKey] || ANNOUNCEMENT_TEMPLATES.TEMPLATE_A;
 
         let msg = config.template;
@@ -3622,11 +3815,13 @@
         const replacementBusInput = document.getElementById("annFieldReplacementBus");
         const sourceBusNumber = sourceBusSelect?.options[sourceBusSelect.selectedIndex]?.text.match(/Bus\s+([^\s(]+)/)?.[1] || "Source Bus";
         const replacementBusNumber = replacementBusSelect?.options[replacementBusSelect.selectedIndex]?.text.match(/Bus\s+([^\s(]+)/)?.[1] || replacementBusInput?.value || "Replacement Bus";
-        const startDate = document.getElementById("annFieldStartDate")?.value || "today";
+        const startDate = document.getElementById("annFieldStartDate")?.value || document.getElementById("annFieldDate")?.value || "today";
         const endDate = document.getElementById("annFieldEndDate")?.value || startDate;
 
         if (templateKey === "TEMPLATE_B") {
             msg = `🔄 Plot twist, Bus ${sourceBusNumber} fam — you're riding Bus ${replacementBusNumber} from ${startDate} to ${endDate}. Same squad, new chariot.`;
+        } else if (templateKey === "TEMPLATE_D") {
+            msg = `🔁 Bus ${sourceBusNumber} tagged out, Bus ${replacementBusNumber} tagged in — ${startDate} to ${endDate}. Don't get on the wrong one!`;
         }
 
         msg = msg.replace("{replacement_bus}", replacementBusNumber);
@@ -3645,7 +3840,7 @@
     }
 
     async function calculateAffectedStudents() {
-        const templateKey = document.getElementById("announcementTemplateSelect")?.value || "TEMPLATE_A";
+        const templateKey = document.getElementById("announcementTemplateSelect")?.value || "CUSTOM";
         let targetType = document.getElementById("announcementTargetType")?.value || "all";
         let targetId = null;
 
@@ -3657,6 +3852,9 @@
             if (targetId) targetId = parseInt(targetId);
         } else if (targetType === "route") {
             targetId = document.getElementById("announcementTargetRoute")?.value || null;
+            if (targetId) targetId = parseInt(targetId);
+        } else if (targetType === "student") {
+            targetId = document.getElementById("announcementTargetStudent")?.value || null;
             if (targetId) targetId = parseInt(targetId);
         }
 
@@ -3670,8 +3868,9 @@
             const countDisplay = document.getElementById("announcementRecipientCount");
             const btn = document.getElementById("btnBroadcastAnnouncement");
 
+            const label = targetType.includes("parent") ? "parent" : "student";
             if (countDisplay) {
-                countDisplay.textContent = `Reach: ${count} student${count === 1 ? "" : "s"}`;
+                countDisplay.textContent = `Reach: ${count} ${label}${count === 1 ? "" : "s"}`;
             }
             if (btn) {
                 btn.innerHTML = `<svg class="w-4 h-4 shrink-0 inline mr-1.5" aria-hidden="true"><use href="icons.svg#icon-paper-plane"/></svg> Send update to ${count}`;
@@ -3692,6 +3891,7 @@
 
         if (targetType === "bus") targetId = parseInt(document.getElementById("announcementTargetBus")?.value) || null;
         if (targetType === "route") targetId = parseInt(document.getElementById("announcementTargetRoute")?.value) || null;
+        if (targetType === "student") targetId = parseInt(document.getElementById("announcementTargetStudent")?.value) || null;
 
         if (!title || !message) {
             showToast("error", "Validation", "Title and message are required.");
@@ -3700,11 +3900,12 @@
 
         try {
             let res;
-            if (templateKey === "TEMPLATE_B") {
+            if (templateKey === "TEMPLATE_B" || templateKey === "TEMPLATE_D") {
                 const sourceBusId = parseInt(document.getElementById("annFieldSourceBus")?.value) || null;
                 const targetBusId = parseInt(document.getElementById("annFieldReplacementBusSelect")?.value) || null;
                 const startDate = document.getElementById("annFieldStartDate")?.value;
                 const endDate = document.getElementById("annFieldEndDate")?.value;
+                const markUnderRepair = Boolean(document.getElementById("annFieldMarkUnderRepair")?.checked);
 
                 if (!sourceBusId || !targetBusId || !startDate || !endDate) {
                     showToast("error", "Validation", "Source bus, replacement bus, start date, and end date are required.");
@@ -3720,7 +3921,19 @@
                         end_date: endDate,
                         title,
                         message,
-                        template_type: "TEMPLATE_B"
+                        template_type: templateKey,
+                        mark_source_under_repair: markUnderRepair
+                    }
+                });
+            } else if (templateKey === "CUSTOM") {
+                res = await apiRequest("/admin/notifications/custom", {
+                    method: "POST",
+                    body: {
+                        title: title,
+                        body: message,
+                        message: message,
+                        target_type: targetType,
+                        target_id: targetId
                     }
                 });
             } else {
@@ -3736,13 +3949,15 @@
                 });
             }
 
-            if (res.delivered === false) {
+            if (res.failure_count && res.failure_count > 0) {
+                showToast("warning", "Partial Reassignment", res.message);
+            } else if (res.delivered === false) {
                 showToast("warning", "Saved, but not delivered", res.warning || res.message);
             } else {
                 showToast("success", "Sent! 🎉", res.message);
             }
             loadAnnouncementHistory();
-            if (templateKey === "TEMPLATE_B") loadAdminBusChanges();
+            if (templateKey === "TEMPLATE_B" || templateKey === "TEMPLATE_D") loadAdminBusChanges();
         } catch (error) {
             showToast("error", "Couldn’t send", error.message);
         }
@@ -4015,6 +4230,11 @@
                 try {
                     if (event.data === "pong") return;
                     const data = JSON.parse(event.data);
+
+                    if (data.type === "entitlements_updated") {
+                        loadAdminCampusEntitlements();
+                        return;
+                    }
 
                     if (data.type === "emergency_sos") {
                         showToast("error", data.title || "URGENT EMERGENCY SOS", data.message);
@@ -4502,7 +4722,9 @@
             showToast("success", "Campus Updated", `Campus "${name}" properties updated successfully.`);
             document.getElementById("editCampusModal")?.classList.add("hidden");
             await loadCampuses();
-            await loadTopCampusSwitcher();
+            if (getSelectedCampusId() === parseInt(campusId, 10)) {
+                await loadAdminCampusEntitlements(parseInt(campusId, 10));
+            }
         } catch (e) {
             if (errDiv) {
                 errDiv.textContent = e.message || "Failed to update campus.";
@@ -4784,6 +5006,97 @@
     }
 
     // =========================================================================
+    // ACTIVE SESSIONS & FORCE LOGOUT
+    // =========================================================================
+
+    async function loadSessions() {
+        const container = document.getElementById("sessionsListContainer");
+        if (!container) return;
+
+        try {
+            container.innerHTML = `<div class="p-8 text-center text-xs text-ink-muted">Loading active sessions...</div>`;
+            const sessions = await apiRequest("/admin/sessions");
+            if (!Array.isArray(sessions) || sessions.length === 0) {
+                container.innerHTML = `<div class="kx-empty-card text-xs text-slate-400">No active sessions found.</div>`;
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="bg-white border border-slate-200/90 rounded overflow-hidden shadow-xs">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs border-collapse">
+                            <thead class="bg-slate-50 border-b border-slate-200/80 text-[11px] font-black text-slate-500 uppercase tracking-wider">
+                                <tr>
+                                    <th class="p-3.5">User</th>
+                                    <th class="p-3.5">Role</th>
+                                    <th class="p-3.5">Campus</th>
+                                    <th class="p-3.5">Session ID</th>
+                                    <th class="p-3.5">Last Login</th>
+                                    <th class="p-3.5 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                ${sessions.map(s => {
+                                    const roleBadge = s.role === 'driver'
+                                        ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">Driver (${escapeHtml(s.driver_code || '')})</span>`
+                                        : (s.role === 'super_admin'
+                                            ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-50 text-purple-800 border border-purple-200">Super Admin</span>`
+                                            : `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-800 border border-blue-200">Admin</span>`);
+                                    const campusLabel = s.campus_name || (s.campus_id ? `Campus ${s.campus_id}` : 'Platform');
+                                    const formattedTime = s.last_login_at ? new Date(s.last_login_at).toLocaleString() : 'Recent';
+                                    const sessionDisplay = s.session_id ? (s.session_id.substring(0, 8) + '...') : '-';
+
+                                    return `
+                                    <tr class="hover:bg-slate-50/80 transition" id="session-row-${escapeHtml(String(s.user_id))}">
+                                        <td class="p-3.5">
+                                            <span class="font-bold text-slate-900">${escapeHtml(s.name)}</span>
+                                            <p class="text-[11px] text-slate-400 font-mono">ID: ${escapeHtml(String(s.user_id))}</p>
+                                        </td>
+                                        <td class="p-3.5">${roleBadge}</td>
+                                        <td class="p-3.5">
+                                            <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">${escapeHtml(campusLabel)}</span>
+                                        </td>
+                                        <td class="p-3.5 font-mono text-[11px] text-slate-600" title="${escapeHtml(s.session_id || '')}">
+                                            <code>${escapeHtml(sessionDisplay)}</code>
+                                        </td>
+                                        <td class="p-3.5 text-slate-600">${escapeHtml(formattedTime)}</td>
+                                        <td class="p-3.5 text-right">
+                                            <button type="button" onclick="window.KambusAdmin.forceLogoutSession('${escapeHtml(s.role)}', ${Number(s.user_id)})"
+                                                class="px-2.5 py-1 bg-red-50 hover:bg-red-100 text-red-700 font-semibold text-[11px] rounded border border-red-200 transition flex items-center gap-1 ml-auto">
+                                                <svg class="w-3.5 h-3.5" aria-hidden="true"><use href="icons.svg#icon-logout"/></svg>
+                                                <span>Force Logout</span>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    `;
+                                }).join("")}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        } catch (e) {
+            container.innerHTML = `<div class="p-4 text-xs text-red-500">${escapeHtml(e.message)}</div>`;
+        }
+    }
+
+    async function forceLogoutSession(role, userId) {
+        if (!confirm(`Are you sure you want to force logout this ${role}? Their active session will be invalidated immediately.`)) {
+            return;
+        }
+
+        try {
+            await apiRequest(`/admin/sessions/${encodeURIComponent(role)}/${encodeURIComponent(userId)}/force-logout`, {
+                method: "POST"
+            });
+            showToast("success", "Session Terminated", `Successfully forced logout for ${role}.`);
+            await loadSessions();
+        } catch (e) {
+            showToast("error", "Logout Failed", e.message);
+        }
+    }
+
+    // =========================================================================
     // INITIALIZATION ON DOM READY
     // =========================================================================
 
@@ -4795,6 +5108,19 @@
         initSuperAdminCampusSelector();
         initAdminWebSocket();
         showSection("dashboard");
+
+        // Live Entitlements auto-refresh on foreground / interval (mitigation for tier upgrades)
+        document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === "visible") {
+                loadAdminCampusEntitlements();
+            }
+        });
+        window.addEventListener("focus", () => {
+            loadAdminCampusEntitlements();
+        });
+        setInterval(() => {
+            loadAdminCampusEntitlements();
+        }, 60000);
 
         // Preload super admin campuses & wire slug listener
         if (isSuperAdmin()) {
@@ -5050,6 +5376,7 @@
         handleAdminLogout,
         openAddBusModal,
         openBusModal,
+        replaceCurrentBus,
         submitUpdateBusGeneralProps,
         deleteBus,
         submitAddBus,
@@ -5102,6 +5429,10 @@
         approveTemporaryStopRequest,
         rejectTemporaryStopRequest,
         deleteTemporaryStopChange,
+        loadPermanentStopRequests,
+        filterPermanentStopRequests,
+        approvePermanentStopRequest,
+        rejectPermanentStopRequest,
         openAddAdminModal,
         submitAddAdmin,
         toggleAdminStatus,
@@ -5136,7 +5467,9 @@
         toggleReplyForm,
         submitMessageReply,
         handleCampusContextChange,
-        initSuperAdminCampusSelector
+        initSuperAdminCampusSelector,
+        loadSessions,
+        forceLogoutSession
     };
 
 })();
