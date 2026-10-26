@@ -10,11 +10,13 @@
         if (typeof window.API_BASE !== "undefined" && window.API_BASE) {
             return window.API_BASE;
         }
-        return window.location.origin.includes(":8000")
-            ? window.location.origin
-            : (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
-                ? `http://${window.location.hostname}:8000`
-                : window.location.origin);
+        if (typeof window.KAMBUS_API_BASE !== "undefined" && window.KAMBUS_API_BASE) {
+            return window.KAMBUS_API_BASE;
+        }
+        if (typeof window.location !== "undefined" && window.location.origin && window.location.origin.includes(":8000")) {
+            return window.location.origin;
+        }
+        return "https://kambus-backend.onrender.com";
     }
 
     function getAuthToken() {
@@ -845,7 +847,7 @@
         modalDiv.id = "temporaryStopModal";
         modalDiv.className = "kambus-modal-backdrop hidden";
         modalDiv.innerHTML = `
-        <div class="kx-sheet kx-sheet--sky kx-sheet--wide">
+        <div class="kx-sheet kx-sheet--sky kx-modal-window kambus-modal-window" style="max-width: 420px; border-radius: 16px !important; max-height: calc(100dvh - 48px); overflow: hidden; margin: auto;">
             <div class="kx-head">
                 <div class="kx-head-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></div>
                 <div class="kx-head-text">

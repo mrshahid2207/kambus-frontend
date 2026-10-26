@@ -4,6 +4,8 @@
 
 const API_BASE = "https://kambus-backend.onrender.com";
 const WS_BASE = API_BASE.replace(/^http/, "ws");
+window.API_BASE = API_BASE;
+window.WS_BASE = WS_BASE;
 
 // Sign out and return to the login screen when the server rejects the saved token
 (function () {
@@ -19,6 +21,9 @@ const WS_BASE = API_BASE.replace(/^http/, "ws");
                 localStorage.removeItem("kambus_role");
                 localStorage.removeItem("kambus_user_id");
                 localStorage.removeItem("kambus_student_dashboard");
+                if (window.AndroidSession && typeof window.AndroidSession.clearSession === "function") {
+                    try { window.AndroidSession.clearSession(); } catch (_) {}
+                }
                 window.location.replace("index.html");
             }
         } catch (e) { /* never break the original request */ }
@@ -122,7 +127,12 @@ const FALLBACK_SPEED_KMH = 15;
 // ========================================================================
 
 function getToken() {
-    return localStorage.getItem("kambus_token");
+    let token = localStorage.getItem("kambus_token");
+    if (!token && window.AndroidSession && typeof window.AndroidSession.getToken === "function") {
+        token = window.AndroidSession.getToken();
+        if (token) localStorage.setItem("kambus_token", token);
+    }
+    return token;
 }
 
 // ========================================================================
@@ -1583,7 +1593,17 @@ function showDriverComplaintAlert(pollData) {
         return;
     }
 
-    const driverName = pollData.driver_name || pollData.driverName || "Assigned Driver";
+    let driverName = pollData.driver_name || pollData.driverName || "Assigned Driver";
+    if (typeof driverName === "string" && (
+        driverName === "Driver #None" ||
+        driverName === "Driver #null" ||
+        driverName === "Driver #undefined" ||
+        driverName.trim() === "Driver #" ||
+        driverName.trim() === "None" ||
+        driverName.trim() === "null"
+    )) {
+        driverName = "Assigned Driver";
+    }
     const busNumber = pollData.bus || pollData.bus_number || pollData.busNumber || (pollData.busId || pollData.bus_id ? `Bus #${pollData.busId || pollData.bus_id}` : "Assigned Bus");
     const rawReason = pollData.reason || pollData.category || "other";
     const rawDescription = pollData.description || pollData.complaint_text || pollData.complaintText || null;
@@ -1668,6 +1688,10 @@ if (wsReconnectTimer) {
             try {
                 if (event.data === "pong") return;
                 const data = JSON.parse(event.data);
+                if (data.type === "entitlements_updated") {
+                    loadCampusEntitlements();
+                    return;
+                }
                 if (data.type === "alternative_bus_allotted") {
                     clearStudentAssignmentTracking();
                     loadStudentBus();
@@ -2240,6 +2264,63 @@ function resetDriverComplaintModal() {
     });
 }
 
+let allBusPeers = [];
+
+if (typeof escapeHtml !== "function") {
+    var escapeHtml = function(str) {
+        if (str == null) return "";
+        return String(str)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    };
+}
+
+function formatPeerPrivacyName(rawName, rollNumber) {
+    const roll = (rollNumber !== null && rollNumber !== undefined && String(rollNumber).trim())
+        ? String(rollNumber).trim()
+        : "No roll";
+    const name = (rawName || "").trim();
+    if (!name) {
+        return `Student (${roll})`;
+    }
+    const parts = name.split(/\s+/).filter(Boolean);
+    if (parts.length === 1) {
+        return `${parts[0]} (${roll})`;
+    }
+    const firstName = parts[0];
+    const lastWord = parts[parts.length - 1];
+    const lastInitial = lastWord.charAt(0).toUpperCase();
+    return `${firstName} ${lastInitial}. (${roll})`;
+}
+window.formatPeerPrivacyName = formatPeerPrivacyName;
+
+function renderComplaintTargetStudents(peers, audience) {
+    const select = document.getElementById("complaintTargetStudentSelect");
+    if (!select) return;
+
+    let filtered = peers || [];
+    const aud = (audience || "").toLowerCase();
+    if (aud === "girls") {
+        filtered = filtered.filter(p => !p.gender || p.gender.toLowerCase() === "female");
+    } else if (aud === "boys") {
+        filtered = filtered.filter(p => !p.gender || p.gender.toLowerCase() === "male");
+    }
+
+    const currentVal = select.value;
+    select.innerHTML = `<option value="">-- Select student on your bus --</option>` +
+        filtered.map(p => `<option value="${p.student_id}">${escapeHtml(formatPeerPrivacyName(p.name, p.roll_number))}</option>`).join("");
+    if (currentVal && filtered.some(p => String(p.student_id) === String(currentVal))) {
+        select.value = currentVal;
+    }
+}
+window.renderComplaintTargetStudents = renderComplaintTargetStudents;
+if (typeof module !== "undefined" && module.exports) {
+    module.exports = { formatPeerPrivacyName, renderComplaintTargetStudents, escapeHtml };
+}
+
 let complaintTargetType = "driver";
 
 window.setComplaintTargetType = async function(type) {
@@ -2296,26 +2377,31 @@ window.setComplaintTargetType = async function(type) {
 
         updateComplaintAudienceVisibility();
 
-        const select = document.getElementById("complaintTargetStudentSelect");
-        if (select && select.options.length <= 1) {
-            const token = typeof getToken === "function" ? getToken() : localStorage.getItem("kambus_token");
-            if (token) {
-                try {
-                    const res = await fetch(`${API_BASE}/student/bus-peers`, {
-                        headers: { "Authorization": `Bearer ${token}` }
-                    });
-                    if (res.ok) {
-                        const data = await res.json();
-                        if (data.gender_restriction) {
-                            updateComplaintAudienceVisibility(data.gender_restriction);
-                        }
-                        const peers = data.peers || [];
-                        select.innerHTML = `<option value="">-- Select student on your bus --</option>` +
-                            peers.map(p => `<option value="${p.student_id}">${escapeHtml(p.name)} (${escapeHtml(p.roll_number || 'No roll')})</option>`).join("");
+        const audienceSelect = document.getElementById("studentComplaintAudienceSelect");
+        if (audienceSelect && !audienceSelect.dataset.peerFilterBound) {
+            audienceSelect.dataset.peerFilterBound = "true";
+            audienceSelect.addEventListener("change", () => {
+                renderComplaintTargetStudents(allBusPeers, audienceSelect.value);
+            });
+        }
+
+        const token = typeof getToken === "function" ? getToken() : localStorage.getItem("kambus_token");
+        if (token) {
+            try {
+                const res = await fetch(`${API_BASE}/student/bus-peers`, {
+                    headers: { "Authorization": `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.gender_restriction) {
+                        updateComplaintAudienceVisibility(data.gender_restriction);
                     }
-                } catch (e) {
-                    console.error("Failed to load bus peers:", e);
+                    allBusPeers = data.peers || [];
+                    window.allBusPeers = allBusPeers;
+                    renderComplaintTargetStudents(allBusPeers, audienceSelect ? audienceSelect.value : "both");
                 }
+            } catch (e) {
+                console.error("Failed to load bus peers:", e);
             }
         }
     }
@@ -2782,35 +2868,50 @@ function showPlanUpgradePrompt(featureName, requiredTier, benefitDescription) {
 
 function applyStudentFeatureGating() {
     const btnWait = document.getElementById("btnWaitRequest");
-    if (btnWait && !hasEntitlement("wait_request")) {
-        btnWait.classList.add("plan-gated-feature");
-        if (!btnWait.querySelector(".plan-gate-badge")) {
-            const badge = document.createElement("span");
-            badge.className = "plan-gate-badge text-[9px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded ml-1.5 inline-flex items-center gap-0.5";
-            badge.innerHTML = `<svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg> Top`;
-            btnWait.appendChild(badge);
+    if (btnWait) {
+        if (!hasEntitlement("wait_request")) {
+            btnWait.classList.add("plan-gated-feature");
+            if (!btnWait.querySelector(".plan-gate-badge")) {
+                const badge = document.createElement("span");
+                badge.className = "plan-gate-badge text-[9px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded ml-1.5 inline-flex items-center gap-0.5";
+                badge.innerHTML = `<svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg> Top`;
+                btnWait.appendChild(badge);
+            }
+        } else {
+            btnWait.classList.remove("plan-gated-feature");
+            btnWait.querySelectorAll(".plan-gate-badge").forEach(el => el.remove());
         }
     }
 
     const btnTemp = document.getElementById("btnTemporaryStop");
-    if (btnTemp && !hasEntitlement("temporary_stop_change")) {
-        btnTemp.classList.add("plan-gated-feature");
-        if (!btnTemp.querySelector(".plan-gate-badge")) {
-            const badge = document.createElement("span");
-            badge.className = "plan-gate-badge text-[9px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded ml-1.5 inline-flex items-center gap-0.5";
-            badge.innerHTML = `<svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg> Top`;
-            btnTemp.appendChild(badge);
+    if (btnTemp) {
+        if (!hasEntitlement("temporary_stop_change")) {
+            btnTemp.classList.add("plan-gated-feature");
+            if (!btnTemp.querySelector(".plan-gate-badge")) {
+                const badge = document.createElement("span");
+                badge.className = "plan-gate-badge text-[9px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded ml-1.5 inline-flex items-center gap-0.5";
+                badge.innerHTML = `<svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg> Top`;
+                btnTemp.appendChild(badge);
+            }
+        } else {
+            btnTemp.classList.remove("plan-gated-feature");
+            btnTemp.querySelectorAll(".plan-gate-badge").forEach(el => el.remove());
         }
     }
 
     const btnMsg = document.querySelector(`[onclick*="openMessageAdminModal"]`);
-    if (btnMsg && !hasEntitlement("student_to_admin_query")) {
-        btnMsg.classList.add("plan-gated-feature");
-        if (!btnMsg.querySelector(".plan-gate-badge")) {
-            const badge = document.createElement("span");
-            badge.className = "plan-gate-badge text-[9px] font-bold uppercase tracking-wider bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded ml-auto inline-flex items-center gap-0.5";
-            badge.innerHTML = `<svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg> Premium`;
-            btnMsg.appendChild(badge);
+    if (btnMsg) {
+        if (!hasEntitlement("student_to_admin_query")) {
+            btnMsg.classList.add("plan-gated-feature");
+            if (!btnMsg.querySelector(".plan-gate-badge")) {
+                const badge = document.createElement("span");
+                badge.className = "plan-gate-badge text-[9px] font-bold uppercase tracking-wider bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded ml-auto inline-flex items-center gap-0.5";
+                badge.innerHTML = `<svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg> Premium`;
+                btnMsg.appendChild(badge);
+            }
+        } else {
+            btnMsg.classList.remove("plan-gated-feature");
+            btnMsg.querySelectorAll(".plan-gate-badge").forEach(el => el.remove());
         }
     }
 }
@@ -2894,6 +2995,19 @@ document.addEventListener("DOMContentLoaded", () => {
     checkActiveDriverAlerts();
     setInterval(checkActiveDriverAlerts, 10000);
     protectWaitRequestFunctions();
+
+    // Live Entitlements auto-refresh on foreground / interval (mitigation for tier upgrades)
+    document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") {
+            loadCampusEntitlements();
+        }
+    });
+    window.addEventListener("focus", () => {
+        loadCampusEntitlements();
+    });
+    setInterval(() => {
+        loadCampusEntitlements();
+    }, 60000);
 });
 
 // Window resize & orientation change handlers to ensure map renders smoothly
@@ -3188,6 +3302,9 @@ window.handleStudentLogout = function() {
     localStorage.removeItem("kambus_role");
     localStorage.removeItem("kambus_user_id");
     localStorage.removeItem("kambus_student_dashboard");
+    if (window.AndroidSession && typeof window.AndroidSession.clearSession === "function") {
+        try { window.AndroidSession.clearSession(); } catch (_) {}
+    }
     window.location.replace("index.html");
 };
 
@@ -3353,6 +3470,597 @@ window.submitStudentProfile = async function(event) {
 // ========================================================================
 
 let permAllBuses = [];
+let permMyBusStops = [];
+let permStopPickerMap = null;
+let permPickupMarker = null;
+let permStopRouteMarkers = [];
+let permRoutePolyline = null;
+let permStopDirection = "morning";
+let permStopInputMode = "pin";
+let permRouteView = "my";
+let permHeadingUp = false;
+
+const permStopDrafts = {
+    morning: { mode: "pin", latitude: null, longitude: null, address: null, stopId: null, routeCheck: null, candidateBusId: null },
+    evening: { mode: "pin", latitude: null, longitude: null, address: null, stopId: null, routeCheck: null, candidateBusId: null }
+};
+
+function hasPermCoordinates(lat, lng) {
+    return lat != null && lng != null && String(lat).trim() !== "" && String(lng).trim() !== "" &&
+        Number.isFinite(Number(lat)) && Number.isFinite(Number(lng)) &&
+        Math.abs(Number(lat)) <= 90 && Math.abs(Number(lng)) <= 180;
+}
+
+function permDirectionColor() {
+    return permStopDirection === "evening" ? "#dc2626" : "#16a34a";
+}
+
+function permStopInputFromDraft(direction) {
+    const draft = permStopDrafts[direction];
+    if (!draft) return null;
+    if (draft.mode === "registered" && draft.stopId) {
+        return { stop_id: Number(draft.stopId) };
+    }
+    if (hasPermCoordinates(draft.latitude, draft.longitude)) {
+        return {
+            latitude: Number(draft.latitude),
+            longitude: Number(draft.longitude),
+            address: draft.address || `Stop (${Number(draft.latitude).toFixed(4)}, ${Number(draft.longitude).toFixed(4)})`
+        };
+    }
+    return null;
+}
+
+function getPermCurrentRequestInput() {
+    const draft = permStopDrafts[permStopDirection];
+    if (draft.mode === "registered") {
+        const stopId = document.getElementById("permRegisteredStop")?.value || draft.stopId;
+        return stopId ? { stop_id: Number(stopId) } : null;
+    }
+    const lat = document.getElementById("permPinLatitude")?.value ?? draft.latitude;
+    const lng = document.getElementById("permPinLongitude")?.value ?? draft.longitude;
+    return hasPermCoordinates(lat, lng) ? { latitude: Number(lat), longitude: Number(lng), address: draft.address || undefined } : null;
+}
+
+function savePermStopDraft() {
+    const draft = permStopDrafts[permStopDirection];
+    draft.mode = permStopInputMode;
+    if (permStopInputMode === "registered") {
+        const select = document.getElementById("permRegisteredStop");
+        draft.stopId = select?.value ? Number(select.value) : null;
+        draft.address = select?.options[select.selectedIndex]?.text || null;
+    } else {
+        const lat = document.getElementById("permPinLatitude")?.value;
+        const lng = document.getElementById("permPinLongitude")?.value;
+        if (hasPermCoordinates(lat, lng)) {
+            draft.latitude = Number(lat);
+            draft.longitude = Number(lng);
+        }
+    }
+}
+
+function renderPermDirectionSummary() {
+    const morningEl = document.getElementById("permMorningSummary");
+    const eveningEl = document.getElementById("permEveningSummary");
+    const morningDraft = permStopDrafts.morning;
+    const eveningDraft = permStopDrafts.evening;
+
+    if (morningEl) {
+        if (morningDraft.stopId || hasPermCoordinates(morningDraft.latitude, morningDraft.longitude)) {
+            morningEl.textContent = morningDraft.address || (morningDraft.stopId ? `Stop #${morningDraft.stopId}` : `${Number(morningDraft.latitude).toFixed(4)}, ${Number(morningDraft.longitude).toFixed(4)}`);
+            morningEl.className = "text-emerald-700 font-bold";
+        } else {
+            morningEl.textContent = "Not selected";
+            morningEl.className = "";
+        }
+    }
+    if (eveningEl) {
+        if (eveningDraft.stopId || hasPermCoordinates(eveningDraft.latitude, eveningDraft.longitude)) {
+            eveningEl.textContent = eveningDraft.address || (eveningDraft.stopId ? `Stop #${eveningDraft.stopId}` : `${Number(eveningDraft.latitude).toFixed(4)}, ${Number(eveningDraft.longitude).toFixed(4)}`);
+            eveningEl.className = "text-rose-700 font-bold";
+        } else {
+            eveningEl.textContent = "Not selected";
+            eveningEl.className = "";
+        }
+    }
+}
+
+function updatePermSubmitState() {
+    const submitBtn = document.getElementById("btnSubmitPermStop");
+    if (!submitBtn) return;
+    const morningInput = permStopInputFromDraft("morning");
+    const eveningInput = permStopInputFromDraft("evening");
+    const morningOk = !morningInput || !!permStopDrafts.morning.routeCheck;
+    const eveningOk = !eveningInput || !!permStopDrafts.evening.routeCheck;
+    const hasAtLeastOne = !!(morningInput || eveningInput);
+
+    if (hasAtLeastOne && morningOk && eveningOk) {
+        submitBtn.disabled = false;
+        submitBtn.classList.remove("opacity-50", "cursor-not-allowed");
+        submitBtn.innerHTML = `<span>Submit Request</span>`;
+    } else {
+        submitBtn.disabled = true;
+        submitBtn.classList.add("opacity-50", "cursor-not-allowed");
+        submitBtn.innerHTML = `<span>Check Location First</span>`;
+    }
+}
+
+window.loadPermanentStopStatus = async function() {
+    const token = typeof getToken === "function" ? getToken() : localStorage.getItem("kambus_token");
+    if (!token) return null;
+
+    const statusCard = document.getElementById("permRequestStatusCard");
+    const submitBtn = document.getElementById("btnSubmitPermStop");
+
+    try {
+        const res = await fetch(`${API_BASE}/student/permanent-stop-change`, {
+            headers: {
+                "Accept": "application/json",
+                "Authorization": `Bearer ${token}`
+            }
+        });
+        if (!res.ok) {
+            if (statusCard) statusCard.classList.add("hidden");
+            return null;
+        }
+
+        const data = await res.json();
+        if (!statusCard) return data;
+
+        if (data.has_request) {
+            statusCard.classList.remove("hidden");
+
+            let stopDisplay = `<strong>${data.desired_stop_name || ('Stop #' + data.desired_stop_id)}</strong>`;
+            if (data.morning_stop_name || data.evening_stop_name) {
+                const parts = [];
+                if (data.morning_stop_name) parts.push(`Morning: <strong>${data.morning_stop_name}</strong>`);
+                if (data.evening_stop_name) parts.push(`Evening: <strong>${data.evening_stop_name}</strong>`);
+                stopDisplay = parts.join(" | ");
+            }
+            if (data.selected_latitude && data.selected_longitude) {
+                stopDisplay += ` <span class="text-[11px] text-slate-500 font-mono">(📍 ${Number(data.selected_latitude).toFixed(4)}, ${Number(data.selected_longitude).toFixed(4)})</span>`;
+            }
+
+            if (data.status === "pending_admin_approval" || data.is_pending) {
+                statusCard.className = "p-3.5 rounded-xl border border-amber-300 bg-amber-50 text-amber-900 mb-3 text-xs";
+                statusCard.innerHTML = `
+                    <div class="flex items-center justify-between gap-2 mb-1">
+                        <span class="inline-flex items-center gap-1 font-black px-2 py-0.5 rounded text-[10px] uppercase bg-amber-200 text-amber-900">
+                            Pending Admin Approval
+                        </span>
+                        <span class="text-[11px] text-amber-700 font-semibold">Submitted ${data.effective_date || ''}</span>
+                    </div>
+                    <p class="mt-1">
+                        Requested Stop: ${stopDisplay}
+                        ${data.target_bus_number ? ` on <strong>Bus ${data.target_bus_number}</strong>` : ''}
+                    </p>
+                    ${data.reason ? `<p class="mt-1 text-[11px] text-amber-800">Reason: "${data.reason}"</p>` : ''}
+                    <p class="mt-1.5 text-[11px] text-amber-700 italic">An administrator is reviewing your request. Your regular stop remains active until approved.</p>
+                `;
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = `<span>Request Pending Approval</span>`;
+                }
+            } else if (data.status === "approved" || data.is_approved) {
+                statusCard.className = "p-3.5 rounded-xl border border-emerald-300 bg-emerald-50 text-emerald-900 mb-3 text-xs";
+                statusCard.innerHTML = `
+                    <div class="flex items-center justify-between gap-2 mb-1">
+                        <span class="inline-flex items-center gap-1 font-black px-2 py-0.5 rounded text-[10px] uppercase bg-emerald-200 text-emerald-900">
+                            Approved
+                        </span>
+                        <span class="text-[11px] text-emerald-700 font-semibold">${data.effective_date || ''}</span>
+                    </div>
+                    <p class="mt-1">
+                        Your permanent stop was updated to ${stopDisplay}.
+                    </p>
+                `;
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = `<span>Submit Request</span>`;
+                }
+            } else if (data.status === "rejected" || data.is_rejected) {
+                statusCard.className = "p-3.5 rounded-xl border border-rose-300 bg-rose-50 text-rose-900 mb-3 text-xs";
+                statusCard.innerHTML = `
+                    <div class="flex items-center justify-between gap-2 mb-1">
+                        <span class="inline-flex items-center gap-1 font-black px-2 py-0.5 rounded text-[10px] uppercase bg-rose-200 text-rose-900">
+                            Request Rejected
+                        </span>
+                    </div>
+                    <p class="mt-1">Your previous permanent stop change request was rejected.</p>
+                    ${data.admin_notes ? `<p class="mt-1 text-[11px] font-semibold text-rose-800">Reason: ${data.admin_notes}</p>` : ''}
+                    <p class="mt-1.5 text-[11px] text-rose-700">You may submit a new request below if needed.</p>
+                `;
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = `<span>Submit Request</span>`;
+                }
+            } else {
+                statusCard.classList.add("hidden");
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = `<span>Submit Request</span>`;
+                }
+            }
+        } else {
+            statusCard.classList.add("hidden");
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = `<span>Submit Request</span>`;
+            }
+        }
+        return data;
+    } catch (e) {
+        console.warn("[PermStop] Failed to load permanent stop status:", e);
+        if (statusCard) statusCard.classList.add("hidden");
+        return null;
+    }
+};
+
+window.setPermStopDirection = function(direction) {
+    savePermStopDraft();
+    permStopDirection = direction;
+
+    const morningBtn = document.getElementById("permMorningDirectionBtn");
+    const eveningBtn = document.getElementById("permEveningDirectionBtn");
+    if (direction === "morning") {
+        morningBtn?.classList.add("is-active");
+        eveningBtn?.classList.remove("is-active");
+    } else {
+        eveningBtn?.classList.add("is-active");
+        morningBtn?.classList.remove("is-active");
+    }
+
+    const draft = permStopDrafts[direction];
+    permStopInputMode = draft.mode || "pin";
+    window.setPermStopInputMode(permStopInputMode);
+
+    if (draft.latitude && draft.longitude) {
+        window.selectPermPickup(draft.latitude, draft.longitude, draft.address);
+    } else if (permPickupMarker && permStopPickerMap) {
+        permStopPickerMap.removeLayer(permPickupMarker);
+        permPickupMarker = null;
+        const addrEl = document.getElementById("permStopPickerAddress");
+        if (addrEl) addrEl.textContent = "Tap map to pick location...";
+    }
+
+    const resEl = document.getElementById("permRouteCheckResult");
+    if (resEl) {
+        if (draft.routeCheck) {
+            resEl.classList.remove("hidden");
+            resEl.className = draft.routeCheck.on_route ? "kx-notice kx-notice--row kx-notice--ok p-2.5 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-800 text-xs" : "kx-notice kx-notice--row kx-notice--danger p-2.5 rounded-xl border border-rose-200 bg-rose-50 text-rose-800 text-xs";
+            resEl.innerHTML = `<span>${draft.routeCheck.message || "Route check completed"}</span>`;
+        } else {
+            resEl.classList.add("hidden");
+        }
+    }
+
+    renderPermDirectionSummary();
+    updatePermSubmitState();
+    renderPermStopsOnMap();
+};
+
+window.setPermStopInputMode = function(mode) {
+    permStopInputMode = mode;
+    permStopDrafts[permStopDirection].mode = mode;
+
+    const registeredBtn = document.getElementById("permRegisteredModeBtn");
+    const pinBtn = document.getElementById("permPinModeBtn");
+    const regFields = document.getElementById("permRegisteredStopFields");
+    const pinCoords = document.getElementById("permManualCoordinatesDetails");
+
+    if (mode === "registered") {
+        registeredBtn?.classList.add("is-active");
+        pinBtn?.classList.remove("is-active");
+        regFields?.classList.remove("hidden");
+        pinCoords?.classList.add("hidden");
+    } else {
+        pinBtn?.classList.add("is-active");
+        registeredBtn?.classList.remove("is-active");
+        regFields?.classList.add("hidden");
+        pinCoords?.classList.remove("hidden");
+    }
+};
+
+window.clearPermStopDirection = function() {
+    permStopDrafts[permStopDirection] = {
+        mode: "pin", latitude: null, longitude: null, address: null, stopId: null, routeCheck: null, candidateBusId: null
+    };
+    if (permPickupMarker && permStopPickerMap) {
+        permStopPickerMap.removeLayer(permPickupMarker);
+        permPickupMarker = null;
+    }
+    const addrEl = document.getElementById("permStopPickerAddress");
+    if (addrEl) addrEl.textContent = "Tap map to pick location...";
+    const latIn = document.getElementById("permPinLatitude");
+    const lngIn = document.getElementById("permPinLongitude");
+    if (latIn) latIn.value = "";
+    if (lngIn) lngIn.value = "";
+    const resEl = document.getElementById("permRouteCheckResult");
+    if (resEl) resEl.classList.add("hidden");
+    const candEl = document.getElementById("permCandidateBuses");
+    if (candEl) candEl.innerHTML = "";
+
+    renderPermDirectionSummary();
+    updatePermSubmitState();
+};
+
+window.selectPermPickup = function(lat, lng, address = null) {
+    if (!permStopPickerMap || !hasPermCoordinates(lat, lng)) return;
+    const color = permDirectionColor();
+
+    if (permPickupMarker) {
+        permPickupMarker.setLatLng([lat, lng]);
+    } else {
+        permPickupMarker = L.circleMarker([lat, lng], {
+            radius: 8,
+            fillColor: color,
+            color: "#ffffff",
+            weight: 2,
+            opacity: 1,
+            fillOpacity: 0.95
+        }).addTo(permStopPickerMap);
+    }
+
+    const latIn = document.getElementById("permPinLatitude");
+    const lngIn = document.getElementById("permPinLongitude");
+    if (latIn) latIn.value = Number(lat).toFixed(6);
+    if (lngIn) lngIn.value = Number(lng).toFixed(6);
+
+    const draft = permStopDrafts[permStopDirection];
+    draft.latitude = Number(lat);
+    draft.longitude = Number(lng);
+    draft.routeCheck = null;
+
+    const addrEl = document.getElementById("permStopPickerAddress");
+    if (address) {
+        draft.address = address;
+        if (addrEl) addrEl.textContent = address;
+    } else {
+        const coordLabel = `Location (${Number(lat).toFixed(4)}, ${Number(lng).toFixed(4)})`;
+        draft.address = coordLabel;
+        if (addrEl) addrEl.textContent = coordLabel;
+        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
+            .then(r => r.json())
+            .then(d => {
+                if (d && d.display_name) {
+                    draft.address = d.display_name.split(",").slice(0, 3).join(",").trim();
+                    if (addrEl) addrEl.textContent = draft.address;
+                    renderPermDirectionSummary();
+                }
+            })
+            .catch(() => {});
+    }
+
+    renderPermDirectionSummary();
+    updatePermSubmitState();
+};
+
+window.checkPermStopRoute = async function() {
+    const token = typeof getToken === "function" ? getToken() : localStorage.getItem("kambus_token");
+    if (!token) return;
+
+    savePermStopDraft();
+    const input = getPermCurrentRequestInput();
+    const resEl = document.getElementById("permRouteCheckResult");
+    const candEl = document.getElementById("permCandidateBuses");
+    const checkBtn = document.getElementById("checkPermPinBtn");
+
+    if (!input) {
+        if (typeof featureNotify === "function") {
+            featureNotify("warning", "Choose a Stop", "Select a registered stop or tap the map to place a pin.");
+        }
+        return;
+    }
+
+    if (checkBtn) {
+        checkBtn.disabled = true;
+        checkBtn.innerHTML = `<span>Checking Route...</span>`;
+    }
+
+    try {
+        const payload = {
+            ...input,
+            trip_type: permStopDirection
+        };
+
+        const res = await fetch(`${API_BASE}/student/temporary-stop-change/check-route`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "Unable to check route.");
+
+        permStopDrafts[permStopDirection].routeCheck = data;
+
+        if (resEl) {
+            resEl.classList.remove("hidden");
+            if (data.on_route) {
+                resEl.className = "kx-notice kx-notice--row kx-notice--ok p-2.5 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-800 text-xs";
+                resEl.innerHTML = `✓ ${data.message || "Stop is directly on assigned bus route"}`;
+            } else {
+                resEl.className = "kx-notice kx-notice--row kx-notice--danger p-2.5 rounded-xl border border-rose-200 bg-rose-50 text-rose-800 text-xs";
+                resEl.innerHTML = `⚠ ${data.message || "Location requires bus route change or admin allotment"}`;
+            }
+        }
+
+        if (candEl && Array.isArray(data.candidate_buses) && data.candidate_buses.length > 0) {
+            candEl.innerHTML = data.candidate_buses.map(candidate => `
+                <label class="kx-bus-option p-2.5 rounded-xl border border-slate-200 bg-white flex items-center gap-2 cursor-pointer text-xs">
+                    <input type="radio" name="permCandidateBus" value="${candidate.bus_id}" ${candidate.is_recommended ? "checked" : ""}>
+                    <span><strong>Bus ${candidate.bus_number}</strong> — ${candidate.route_name || 'Active Route'} (${candidate.driver_name || 'Driver'})</span>
+                </label>
+            `).join("");
+            const selectedRadio = candEl.querySelector("input[name='permCandidateBus']:checked");
+            if (selectedRadio) {
+                permStopDrafts[permStopDirection].candidateBusId = Number(selectedRadio.value);
+            }
+            candEl.querySelectorAll("input[name='permCandidateBus']").forEach(radio => {
+                radio.addEventListener("change", e => {
+                    permStopDrafts[permStopDirection].candidateBusId = Number(e.target.value);
+                });
+            });
+        } else if (candEl) {
+            candEl.innerHTML = "";
+        }
+
+        updatePermSubmitState();
+
+    } catch (err) {
+        if (resEl) {
+            resEl.classList.remove("hidden");
+            resEl.className = "kx-notice kx-notice--row kx-notice--danger p-2.5 rounded-xl border border-rose-200 bg-rose-50 text-rose-800 text-xs";
+            resEl.textContent = err.message || "Route check failed.";
+        }
+    } finally {
+        if (checkBtn) {
+            checkBtn.disabled = false;
+            checkBtn.innerHTML = `<span>Step 1: Check Location</span>`;
+        }
+    }
+};
+
+function renderPermStopsOnMap() {
+    if (!permStopPickerMap) return;
+    permStopRouteMarkers.forEach(m => permStopPickerMap.removeLayer(m));
+    permStopRouteMarkers = [];
+
+    const stops = permGetSelectedRouteStops();
+    stops.forEach(stop => {
+        if (!hasPermCoordinates(stop.latitude, stop.longitude)) return;
+        const marker = L.circleMarker([stop.latitude, stop.longitude], {
+            radius: 5,
+            fillColor: stop.is_custom ? "#f97316" : "#2563eb",
+            color: "#ffffff",
+            weight: 1.5,
+            opacity: 1,
+            fillOpacity: 0.9
+        }).addTo(permStopPickerMap);
+        marker.bindPopup(`<b>${stop.name || 'Stop'}</b><br>Stop #${stop.stop_order || ''}`);
+        marker.on("click", () => {
+            if (permStopInputMode === "registered") {
+                const select = document.getElementById("permRegisteredStop");
+                if (select) {
+                    select.value = String(stop.stop_id);
+                    savePermStopDraft();
+                    window.checkPermStopRoute();
+                }
+            } else {
+                window.selectPermPickup(stop.latitude, stop.longitude, stop.name);
+            }
+        });
+        permStopRouteMarkers.push(marker);
+    });
+
+    drawPermRoutePolyline(stops);
+}
+
+function permGetSelectedRouteStops() {
+    if (permRouteView === "my") {
+        return permMyBusStops.length > 0 ? permMyBusStops : (window.routeStops || []);
+    }
+    const bus = permAllBuses.find(b => Number(b.bus_id) === Number(permRouteView));
+    return bus?.stops || [];
+}
+
+async function drawPermRoutePolyline(stops) {
+    if (!permStopPickerMap || !stops || stops.length < 2) return;
+    if (permRoutePolyline) {
+        permStopPickerMap.removeLayer(permRoutePolyline);
+        permRoutePolyline = null;
+    }
+
+    const validStops = stops.filter(s => hasPermCoordinates(s.latitude, s.longitude))
+        .sort((a, b) => Number(a.stop_order || 0) - Number(b.stop_order || 0));
+    if (validStops.length < 2) return;
+
+    const COLLEGE = window.COLLEGE_LOCATION || { latitude: 18.054145, longitude: 79.535587 };
+    let waypoints = [...validStops, COLLEGE];
+    if (permStopDirection === "evening") {
+        waypoints.reverse();
+    }
+
+    const coordStr = waypoints.map(w => `${Number(w.longitude)},${Number(w.latitude)}`).join(";");
+    const url = `https://router.project-osrm.org/route/v1/driving/${coordStr}?overview=full&geometries=geojson`;
+
+    try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error("OSRM error");
+        const json = await res.json();
+        const coords = json.routes?.[0]?.geometry?.coordinates;
+        if (!coords || coords.length < 2) return;
+
+        let travelPoints = coords.map(([lng, lat]) => [lat, lng]);
+        const color = permDirectionColor();
+
+        permRoutePolyline = L.polyline(travelPoints, {
+            color: color,
+            weight: 4,
+            opacity: 0.8,
+            lineJoin: "round"
+        }).addTo(permStopPickerMap);
+
+    } catch (e) {
+        console.warn("[PermStop] Road routing fallback:", e);
+    }
+}
+
+window.setPermRouteView = function(busId) {
+    permRouteView = busId;
+    renderPermStopsOnMap();
+    renderPermRegisteredStopOptions();
+};
+
+function renderPermRegisteredStopOptions() {
+    const select = document.getElementById("permRegisteredStop");
+    if (!select) return;
+    const stops = permGetSelectedRouteStops();
+    if (stops.length === 0) {
+        select.innerHTML = `<option value="">No stops on this route</option>`;
+        return;
+    }
+    select.innerHTML = `<option value="">-- Choose a Stop --</option>` +
+        stops.map(s => `<option value="${s.stop_id}">Stop #${s.stop_order}: ${s.name}</option>`).join("");
+}
+
+window.setPermMapHeading = function(enabled) {
+    permHeadingUp = enabled;
+    if (permStopPickerMap) {
+        if (!enabled && typeof permStopPickerMap.setBearing === "function") {
+            permStopPickerMap.setBearing(0);
+        }
+    }
+};
+
+window.initPermStopPickerMap = function() {
+    const container = document.getElementById("permStopPickerMap");
+    if (!container || typeof L === "undefined") return;
+
+    if (permStopPickerMap) {
+        permStopPickerMap.invalidateSize();
+        return;
+    }
+
+    const COLLEGE = window.COLLEGE_LOCATION || { latitude: 18.054145, longitude: 79.535587 };
+    permStopPickerMap = L.map("permStopPickerMap", {
+        zoomControl: true,
+        attributionControl: false
+    }).setView([COLLEGE.latitude, COLLEGE.longitude], 13);
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19
+    }).addTo(permStopPickerMap);
+
+    permStopPickerMap.on("click", e => {
+        window.selectPermPickup(e.latlng.lat, e.latlng.lng);
+    });
+
+    renderPermStopsOnMap();
+};
 
 window.openPermanentStopModal = async function() {
     window.closeStudentMenuDrawer();
@@ -3366,21 +4074,6 @@ window.openPermanentStopModal = async function() {
 
     modal.classList.remove("hidden");
 
-    // Populate current stop and bus
-    const currStopEl = document.getElementById("permCurrentStopDisplay");
-    const currBusEl = document.getElementById("permCurrentBusDisplay");
-    const passStopEl = document.getElementById("passPickupPoint");
-    const passBusEl = document.getElementById("passBusNumber");
-
-    if (currStopEl) {
-        currStopEl.textContent = (passStopEl?.textContent && passStopEl.textContent !== "Loading...")
-            ? passStopEl.textContent
-            : (typeof studentStopName !== "undefined" ? studentStopName : "Your Registered Stop");
-    }
-    if (currBusEl) {
-        currBusEl.textContent = `Assigned Bus: ${passBusEl?.textContent || (typeof assignedBusNumber !== "undefined" ? assignedBusNumber : "Unassigned")}`;
-    }
-
     // Set default effective date to tomorrow
     const dateInput = document.getElementById("permEffectiveDate");
     if (dateInput) {
@@ -3390,61 +4083,52 @@ window.openPermanentStopModal = async function() {
         dateInput.min = new Date().toISOString().split("T")[0];
     }
 
-    // Load buses and stops
-    const busSelect = document.getElementById("permBusSelect");
-    const stopSelect = document.getElementById("permStopSelect");
-    if (busSelect) {
-        busSelect.innerHTML = `<option value="">Loading available bus routes...</option>`;
-    }
-    if (stopSelect) {
-        stopSelect.innerHTML = `<option value="">Select bus route first</option>`;
-        stopSelect.disabled = true;
-    }
+    // Check status of previous or pending requests
+    await window.loadPermanentStopStatus();
 
+    // Load bus routes and student's regular route stops
     const token = typeof getToken === "function" ? getToken() : localStorage.getItem("kambus_token");
-    if (!token) return;
+    if (token) {
+        try {
+            const [busesRes, myStopsRes] = await Promise.all([
+                fetch(`${API_BASE}/student/all-bus-routes`, { headers: { "Accept": "application/json", "Authorization": `Bearer ${token}` } }),
+                fetch(`${API_BASE}/student/my-route-stops`, { headers: { "Accept": "application/json", "Authorization": `Bearer ${token}` } })
+            ]);
+            const busesData = await busesRes.json();
+            permAllBuses = Array.isArray(busesData.buses) ? busesData.buses : [];
 
-    try {
-        const res = await fetch(`${API_BASE}/student/all-bus-routes`, {
-            headers: {
-                "Accept": "application/json",
-                "Authorization": `Bearer ${token}`
+            if (myStopsRes.ok) {
+                const myStopsData = await myStopsRes.json();
+                permMyBusStops = Array.isArray(myStopsData.stops) ? myStopsData.stops : [];
             }
-        });
-        const data = await res.json();
-        permAllBuses = Array.isArray(data.buses) ? data.buses : [];
 
-        if (busSelect) {
-            if (permAllBuses.length === 0) {
-                busSelect.innerHTML = `<option value="">No active routes found</option>`;
-            } else {
-                busSelect.innerHTML = `<option value="">-- Choose a Bus Route --</option>` +
-                    permAllBuses.map(b => `<option value="${b.bus_id}">Bus ${b.bus_number} - ${b.route_name || 'Active Route'}</option>`).join("");
+            const routeViewSelect = document.getElementById("permRouteView");
+            if (routeViewSelect && permAllBuses.length > 0) {
+                routeViewSelect.innerHTML = `<option value="my">My Bus Route</option>` +
+                    permAllBuses.map(b => `<option value="${b.bus_id}">Bus ${b.bus_number} - ${b.route_name || 'Route'}</option>`).join("");
             }
+
+            const currentRouteEl = document.getElementById("permCurrentRoute");
+            if (currentRouteEl) {
+                const routeName = (window.studentAssignment?.bus_number ? `Bus ${window.studentAssignment.bus_number}` : 'Assigned route');
+                const stopNames = (permMyBusStops.length > 0 ? permMyBusStops : (window.routeStops || [])).map(s => s.name).join(" → ");
+                currentRouteEl.textContent = `${routeName} route: ${stopNames || 'Active route stops'}`;
+            }
+
+            renderPermRegisteredStopOptions();
+        } catch (e) {
+            console.warn("[PermStop] Error loading routes:", e);
         }
-    } catch (err) {
-        console.warn("[PermStop] Failed to load routes:", err);
-        if (busSelect) busSelect.innerHTML = `<option value="">Failed to load routes</option>`;
-    }
-};
-
-window.onPermanentBusChanged = function() {
-    const busSelect = document.getElementById("permBusSelect");
-    const stopSelect = document.getElementById("permStopSelect");
-    if (!busSelect || !stopSelect) return;
-
-    const busId = parseInt(busSelect.value, 10);
-    const bus = permAllBuses.find(b => Number(b.bus_id) === busId);
-
-    if (!bus || !Array.isArray(bus.stops) || bus.stops.length === 0) {
-        stopSelect.innerHTML = `<option value="">No stops available on this route</option>`;
-        stopSelect.disabled = true;
-        return;
     }
 
-    stopSelect.innerHTML = `<option value="">-- Select Pickup Stop --</option>` +
-        bus.stops.map(s => `<option value="${s.stop_id}">${s.name} (Stop #${s.stop_order})</option>`).join("");
-    stopSelect.disabled = false;
+    // Initialize map after modal is visible
+    setTimeout(() => {
+        window.initPermStopPickerMap();
+        if (permStopPickerMap) {
+            permStopPickerMap.invalidateSize();
+            renderPermStopsOnMap();
+        }
+    }, 150);
 };
 
 window.closePermanentStopModal = function() {
@@ -3457,48 +4141,66 @@ window.submitPermanentStopChange = async function(event) {
     const token = typeof getToken === "function" ? getToken() : localStorage.getItem("kambus_token");
     if (!token) return;
 
-    const busSelect = document.getElementById("permBusSelect");
-    const stopSelect = document.getElementById("permStopSelect");
+    savePermStopDraft();
+    const morningInput = permStopInputFromDraft("morning");
+    const eveningInput = permStopInputFromDraft("evening");
     const dateInput = document.getElementById("permEffectiveDate");
     const notesInput = document.getElementById("permReasonNotes");
     const alertEl = document.getElementById("permanentStopAlert");
     const submitBtn = document.getElementById("btnSubmitPermStop");
 
-    const targetBusId = busSelect ? parseInt(busSelect.value, 10) : null;
-    const stopId = stopSelect ? parseInt(stopSelect.value, 10) : null;
     const startDate = dateInput?.value;
     const notes = notesInput?.value.trim() || "";
 
-    if (!targetBusId || !stopId || !startDate) {
+    if (!morningInput && !eveningInput) {
         if (alertEl) {
             alertEl.className = "p-3 rounded-xl text-xs font-semibold bg-rose-50 text-rose-700 block border border-rose-200";
-            alertEl.textContent = "Please select both a bus route, a stop, and an effective date.";
+            alertEl.textContent = "Please select at least one stop (morning pickup or evening drop-off) and run Step 1: Check Location.";
         }
         return;
     }
 
-    // Set end_date to startDate + 30 days
-    const startObj = new Date(startDate);
-    const endObj = new Date(startObj);
-    endObj.setDate(endObj.getDate() + 30);
-    const endDate = endObj.toISOString().split("T")[0];
+    if (!startDate) {
+        if (alertEl) {
+            alertEl.className = "p-3 rounded-xl text-xs font-semibold bg-rose-50 text-rose-700 block border border-rose-200";
+            alertEl.textContent = "Please select an effective date.";
+        }
+        return;
+    }
+
+    const candidateBusIds = ["morning", "evening"]
+        .filter(dir => permStopInputFromDraft(dir))
+        .map(dir => permStopDrafts[dir].candidateBusId)
+        .filter(Boolean);
+    const uniqueCandidateBusIds = [...new Set(candidateBusIds)];
+    if (uniqueCandidateBusIds.length > 1) {
+        if (alertEl) {
+            alertEl.className = "p-3 rounded-xl text-xs font-semibold bg-rose-50 text-rose-700 block border border-rose-200";
+            alertEl.textContent = "Both morning and evening stops must be served by the same bus.";
+        }
+        return;
+    }
+
+    let targetBusId = uniqueCandidateBusIds.length ? uniqueCandidateBusIds[0] : null;
+    if (!targetBusId && permRouteView && permRouteView !== "my") {
+        targetBusId = Number(permRouteView);
+    }
 
     if (submitBtn) {
         submitBtn.disabled = true;
-        submitBtn.innerHTML = `<span>Submitting...</span>`;
+        submitBtn.innerHTML = `<span>Submitting Request...</span>`;
     }
 
     try {
         const payload = {
-            stop_id: stopId,
-            target_bus_id: targetBusId,
-            start_date: startDate,
-            end_date: endDate,
-            request_type: "permanent",
-            address: notes || undefined
+            ...(morningInput ? { morning_location: morningInput } : {}),
+            ...(eveningInput ? { evening_location: eveningInput } : {}),
+            ...(targetBusId ? { target_bus_id: targetBusId } : {}),
+            effective_date: startDate,
+            reason: notes || undefined
         };
 
-        const res = await fetch(`${API_BASE}/student/temporary-stop-change`, {
+        const res = await fetch(`${API_BASE}/student/permanent-stop-change`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -3521,25 +4223,38 @@ window.submitPermanentStopChange = async function(event) {
             featureNotify("ok", "Request Submitted", "Permanent stop change request submitted for admin approval.");
         }
 
-        if (typeof loadTemporaryStopChange === "function") {
-            await loadTemporaryStopChange();
-        }
+        await window.loadPermanentStopStatus();
 
         setTimeout(() => {
             window.closePermanentStopModal();
-        }, 1500);
+        }, 1800);
 
     } catch (err) {
         if (alertEl) {
             alertEl.className = "p-3 rounded-xl text-xs font-semibold bg-rose-50 text-rose-700 block border border-rose-200";
             alertEl.textContent = err.message || "Failed to submit stop change request.";
         }
-    } finally {
         if (submitBtn) {
             submitBtn.disabled = false;
             submitBtn.innerHTML = `<span>Submit Request</span>`;
         }
     }
 };
+
+// ========================================================================
+// CAMPUS PARTNER PROMO (ZORDR)
+// ========================================================================
+
+// Placeholder URL: MUST be replaced with official Zordr app / download link before shipping
+const ZORDR_PROMO_URL = "https://zordr.com";
+
+function openZordrPromo() {
+    try {
+        window.open(ZORDR_PROMO_URL, "_blank");
+    } catch (e) {
+        window.location.href = ZORDR_PROMO_URL;
+    }
+}
+window.openZordrPromo = openZordrPromo;
 
 

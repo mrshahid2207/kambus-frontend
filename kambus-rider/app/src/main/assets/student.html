@@ -598,12 +598,12 @@
             display: flex;
             flex-direction: column;
             background: #ffffff;
-            border-radius: 24px;
+            border-radius: 16px !important;
             box-shadow: 0 24px 60px rgba(15, 36, 45, 0.38), 0 0 0 1px rgba(15, 36, 45, 0.06);
             overflow: hidden;
             color: #0f172a;
         }
-        .kx-sheet--wide { max-width: 440px; }
+        .kx-sheet--wide { max-width: 420px; }
         .kx-sheet--danger {
             --grad-a: #ef4444; --grad-b: #b91c1c; --on-accent: #ffffff;
             --accent: #dc2626; --accent-deep: #991b1b;
@@ -809,10 +809,11 @@
         }
         .kx-map {
             position: relative; isolation: isolate;
-            height: 70vh; min-height: 360px; flex: 0 0 70vh;
+            height: 260px; min-height: 200px; flex: 0 0 260px;
             border-radius: 16px; overflow: hidden; border: 1.5px solid #e2e8f0;
         }
-        .kx-map > #tempStopPickerMap { width: 100%; height: 100%; }
+        .kx-map > #tempStopPickerMap,
+        .kx-map > #permStopPickerMap { width: 100%; height: 100%; }
         .kx-direction-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         .kx-direction-summary > div { padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 11px; color: #475569; }
         .kx-direction-summary strong { display: block; color: #173541; font-size: 12px; margin-bottom: 2px; }
@@ -2157,7 +2158,7 @@
 
 <!-- TEMPORARY STOP MODAL -->
 <div id="temporaryStopModal" class="kambus-modal-backdrop hidden">
-    <div class="kx-sheet kx-sheet--sky kx-sheet--wide">
+    <div class="kx-sheet kx-sheet--sky kx-modal-window kambus-modal-window" style="max-width: 420px; border-radius: 16px !important; max-height: calc(100dvh - 48px); overflow: hidden; margin: auto;">
         <div class="kx-head">
             <div class="kx-head-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></div>
             <div class="kx-head-text">
@@ -2497,6 +2498,38 @@
                 <span class="drawer-item-label">Request to Admin</span>
                 <span class="drawer-item-arrow"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span>
             </button>
+
+            <!-- Campus Partner / Zordr Banner -->
+            <div class="mt-auto pt-3">
+                <a id="zordrPromoBanner"
+                   href="https://zordr.com"
+                   target="_blank"
+                   rel="noopener noreferrer"
+                   onclick="openZordrPromo(); return false;"
+                   class="kx-card kx-card-interactive block p-3 border border-amber-200/90 bg-amber-50/60 hover:bg-amber-50 transition"
+                   style="text-decoration: none;"
+                   aria-label="Zordr - Campus food ordering, skip the canteen line">
+                    <div class="flex items-center justify-between gap-2 mb-1.5">
+                        <span class="inline-flex items-center text-[10px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-300/80">
+                            KITSW Startup
+                        </span>
+                        <span class="text-[11px] font-bold text-amber-800 flex items-center gap-0.5">
+                            Open <svg class="w-3 h-3 text-amber-800" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        </span>
+                    </div>
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-8 h-8 rounded-lg bg-amber-500 text-white flex items-center justify-center shrink-0 font-black text-sm shadow-xs">
+                            Z
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <strong class="text-xs font-black text-slate-900 block leading-tight">Zordr</strong>
+                            <p class="text-[11px] text-slate-600 font-medium leading-tight mt-0.5">
+                                Campus food ordering — skip the canteen line
+                            </p>
+                        </div>
+                    </div>
+                </a>
+            </div>
         </nav>
 
         <!-- Drawer Footer & Logout -->
@@ -2617,74 +2650,109 @@
 
 <!-- PERMANENT STOP CHANGE MODAL -->
 <div id="permanentStopModal" class="kambus-modal-backdrop hidden" style="z-index: 2100;">
-    <div class="student-modal-card">
-        <!-- Header -->
-        <div class="student-modal-header">
-            <div class="student-modal-header-left">
-                <div class="student-modal-header-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                </div>
-                <div>
-                    <h3 class="student-modal-title">Permanent Stop Change</h3>
-                    <p class="student-modal-sub">Request a permanent change to your assigned pickup stop</p>
-                </div>
+    <div class="kx-sheet kx-sheet--sky kx-modal-window kambus-modal-window" style="max-width: 420px; border-radius: 16px !important; max-height: calc(100dvh - 48px); overflow: hidden; margin: auto;">
+        <div class="kx-head">
+            <div class="kx-head-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
             </div>
-            <button type="button" onclick="closePermanentStopModal()" class="student-modal-close" aria-label="Close modal">&times;</button>
+            <div class="kx-head-text">
+                <h3 class="kx-title">Permanent Stop Change</h3>
+                <p class="kx-sub">Request a permanent change to your assigned stop</p>
+            </div>
+            <button type="button" onclick="closePermanentStopModal()" class="kx-close" aria-label="Close">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
         </div>
 
-        <form id="permanentStopForm" onsubmit="submitPermanentStopChange(event)" class="student-modal-form">
-            <!-- Content -->
-            <div class="student-modal-body">
-                <div id="permanentStopAlert" class="hidden student-modal-alert"></div>
+        <div class="kx-body">
+            <div id="permanentStopAlert" class="hidden student-modal-alert"></div>
+            <div id="permRequestStatusCard" class="hidden mb-3"></div>
 
-                <!-- Current stop display -->
-                <div class="student-info-card">
-                    <span class="student-info-card-title">Current Assigned Stop</span>
-                    <p id="permCurrentStopDisplay" class="student-info-value" style="font-size: 14px; margin-top: 2px;">--</p>
-                    <p id="permCurrentBusDisplay" style="margin: 2px 0 0; font-size: 11.5px; font-weight: 600; color: #52707a;">Assigned Bus: --</p>
+            <div id="permCurrentRoute" class="kx-route">Loading normal route...</div>
+
+            <div class="kx-map">
+                <div id="permStopPickerMap"></div>
+            </div>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:12px" aria-label="Map legend">
+                <span><b style="color:#2563eb">●</b> Normal stop</span>
+                <span><b style="color:#f97316">●</b> Custom/temp stop</span>
+                <span><b style="color:#16a34a">●</b> Pickup (morning)</span>
+                <span><b style="color:#dc2626">●</b> Drop-off (evening)</span>
+                <button type="button" onclick="setPermMapHeading(false)">Reset north</button>
+                <button type="button" onclick="setPermMapHeading(true)">Follow heading</button>
+            </div>
+            <p id="permRouteMapStatus" role="status" class="text-xs text-slate-600"></p>
+
+            <div>
+                <label for="permRouteView" class="kx-label">Explore bus routes</label>
+                <select id="permRouteView" onchange="setPermRouteView(this.value)" class="kx-input">
+                    <option value="my">My bus</option>
+                </select>
+            </div>
+
+            <div class="kx-seg" aria-label="Permanent stop direction">
+                <button id="permMorningDirectionBtn" type="button" onclick="setPermStopDirection('morning')" class="kx-seg-btn is-active">Morning pickup</button>
+                <button id="permEveningDirectionBtn" type="button" onclick="setPermStopDirection('evening')" class="kx-seg-btn">Evening drop-off</button>
+            </div>
+            <div class="kx-direction-summary">
+                <div><strong>Morning pickup</strong><span id="permMorningSummary">Not selected</span></div>
+                <div><strong>Evening drop-off</strong><span id="permEveningSummary">Not selected</span></div>
+            </div>
+            <p class="text-xs text-slate-600">Choose morning only, evening only, or both. Check each selected location before submitting.</p>
+            <button type="button" onclick="clearPermStopDirection()" class="kx-btn kx-btn--soft kx-btn--sm">Clear this direction</button>
+
+            <div class="kx-seg">
+                <button id="permRegisteredModeBtn" type="button" onclick="setPermStopInputMode('registered')" class="kx-seg-btn">Registered stop</button>
+                <button id="permPinModeBtn" type="button" onclick="setPermStopInputMode('pin')" class="kx-seg-btn is-active">Map pin</button>
+            </div>
+
+            <div id="permRegisteredStopFields" class="hidden kx-stack">
+                <div>
+                    <label for="permRegisteredStop" class="kx-label">Choose stop</label>
+                    <select id="permRegisteredStop" class="kx-input"></select>
                 </div>
+                <button type="button" onclick="checkPermStopRoute()" class="kx-btn kx-btn--soft kx-btn--sm">Check this stop</button>
+            </div>
 
-                <!-- Select Bus / Route -->
-                <div class="student-form-group">
-                    <label for="permBusSelect" class="student-form-label">Select Bus Route *</label>
-                    <select id="permBusSelect" onchange="onPermanentBusChanged()" class="student-form-select" required>
-                        <option value="">Loading routes...</option>
-                    </select>
+            <details id="permManualCoordinatesDetails" class="kx-details">
+                <summary>Manual coordinates (optional)</summary>
+                <div id="permPinCoordinates" class="kx-coords">
+                    <input id="permPinLatitude" type="number" step="any" placeholder="Latitude" class="kx-input">
+                    <input id="permPinLongitude" type="number" step="any" placeholder="Longitude" class="kx-input">
                 </div>
+            </details>
+            <button id="checkPermPinBtn" type="button" onclick="checkPermStopRoute()" class="kx-btn kx-btn--soft kx-btn--sm">Step 1: Check Location</button>
 
-                <!-- Select Stop -->
-                <div class="student-form-group">
-                    <label for="permStopSelect" class="student-form-label">Select New Permanent Stop *</label>
-                    <select id="permStopSelect" class="student-form-select" required disabled>
-                        <option value="">Select bus route first</option>
-                    </select>
+            <div id="permRouteCheckResult" class="hidden"></div>
+            <div id="permCandidateBuses" class="kx-stack"></div>
+
+            <div id="permStopPickerLabel" class="kx-pickup">
+                <div class="kx-pickup-label">Selected stop/location</div>
+                <div id="permStopPickerAddress" class="kx-pickup-address">Tap map to pick location...</div>
+            </div>
+
+            <div class="kx-dates">
+                <div>
+                    <label for="permEffectiveDate" class="kx-label">Effective From *</label>
+                    <input id="permEffectiveDate" type="date" required class="kx-input">
                 </div>
-
-                <!-- Effective Date -->
-                <div class="student-form-group">
-                    <label for="permEffectiveDate" class="student-form-label">Effective From *</label>
-                    <input type="date" id="permEffectiveDate" required class="student-form-input">
-                </div>
-
-                <!-- Reason / Notes -->
-                <div class="student-form-group">
-                    <label for="permReasonNotes" class="student-form-label">Reason for Change <span class="helper">(Optional)</span></label>
-                    <textarea id="permReasonNotes" rows="2" placeholder="e.g. Relocated residence to Subedari" class="student-form-textarea"></textarea>
-                </div>
-
-                <div class="student-note-card">
-                    <strong>Note:</strong> Permanent stop changes are reviewed and approved by the transport administrator. Once approved, your daily bus pass and regular route will automatically update.
+                <div>
+                    <label for="permReasonNotes" class="kx-label">Reason (Optional)</label>
+                    <input id="permReasonNotes" type="text" placeholder="e.g. Relocated residence" class="kx-input">
                 </div>
             </div>
 
-            <!-- Footer / Actions -->
-            <div class="student-modal-footer">
-                <button type="button" onclick="closePermanentStopModal()" class="student-btn-cancel">Cancel</button>
-                <button type="submit" id="btnSubmitPermStop" class="student-btn-primary">
-                    <span>Submit Request</span>
-                </button>
+            <div class="student-note-card">
+                <strong>Note:</strong> Permanent stop changes are reviewed and approved by the transport administrator. Once approved, your daily bus pass and regular route will automatically update.
             </div>
-        </form>
+        </div>
+
+        <div class="kx-foot">
+            <button type="button" onclick="closePermanentStopModal()" class="kx-btn kx-btn--ghost">Cancel</button>
+            <button id="btnSubmitPermStop" type="button" onclick="submitPermanentStopChange()" disabled class="kx-btn kx-btn--primary opacity-50 cursor-not-allowed">
+                Step 2: Submit Request
+            </button>
+        </div>
     </div>
 </div>
 

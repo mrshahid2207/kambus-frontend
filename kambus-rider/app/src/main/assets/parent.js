@@ -132,7 +132,12 @@
     // Utility Functions
     // --------------------------------------------------------------------
     function getToken() {
-        return localStorage.getItem("kambus_token");
+        let token = localStorage.getItem("kambus_token");
+        if (!token && window.AndroidSession && typeof window.AndroidSession.getToken === "function") {
+            token = window.AndroidSession.getToken();
+            if (token) localStorage.setItem("kambus_token", token);
+        }
+        return token;
     }
 
     function getRole() {
@@ -278,6 +283,12 @@
             localStorage.setItem("kambus_role", data.role);
             localStorage.setItem("kambus_user_id", data.user_id || "");
 
+            if (window.AndroidSession && typeof window.AndroidSession.saveSession === "function") {
+                try {
+                    window.AndroidSession.saveSession(data.access_token, data.role, String(data.user_id || ""), null);
+                } catch (_) {}
+            }
+
             if (rememberMe) {
                 localStorage.setItem("kambus_remember", "true");
                 localStorage.setItem("kambus_saved_identifier", phoneOrId);
@@ -322,6 +333,11 @@
         localStorage.removeItem("kambus_token");
         localStorage.removeItem("kambus_role");
         localStorage.removeItem("kambus_user_id");
+        if (window.AndroidSession && typeof window.AndroidSession.clearSession === "function") {
+            try {
+                window.AndroidSession.clearSession();
+            } catch (_) {}
+        }
         window.location.replace("index.html");
     }
 
@@ -1099,11 +1115,66 @@
     }
 
     // --------------------------------------------------------------------
+    // Campus Plan Entitlements & Live Auto-Refresh
+    // --------------------------------------------------------------------
+    async function loadParentCampusEntitlements() {
+        const token = localStorage.getItem("kambus_token");
+        if (!token) return;
+        try {
+            const res = await fetch(`${API_BASE}/me/entitlements`, {
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                    "Accept": "application/json"
+                }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                window.parentCampusEntitlements = data;
+                window.campusEntitlements = data;
+            }
+        } catch (e) {
+            console.warn("Could not load parent entitlements:", e);
+        }
+    }
+
+    window.hasEntitlement = function(featureName) {
+        if (!window.campusEntitlements || !Array.isArray(window.campusEntitlements.features)) {
+            return true;
+        }
+        return window.campusEntitlements.features.includes(featureName);
+    };
+
+    window.showPlanUpgradePrompt = function(featureName, requiredTier, benefitDescription) {
+        const tierName = requiredTier.charAt(0).toUpperCase() + requiredTier.slice(1);
+        const msg = `${featureName} requires the ${tierName} plan or higher. ${benefitDescription || "Contact your campus administrator to upgrade."}`;
+        if (typeof notifyUser === "function") {
+            notifyUser("warn", `${tierName} Plan Required`, msg);
+        } else {
+            alert(msg);
+        }
+    };
+
+    window.loadCampusEntitlements = loadParentCampusEntitlements;
+
+    // --------------------------------------------------------------------
     // DOM Ready Initialization & Global API Export
     // --------------------------------------------------------------------
     document.addEventListener("DOMContentLoaded", () => {
         initApp();
         registerDeviceToken();
+        loadParentCampusEntitlements();
+
+        document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === "visible") {
+                loadParentCampusEntitlements();
+            }
+        });
+        window.addEventListener("focus", () => {
+            loadParentCampusEntitlements();
+        });
+        setInterval(() => {
+            loadParentCampusEntitlements();
+        }, 60000);
     });
 
     async function toggleNotTravelling(index) {
