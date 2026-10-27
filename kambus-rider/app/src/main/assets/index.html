@@ -17,6 +17,10 @@
     <script src="kambus-ui.js"></script>
     <style>
         :root {
+            --navy: #17333f;
+            --navy-deep: #0f232c;
+            --teal: #3fa796;
+            --teal-dark: #2d7a6d;
             --banner-navy-top: #14283A;
             --banner-navy-bot: #1F3345;
             --form-bg: #FAF9F5;
@@ -24,7 +28,7 @@
             --input-border: #DAD7CE;
             --prefix-bg: #F1EFE8;
             --label-color: #3E4C58;
-            --btn-navy: #1F3345;
+            --btn-navy: #17333f;
             --help-muted: #4A5763;
         }
 
@@ -264,7 +268,8 @@
             z-index: 2;
             margin-top: 0;
             background-color: var(--form-bg);
-            border-top: 4px solid #F5A623;
+            border-top: 3px solid var(--teal, #3fa796);
+            border-image: linear-gradient(90deg, #3fa796, rgba(63, 167, 150, 0)) 1;
             padding: 28px 28px;
             padding-bottom: max(32px, calc(24px + env(safe-area-inset-bottom, 0px)));
             flex: 1;
@@ -427,7 +432,7 @@
             height: 20px;
             min-width: 20px;
             min-height: 20px;
-            accent-color: #1F3345;
+            accent-color: var(--navy, #17333f);
             cursor: pointer;
             margin: 0;
         }
@@ -441,18 +446,19 @@
         .forgot-link {
             font-size: 14px;
             font-weight: 600;
-            color: #1F3345;
+            color: var(--teal-dark, #2d7a6d);
             text-decoration: none;
             min-height: 44px;
             display: inline-flex;
             align-items: center;
             cursor: pointer;
-            transition: opacity 0.15s ease;
+            transition: opacity 0.15s ease, color 0.15s ease;
         }
 
         .forgot-link:hover {
+            color: var(--teal, #3fa796);
             text-decoration: underline;
-            opacity: 0.85;
+            opacity: 0.9;
         }
 
         /* Error Alert Banner */
@@ -479,10 +485,10 @@
             width: 100%;
             min-height: 56px;
             height: 56px;
-            background-color: var(--btn-navy);
+            background-color: var(--navy, #17333f);
             color: #ffffff;
             font-size: 17px;
-            font-weight: 600;
+            font-weight: 700;
             border: 0;
             border-radius: 12px;
             margin-top: 22px;
@@ -491,13 +497,14 @@
             align-items: center;
             justify-content: center;
             gap: 8px;
-            transition: transform 0.1s ease, background-color 0.15s ease, opacity 0.15s ease;
+            box-shadow: 0 10px 24px rgba(23, 51, 63, 0.28);
+            transition: transform 0.1s ease, background-color 0.15s ease, opacity 0.15s ease, box-shadow 0.15s ease;
             font-family: inherit;
             scroll-margin-bottom: 32px;
         }
 
         .submit-btn:hover:not(:disabled) {
-            background-color: #172736;
+            background-color: var(--navy-deep, #0f232c);
         }
 
         .submit-btn:active:not(:disabled) {
@@ -523,7 +530,7 @@
         }
 
         .register-link {
-            color: #1F3345;
+            color: var(--teal-dark, #2d7a6d);
             font-weight: 700;
             border: 0;
             background: transparent;
@@ -533,13 +540,14 @@
             min-height: 44px;
             display: inline-flex;
             align-items: center;
-            transition: opacity 0.15s ease;
+            transition: opacity 0.15s ease, color 0.15s ease;
             font-family: inherit;
             text-decoration: underline;
         }
 
         .register-link:hover {
-            opacity: 0.85;
+            color: var(--teal, #3fa796);
+            opacity: 0.9;
         }
 
         /* Help Line */
@@ -678,11 +686,11 @@
         .login-banner { background: #14283A !important; background-image: none !important; border-radius: 0 !important; padding-bottom: 28px !important; }
         .banner-highlights { display: none !important; }
         .banner-intro, .banner-bottom { margin-top: 20px; margin-bottom: 0; }
-        .form-panel { margin-top: 0 !important; border-radius: 0 !important; box-shadow: none !important; border-top: 4px solid #F5A623; padding-top: 24px; }
-        .role-btn.is-active { background: #14283A; color: #ffffff; box-shadow: none; }
-        .input-row:focus-within { border-color: #14283A; box-shadow: 0 0 0 3px rgba(245, 166, 35, 0.35); }
-        .submit-btn { background-color: #F5A623; color: #14283A; font-weight: 700; }
-        .submit-btn:hover:not(:disabled) { background-color: #E0951A; }
+        .form-panel { margin-top: 0 !important; border-radius: 0 !important; box-shadow: none !important; border-top: 3px solid #3fa796; border-image: linear-gradient(90deg, #3fa796, rgba(63, 167, 150, 0)) 1; padding-top: 24px; }
+        .role-btn.is-active { background: #17333f; color: #ffffff; box-shadow: none; }
+        .input-row:focus-within { border-color: #17333f; box-shadow: 0 0 0 3px rgba(63, 167, 150, 0.25); }
+        .submit-btn { background-color: #17333f; color: #ffffff; font-weight: 700; box-shadow: 0 10px 24px rgba(23, 51, 63, 0.28); }
+        .submit-btn:hover:not(:disabled) { background-color: #0f232c; }
         .field-hint { font-size: 13px; }
     </style>
 </head>
@@ -869,7 +877,7 @@
             <div id="signupMsg" class="hidden text-xs p-2.5 rounded-xl" style="font-size: 13px; padding: 10px; border-radius: 10px; margin-top: 12px;"></div>
             <div class="pt-3 flex gap-3" style="display: flex; gap: 12px; margin-top: 18px;">
                 <button type="button" onclick="closeSignupModal()" class="flex-1 min-h-[48px] bg-slate-100 hover:bg-slate-200 text-navy font-semibold rounded-xl text-sm cursor-pointer" style="flex: 1; min-height: 48px; border: 1px solid #DAD7CE; border-radius: 12px; background: #FAF9F5; color: #1F3345; font-weight: 600;">Cancel</button>
-                <button type="submit" id="btnRegSubmit" class="flex-1 min-h-[48px] bg-navy hover:bg-navy/90 text-white font-semibold rounded-xl text-sm cursor-pointer" style="flex: 1; min-height: 48px; border: 0; border-radius: 12px; background: #1F3345; color: #ffffff; font-weight: 600;">Register</button>
+                <button type="submit" id="btnRegSubmit" class="flex-1 min-h-[48px] bg-navy hover:bg-navy/90 text-white font-semibold rounded-xl text-sm cursor-pointer" style="flex: 1; min-height: 48px; border: 0; border-radius: 12px; background: #17333f; color: #ffffff; font-weight: 600;">Register</button>
             </div>
         </form>
     </div>

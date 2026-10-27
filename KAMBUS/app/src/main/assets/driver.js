@@ -19,6 +19,9 @@ const OSRM_BASE = "https://kambus-orsm.onrender.com";
                 localStorage.removeItem("kambus_role");
                 localStorage.removeItem("kambus_user_id");
                 localStorage.removeItem("kambus_driver_dashboard");
+                if (window.AndroidSession && typeof window.AndroidSession.clearSession === "function") {
+                    try { window.AndroidSession.clearSession(); } catch (_) {}
+                }
                 window.location.replace("index.html");
             }
         } catch (e) { /* never break the original request */ }
@@ -108,6 +111,9 @@ const TRANSLATIONS = {
         next_stop_eta: "ETA: ~{min} min",
         students_expected: "{count} students expected",
         student_expected_single: "1 student expected",
+        no_pickups_badge: "No pickups",
+        no_pickups_expected: "No pickups expected (All not travelling)",
+        route_stops_header: "Route Stops",
 
         // Trip Summary Bar (Collapsed & Expanded)
         college_label: "College",
@@ -197,6 +203,13 @@ const TRANSLATIONS = {
         confirm_logout_active_trip: "You have an active trip in progress. Are you sure you want to log out? The trip will be ended automatically.",
         confirm_end_trip_ok: "End Trip",
         cancel: "Cancel",
+
+        // Trusted Device Modal
+        trusted_device_title: "Trust this device?",
+        trusted_device_prompt: "Do you trust this device? If yes, this becomes your primary device and other sessions will be signed out.",
+        trusted_device_confirm: "Yes, trust this device",
+        trusted_device_dismiss: "Not now",
+        device_trusted_success: "Device marked as trusted",
 
         // Toasts & Notifications
         toast_select_trip_type: "Select trip type",
@@ -325,6 +338,9 @@ const TRANSLATIONS = {
         next_stop_eta: "ETA: ~{min} मिनट",
         students_expected: "{count} छात्र अपेक्षित",
         student_expected_single: "1 छात्र अपेक्षित",
+        no_pickups_badge: "कोई पिकअप नहीं",
+        no_pickups_expected: "कोई छात्र अपेक्षित नहीं (सभी अनुपस्थित)",
+        route_stops_header: "रूट के स्टॉप",
 
         // Trip Summary Bar (Collapsed & Expanded)
         college_label: "कॉलेज",
@@ -414,6 +430,13 @@ const TRANSLATIONS = {
         confirm_logout_active_trip: "आपकी यात्रा अभी सक्रिय है। क्या आप वाकई लॉग आउट करना चाहते हैं? यात्रा स्वतः समाप्त हो जाएगी।",
         confirm_end_trip_ok: "यात्रा समाप्त करें",
         cancel: "रद्द करें",
+
+        // Trusted Device Modal
+        trusted_device_title: "क्या आप इस डिवाइस पर भरोसा करते हैं?",
+        trusted_device_prompt: "क्या आप इस डिवाइस पर भरोसा करते हैं? यदि हाँ, तो यह आपका प्राथमिक डिवाइस बन जाएगा और अन्य सत्र साइन आउट हो जाएंगे।",
+        trusted_device_confirm: "हाँ, इस डिवाइस पर भरोसा करें",
+        trusted_device_dismiss: "अभी नहीं",
+        device_trusted_success: "डिवाइस को आपके विश्वसनीय प्राथमिक डिवाइस के रूप में चिह्नित किया गया है।",
 
         // Toasts & Notifications
         toast_select_trip_type: "यात्रा का प्रकार चुनें",
@@ -542,6 +565,9 @@ const TRANSLATIONS = {
         next_stop_eta: "ETA: ~{min} నిమి",
         students_expected: "{count} విద్యార్థులు రానున్నారు",
         student_expected_single: "1 విద్యార్థి రానున్నారు",
+        no_pickups_badge: "పికప్‌లు లేవు",
+        no_pickups_expected: "ఎవరూ రావట్లేదు (అందరూ సెలవు)",
+        route_stops_header: "రూట్ స్టాప్‌లు",
 
         // Trip Summary Bar (Collapsed & Expanded)
         college_label: "కళాశాల",
@@ -631,6 +657,13 @@ const TRANSLATIONS = {
         confirm_logout_active_trip: "మీ యాక్టివ్ ట్రిప్ ఇంకా కొనసాగుతోంది. మీరు ఖచ్చితంగా లాగ్ అవుట్ చేయాలనుకుంటున్నారా? ట్రిప్ స్వయంచాలకంగా ముగుస్తుంది.",
         confirm_end_trip_ok: "ట్రిప్ ముగించండి",
         cancel: "రద్దు చేయండి",
+
+        // Trusted Device Modal
+        trusted_device_title: "ఈ పరికరాన్ని విశ్వసిస్తున్నారా?",
+        trusted_device_prompt: "మీరు ఈ పరికరాన్ని విశ్వసిస్తున్నారా? అవును అయితే, ఇది మీ ప్రాథమిక పరికరం అవుతుంది మరియు ఇతర సెషన్‌లు సైన్ అవుట్ చేయబడతాయి.",
+        trusted_device_confirm: "అవును, ఈ పరికరాన్ని విశ్వసించండి",
+        trusted_device_dismiss: "ఇప్పుడు కాదు",
+        device_trusted_success: "పరికరం మీ విశ్వసనీయ ప్రాథమిక పరికరంగా గుర్తించబడింది.",
 
         // Toasts & Notifications
         toast_select_trip_type: "ట్రిప్ రకాన్ని ఎంచుకోండి",
@@ -935,6 +968,7 @@ let busAssignmentCheckInterval = null; // Polls for driver->bus reassignment whi
 let BUS_ID = null;
 let currentBusData = null;
 let driverRouteStops = [];
+let driverExtraPickups = [];
 let activeTripType = null;
 let passedStopIds = new Set();
 let currentNextStop = null;
@@ -1016,7 +1050,12 @@ document.addEventListener("visibilitychange", async () => {
 // ========================================================================
 
 function getToken() {
-    return localStorage.getItem("kambus_token");
+    let token = localStorage.getItem("kambus_token");
+    if (!token && window.AndroidSession && typeof window.AndroidSession.getToken === "function") {
+        token = window.AndroidSession.getToken();
+        if (token) localStorage.setItem("kambus_token", token);
+    }
+    return token;
 }
 
 // ========================================================================
@@ -1056,10 +1095,18 @@ function applyDriverFeatureGating() {
         if (typeof VoiceAnnouncer !== "undefined" && typeof VoiceAnnouncer.setEnabled === "function") {
             VoiceAnnouncer.setEnabled(false);
         }
+    } else {
+        if (typeof VoiceAnnouncer !== "undefined" && typeof VoiceAnnouncer.setEnabled === "function") {
+            VoiceAnnouncer.setEnabled(true);
+        }
     }
     if (!hasDriverEntitlement("wait_request")) {
         stopWaitRequestsPolling();
         hideActiveWaitCard();
+    } else {
+        if (isTripActive && typeof startWaitRequestsPolling === "function") {
+            startWaitRequestsPolling();
+        }
     }
 }
 
@@ -1095,8 +1142,24 @@ document.addEventListener("DOMContentLoaded", () => {
     // Restore Driver State
     restoreDriverDashboardState();
 
+    // Check Trusted Device Confirmation Flow
+    checkTrustedDeviceFlow();
+
     // Initialize Driver Real-time WebSocket
     initDriverWebSocket();
+
+    // Live Entitlements auto-refresh on foreground / interval (mitigation for tier upgrades)
+    document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") {
+            loadDriverCampusEntitlements();
+        }
+    });
+    window.addEventListener("focus", () => {
+        loadDriverCampusEntitlements();
+    });
+    setInterval(() => {
+        loadDriverCampusEntitlements();
+    }, 60000);
 });
 
 // ========================================================================
@@ -1152,9 +1215,143 @@ async function handleDriverLogout(event) {
     localStorage.removeItem("kambus_role");
     localStorage.removeItem("kambus_user_id");
     localStorage.removeItem("kambus_driver_dashboard");
+    sessionStorage.removeItem("kambus_trust_prompt_dismissed");
+    if (window.AndroidSession && typeof window.AndroidSession.clearSession === "function") {
+        try { window.AndroidSession.clearSession(); } catch (_) {}
+    }
 
     // Redirect to login page
     window.location.href = "index.html";
+}
+
+// ========================================================================
+// TRUSTED DEVICE CONFIRMATION FLOW
+// ========================================================================
+
+function getOrCreateDeviceId() {
+    try {
+        if (window.AndroidSession && typeof window.AndroidSession.getDeviceId === "function") {
+            const devId = window.AndroidSession.getDeviceId();
+            if (devId && devId.length > 5) {
+                localStorage.setItem("kambus_device_id", devId);
+                return devId;
+            }
+        }
+    } catch (e) {
+        console.warn("Could not retrieve device ID from native bridge:", e);
+    }
+
+    let devId = localStorage.getItem("kambus_device_id");
+    if (!devId) {
+        if (window.crypto && typeof window.crypto.randomUUID === "function") {
+            devId = window.crypto.randomUUID();
+        } else {
+            devId = "dev-" + Math.random().toString(36).substring(2, 15) + "-" + Date.now().toString(36);
+        }
+        localStorage.setItem("kambus_device_id", devId);
+    }
+    return devId;
+}
+
+function showTrustedDeviceModal() {
+    const modal = document.getElementById("trustedDeviceModal");
+    if (modal) {
+        modal.classList.remove("hidden");
+    }
+}
+
+function dismissTrustedDeviceModal() {
+    const modal = document.getElementById("trustedDeviceModal");
+    if (modal) {
+        modal.classList.add("hidden");
+    }
+    sessionStorage.setItem("kambus_trust_prompt_dismissed", "true");
+}
+
+async function confirmTrustedDevice() {
+    const token = getToken();
+    const deviceId = getOrCreateDeviceId();
+    const btn = document.getElementById("confirmTrustDeviceBtn");
+    const origHtml = btn ? btn.innerHTML : "";
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<span>Saving…</span>`;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE}/driver/trust-device`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify({ device_id: deviceId })
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            const dash = getInitialDriverDashboard() || {};
+            dash.trusted_device_id = deviceId;
+            dash.is_trusted_device = true;
+            dash.needs_trust_prompt = false;
+            localStorage.setItem("kambus_driver_dashboard", JSON.stringify(dash));
+            sessionStorage.setItem("kambus_trust_prompt_dismissed", "true");
+            dismissTrustedDeviceModal();
+            if (window.KambusNotify && typeof window.KambusNotify.notify === "function") {
+                window.KambusNotify.notify({
+                    type: "success",
+                    title: t("trusted_device_title") || "Trusted Device",
+                    message: t("device_trusted_success") || "Device marked as trusted"
+                });
+            }
+        } else {
+            const err = await response.json().catch(() => ({}));
+            console.error("Failed to trust device:", err);
+            dismissTrustedDeviceModal();
+        }
+    } catch (err) {
+        console.error("Error confirming trusted device:", err);
+        dismissTrustedDeviceModal();
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = origHtml;
+        }
+    }
+}
+
+async function checkTrustedDeviceFlow() {
+    const token = getToken();
+    if (!token) return;
+
+    if (sessionStorage.getItem("kambus_trust_prompt_dismissed") === "true") {
+        return;
+    }
+
+    const initialData = getInitialDriverDashboard();
+    if (initialData && typeof initialData.needs_trust_prompt === "boolean") {
+        if (initialData.needs_trust_prompt) {
+            showTrustedDeviceModal();
+        }
+        return;
+    }
+
+    try {
+        const deviceId = getOrCreateDeviceId();
+        const resp = await fetch(`${API_BASE}/driver/trusted-device/status?device_id=${encodeURIComponent(deviceId)}`, {
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
+        });
+        if (resp.ok) {
+            const data = await resp.json();
+            if (data.needs_trust_prompt) {
+                showTrustedDeviceModal();
+            }
+        }
+    } catch (e) {
+        console.warn("Could not check trusted device status:", e);
+    }
 }
 
 // ========================================================================
@@ -1419,17 +1616,45 @@ function applyRouteStopsPayload(data, overrideTripType = null) {
         const useEveningCoords = isEvening && stop.evening_latitude != null && stop.evening_longitude != null;
         const lat = useEveningCoords ? Number(stop.evening_latitude) : Number(stop.latitude);
         const lng = useEveningCoords ? Number(stop.evening_longitude) : Number(stop.longitude);
+        const count = Number(stop.student_count || 0);
+        const hasExplicitZeroStudents = (stop.student_count !== undefined && count === 0);
+        const isCustom = Boolean(stop.is_custom);
+        const isRealloc = Boolean(stop.is_reallocated || stop.has_reallocated_students || stop.is_extra_pickup);
+        const isNoPickups = hasExplicitZeroStudents && !isCustom && !isRealloc;
         return {
             ...stop,
             latitude: lat,
-            longitude: lng
+            longitude: lng,
+            student_count: count,
+            is_no_pickups: isNoPickups,
+            is_custom: isCustom,
+            is_reallocated: Boolean(stop.is_reallocated),
+            has_reallocated_students: Boolean(stop.has_reallocated_students),
+            is_extra_pickup: isRealloc,
+            reallocated_student_count: Number(stop.reallocated_student_count || 0),
+            source_bus_id: stop.source_bus_id || null,
+            source_bus_number: stop.source_bus_number || null,
+            students: Array.isArray(stop.students) ? stop.students : []
         };
     });
+
+    driverExtraPickups = Array.isArray(data.extra_pickups) ? data.extra_pickups : [];
 
     if (driverRouteStops.length > 0) {
         const firstStopName = document.getElementById("preTripFirstStopName");
         const firstStop = driverRouteStops[0];
-        if (firstStopName && firstStop) firstStopName.textContent = firstStop.name;
+        if (firstStopName && firstStop) {
+            if (firstStop.is_extra_pickup) {
+                const src = firstStop.source_bus_number ? ` • Bus ${firstStop.source_bus_number}` : "";
+                firstStopName.innerHTML = `${firstStop.name} <span class="ml-1 inline-block px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-amber-500/10 text-amber-700 border border-amber-500/30" style="vertical-align: middle;">⚡ Extra${src}</span>`;
+            } else if (firstStop.is_custom) {
+                firstStopName.innerHTML = `${firstStop.name} <span class="ml-1 inline-block px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-warn/10 text-warn border border-warn/20" style="vertical-align: middle;">Temp</span>`;
+            } else if (firstStop.is_no_pickups) {
+                firstStopName.innerHTML = `${firstStop.name} <span class="ml-1 inline-block px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 border border-slate-300" style="vertical-align: middle;">${t("no_pickups_badge")}</span>`;
+            } else {
+                firstStopName.textContent = firstStop.name;
+            }
+        }
     }
 
     // Dynamic College Coordinates from Backend if provided
@@ -1450,6 +1675,7 @@ function applyRouteStopsPayload(data, overrideTripType = null) {
 
     updatePreTripOverview();
     updateStopProgressionUI();
+    renderRouteStopList();
 
     if (isTripActive) {
         initOrUpdateRouteMap();
@@ -1514,10 +1740,63 @@ function updatePreTripOverview() {
         stopCount.textContent = count === 1 ? t("stop_count_single") : t("stops_count", { count });
     }
 
+    const firstStop = driverRouteStops[0];
     const firstStopName = document.getElementById("preTripFirstStopName");
     if (firstStopName) {
-        firstStopName.textContent = driverRouteStops[0]?.name || t("route_stops_ready");
+        if (firstStop?.is_extra_pickup) {
+            const src = firstStop.source_bus_number ? ` • Bus ${firstStop.source_bus_number}` : "";
+            firstStopName.innerHTML = `${firstStop.name || t("route_stops_ready")} <span class="ml-1 inline-block px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-amber-500/10 text-amber-700 border border-amber-500/30" style="vertical-align: middle;">⚡ Extra${src}</span>`;
+        } else if (firstStop?.is_custom) {
+            firstStopName.innerHTML = `${firstStop.name || t("route_stops_ready")} <span class="ml-1 inline-block px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-warn/10 text-warn border border-warn/20" style="vertical-align: middle;">Temp</span>`;
+        } else if (firstStop?.is_no_pickups) {
+            firstStopName.innerHTML = `${firstStop.name || t("route_stops_ready")} <span class="ml-1 inline-block px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 border border-slate-300" style="vertical-align: middle;">${t("no_pickups_badge")}</span>`;
+        } else {
+            firstStopName.textContent = firstStop?.name || t("route_stops_ready");
+        }
     }
+
+    renderPreTripExtraPickupsAlert();
+}
+
+function renderPreTripExtraPickupsAlert() {
+    let alertElem = document.getElementById("preTripExtraPickupsAlert");
+    if (!alertElem) {
+        const preTripCard = document.querySelector("#preTripView > .kx-card");
+        if (preTripCard) {
+            alertElem = document.createElement("div");
+            alertElem.id = "preTripExtraPickupsAlert";
+            preTripCard.appendChild(alertElem);
+        }
+    }
+    if (!alertElem) return;
+
+    if (!driverExtraPickups || driverExtraPickups.length === 0) {
+        alertElem.innerHTML = "";
+        alertElem.classList.add("hidden");
+        return;
+    }
+
+    alertElem.classList.remove("hidden");
+    alertElem.className = "pt-2.5 border-t border-amber-200 mt-2";
+    alertElem.innerHTML = `
+        <div class="p-2.5 rounded-lg bg-amber-50 border border-amber-300 text-amber-900 text-xs space-y-1.5">
+            <div class="flex items-center justify-between font-bold">
+                <span class="flex items-center gap-1.5 text-amber-800">
+                    <svg class="w-3.5 h-3.5 text-amber-600" fill="currentColor" viewBox="0 0 20 20"><path d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z"/></svg>
+                    ⚡ ${driverExtraPickups.length} Extra Pickup${driverExtraPickups.length > 1 ? 's' : ''} Today
+                </span>
+                <span class="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-amber-200 text-amber-900">Reallocated</span>
+            </div>
+            <div class="space-y-1 text-[11px] text-amber-950">
+                ${driverExtraPickups.map(p => `
+                    <div class="flex items-center justify-between gap-1">
+                        <span class="truncate"><strong>${p.student_name}</strong> at ${p.stop_name}</span>
+                        <span class="shrink-0 font-semibold px-1.5 py-0.5 rounded bg-white/80 border border-amber-300 text-amber-800">Bus ${p.source_bus_number || '?'}</span>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
 }
 
 // ========================================================================
@@ -1907,6 +2186,10 @@ function initDriverWebSocket() {
             try {
                 if (event.data === "pong") return;
                 const data = JSON.parse(event.data);
+                if (data.type === "entitlements_updated") {
+                    loadDriverCampusEntitlements();
+                    return;
+                }
                 if (data.type === "route_rerouted" || data.type === "route_update") {
                     const poly = data.remaining_polyline || data.polyline;
                     if (Array.isArray(poly) && poly.length >= 2) {
@@ -2086,7 +2369,12 @@ function updateNextStopAndEta(driverPos) {
         distance: distToNext,
         orderText: orderText,
         studentCount: nextStop.student_count,
-        isCollege: false
+        isCollege: false,
+        isCustom: Boolean(nextStop.is_custom),
+        isExtraPickup: Boolean(nextStop.is_extra_pickup || nextStop.has_reallocated_students || nextStop.is_reallocated),
+        isNoPickups: Number(nextStop.student_count || 0) === 0,
+        sourceBusNumber: nextStop.source_bus_number,
+        reallocatedCount: Number(nextStop.reallocated_student_count || 0)
     });
 
     updateStopProgressionUI();
@@ -2099,7 +2387,7 @@ function updateNextStopAndEta(driverPos) {
     }
 }
 
-function renderNextStopCard({ name, distance, orderText, studentCount, isCollege }) {
+function renderNextStopCard({ name, distance, orderText, studentCount, isCollege, isCustom = false, isExtraPickup = false, isNoPickups = false, sourceBusNumber = null, reallocatedCount = 0 }) {
     const nameElem = document.getElementById("nextStopName");
     if (nameElem) nameElem.textContent = name;
 
@@ -2111,7 +2399,26 @@ function renderNextStopCard({ name, distance, orderText, studentCount, isCollege
     }
 
     const badgeElem = document.getElementById("nextStopOrderBadge");
-    if (badgeElem) badgeElem.textContent = orderText;
+    if (badgeElem) {
+        if (isExtraPickup) {
+            const busTag = sourceBusNumber ? `Bus ${sourceBusNumber}` : "Reallocated";
+            badgeElem.innerHTML = `${orderText} <span class="ml-1 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-amber-500/20 text-amber-700 border border-amber-500/40" style="vertical-align: text-bottom;">⚡ ${busTag}</span>`;
+            badgeElem.classList.remove("text-ink-muted", "bg-bg", "border-line", "text-warn", "bg-warn/10", "border-warn/20", "text-slate-600", "bg-slate-100", "border-slate-300");
+            badgeElem.classList.add("text-amber-800", "bg-amber-50", "border-amber-300");
+        } else if (isCustom) {
+            badgeElem.innerHTML = `${orderText} <span class="ml-1 inline-block px-1.5 py-0.2 rounded text-[10px] font-bold uppercase tracking-wider bg-warn/20 text-warn border border-warn" style="vertical-align: text-bottom;">Temp</span>`;
+            badgeElem.classList.remove("text-ink-muted", "bg-bg", "border-line", "text-amber-800", "bg-amber-50", "border-amber-300", "text-slate-600", "bg-slate-100", "border-slate-300");
+            badgeElem.classList.add("text-warn", "bg-warn/10", "border-warn/20");
+        } else if (isNoPickups && !isCollege) {
+            badgeElem.innerHTML = `${orderText} <span class="ml-1 inline-block px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 border border-slate-300" style="vertical-align: text-bottom;">${t("no_pickups_badge")}</span>`;
+            badgeElem.classList.remove("text-ink-muted", "bg-bg", "border-line", "text-warn", "bg-warn/10", "border-warn/20", "text-amber-800", "bg-amber-50", "border-amber-300");
+            badgeElem.classList.add("text-slate-600", "bg-slate-100", "border-slate-300");
+        } else {
+            badgeElem.textContent = orderText;
+            badgeElem.classList.remove("text-warn", "bg-warn/10", "border-warn/20", "text-amber-800", "bg-amber-50", "border-amber-300", "text-slate-600", "bg-slate-100", "border-slate-300");
+            badgeElem.classList.add("text-ink-muted", "bg-bg", "border-line");
+        }
+    }
 
     // Next Stop ETA calculation
     const etaElem = document.getElementById("nextStopEta");
@@ -2127,13 +2434,21 @@ function renderNextStopCard({ name, distance, orderText, studentCount, isCollege
 
     if (studentsContainer && studentsElem) {
         const count = Number(studentCount);
-        if (isCollege || !Number.isFinite(count) || count <= 0) {
+        if (isCollege || !Number.isFinite(count) || count < 0) {
             studentsContainer.classList.add("hidden");
+        } else if (count === 0) {
+            studentsContainer.classList.remove("hidden");
+            studentsElem.textContent = t("no_pickups_expected");
         } else {
             studentsContainer.classList.remove("hidden");
-            studentsElem.textContent = count === 1
+            let text = count === 1
                 ? t("student_expected_single")
                 : t("students_expected", { count });
+            if (isExtraPickup && reallocatedCount > 0) {
+                const src = sourceBusNumber ? `from Bus ${sourceBusNumber}` : "reallocated";
+                text += ` (${reallocatedCount} extra ${src})`;
+            }
+            studentsElem.textContent = text;
         }
     }
 }
@@ -2194,7 +2509,15 @@ function updateStopProgressionUI() {
 
     const nextElem = document.getElementById("progressNextText");
     if (nextElem) {
-        nextElem.textContent = currentNextStop ? t("next_stop_prefix", { name: currentNextStop.name }) : t("to_college");
+        if (currentNextStop) {
+            const noPickupsTag = (Number(currentNextStop.student_count || 0) === 0) ? ` (${t("no_pickups_badge")})` : '';
+            const extraTag = currentNextStop.is_extra_pickup
+                ? ` (Extra • Bus ${currentNextStop.source_bus_number || '?'})`
+                : (currentNextStop.is_custom ? ' (Temp)' : noPickupsTag);
+            nextElem.textContent = `${t("next_stop_prefix", { name: currentNextStop.name })}${extraTag}`;
+        } else {
+            nextElem.textContent = t("to_college");
+        }
     }
 
     const summaryPassedElem = document.getElementById("summaryPassedCount");
@@ -2203,6 +2526,168 @@ function updateStopProgressionUI() {
     if (summaryProgressElem) {
         summaryProgressElem.textContent = t("summary_passed_ratio", { passed: passedCount, total: totalStops });
     }
+
+    updateActiveTripExtraPickupsBanner();
+    renderExtraPickupsSummary();
+    renderRouteStopList();
+}
+
+function updateActiveTripExtraPickupsBanner() {
+    let banner = document.getElementById("activeTripExtraPickupsBanner");
+    if (!banner) {
+        const activeTripView = document.getElementById("activeTripView");
+        if (activeTripView) {
+            banner = document.createElement("div");
+            banner.id = "activeTripExtraPickupsBanner";
+            const nextStopSection = activeTripView.querySelector("section");
+            if (nextStopSection && nextStopSection.nextElementSibling) {
+                activeTripView.insertBefore(banner, nextStopSection.nextElementSibling);
+            } else {
+                activeTripView.prepend(banner);
+            }
+        }
+    }
+    if (!banner) return;
+
+    if (!driverExtraPickups || driverExtraPickups.length === 0) {
+        banner.innerHTML = "";
+        banner.classList.add("hidden");
+        return;
+    }
+
+    const reallocSummary = driverExtraPickups.map(p => `${p.student_name} (Bus ${p.source_bus_number || '?'})`).join(', ');
+    banner.classList.remove("hidden");
+    banner.className = "p-2 rounded-xl bg-amber-50 border border-amber-300 text-amber-950 text-xs flex items-center gap-2 shadow-xs";
+    banner.innerHTML = `
+        <div class="w-6 h-6 rounded-lg bg-amber-200 flex items-center justify-center shrink-0 text-amber-800 font-bold text-xs">⚡</div>
+        <div class="min-w-0 flex-1">
+            <span class="font-bold text-amber-900">${driverExtraPickups.length} Extra Pickup${driverExtraPickups.length > 1 ? 's' : ''}:</span>
+            <span class="text-amber-800 text-[11px] truncate block">${reallocSummary}</span>
+        </div>
+    `;
+}
+
+function renderExtraPickupsSummary() {
+    let container = document.getElementById("extraPickupsSummaryContainer");
+    if (!container) {
+        const parent = document.getElementById("summaryDetailsContent");
+        if (parent) {
+            container = document.createElement("div");
+            container.id = "extraPickupsSummaryContainer";
+            parent.appendChild(container);
+        }
+    }
+    if (!container) return;
+
+    if (!driverExtraPickups || driverExtraPickups.length === 0) {
+        container.innerHTML = "";
+        container.classList.add("hidden");
+        return;
+    }
+
+    container.classList.remove("hidden");
+    container.className = "kx-card-sub p-2.5 space-y-2 border border-amber-200 bg-amber-50/50 rounded-xl";
+    container.innerHTML = `
+        <div class="flex items-center justify-between text-xs font-bold text-amber-900 uppercase tracking-wider">
+            <span class="flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5 text-amber-600 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z"/></svg>
+                Extra Pickups (${driverExtraPickups.length})
+            </span>
+            <span class="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded bg-amber-200/80 text-amber-900 border border-amber-300">Reallocated</span>
+        </div>
+        <div class="space-y-1.5 text-xs text-navy">
+            ${driverExtraPickups.map(p => `
+                <div class="flex items-center justify-between gap-2 p-1.5 rounded bg-surface border border-amber-200/70 shadow-xs">
+                    <div class="min-w-0">
+                        <p class="font-semibold text-navy truncate">${p.student_name} <span class="font-normal font-mono text-ink-muted text-[11px]">(${p.roll_number})</span></p>
+                        <p class="text-[11px] text-ink-muted truncate">Stop: <strong class="text-navy">${p.stop_name}</strong></p>
+                    </div>
+                    <span class="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-300">
+                        From Bus ${p.source_bus_number || '?'}
+                    </span>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
+function renderRouteStopList() {
+    const listContainers = [
+        document.getElementById("driverRouteStopList"),
+        document.getElementById("preTripRouteStopList")
+    ].filter(Boolean);
+
+    if (listContainers.length === 0) return;
+
+    if (!driverRouteStops || driverRouteStops.length === 0) {
+        listContainers.forEach(container => {
+            container.innerHTML = `<p class="text-xs text-ink-muted text-center py-2">${t("loading_route")}</p>`;
+        });
+        return;
+    }
+
+    const totalCountText = driverRouteStops.length === 1 ? t("stop_count_single") : t("stops_count", { count: driverRouteStops.length });
+    const countBadge = document.getElementById("routeStopsCountBadge");
+    if (countBadge) countBadge.textContent = totalCountText;
+    const preTripCountBadge = document.getElementById("preTripStopListCount");
+    if (preTripCountBadge) preTripCountBadge.textContent = totalCountText;
+    const preTripCard = document.getElementById("preTripRouteStopListCard");
+    if (preTripCard) preTripCard.classList.remove("hidden");
+
+    const html = driverRouteStops.map((stop, index) => {
+        const stopId = stop.stop_id || stop.id;
+        const isPassed = passedStopIds.has(stopId);
+        const isNext = currentNextStop && (currentNextStop.stop_id || currentNextStop.id) === stopId;
+        const isNoPickups = Number(stop.student_count || 0) === 0;
+        const isCustom = Boolean(stop.is_custom);
+        const isExtraPickup = Boolean(stop.is_extra_pickup || stop.has_reallocated_students || stop.is_reallocated);
+        const count = Number(stop.student_count || 0);
+
+        let badgeHtml = "";
+        if (isNoPickups) {
+            badgeHtml = `<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 border border-slate-300 shrink-0">${t("no_pickups_badge")}</span>`;
+        } else if (isExtraPickup) {
+            const src = stop.source_bus_number ? ` • Bus ${stop.source_bus_number}` : "";
+            badgeHtml = `<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-amber-500/10 text-amber-700 border border-amber-500/30 shrink-0">⚡ Extra${src}</span>`;
+        } else if (isCustom) {
+            badgeHtml = `<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-warn/10 text-warn border border-warn/20 shrink-0">Temp</span>`;
+        } else {
+            badgeHtml = `<span class="px-1.5 py-0.5 rounded text-[10px] font-mono font-medium text-ink-muted bg-bg border border-line shrink-0">${count} ${t("expected_abbrev")}</span>`;
+        }
+
+        let rowClasses = "flex items-center justify-between p-2 rounded-lg border text-xs transition-colors ";
+        let orderIndicator = "";
+
+        if (isPassed) {
+            rowClasses += "bg-bg/60 border-line text-ink-muted opacity-60";
+            orderIndicator = `<span class="w-5 h-5 rounded-full bg-ok/10 text-ok flex items-center justify-center text-[10px] shrink-0 font-bold">✓</span>`;
+        } else if (isNext) {
+            rowClasses += "bg-brand/5 border-brand/40 text-navy font-semibold shadow-xs ring-1 ring-brand/20";
+            orderIndicator = `<span class="w-5 h-5 rounded-full bg-navy text-white flex items-center justify-center text-[10px] shrink-0 font-bold">${index + 1}</span>`;
+        } else if (isNoPickups) {
+            rowClasses += "bg-slate-50/80 border-dashed border-slate-200 text-slate-500";
+            orderIndicator = `<span class="w-5 h-5 rounded-full bg-slate-200 text-slate-500 border border-dashed border-slate-400 flex items-center justify-center text-[10px] shrink-0 font-medium">${index + 1}</span>`;
+        } else {
+            rowClasses += "bg-surface border-line text-navy";
+            orderIndicator = `<span class="w-5 h-5 rounded-full bg-bg border border-line text-ink-muted flex items-center justify-center text-[10px] shrink-0 font-medium">${index + 1}</span>`;
+        }
+
+        return `
+            <div class="${rowClasses}" data-stop-id="${stopId}">
+                <div class="flex items-center gap-2 min-w-0 pr-2">
+                    ${orderIndicator}
+                    <span class="truncate ${isNoPickups && !isNext ? 'text-slate-500' : ''}">${stop.name}</span>
+                </div>
+                <div class="flex items-center gap-1.5 shrink-0">
+                    ${badgeHtml}
+                </div>
+            </div>
+        `;
+    }).join("");
+
+    listContainers.forEach(container => {
+        container.innerHTML = html;
+    });
 }
 
 function toggleTripSummary() {
@@ -2282,16 +2767,34 @@ function renderMapMarkers() {
 
         const isPassed = passedStopIds.has(stop.stop_id || stop.id);
         const isNext = currentNextStop && (currentNextStop.stop_id || currentNextStop.id) === (stop.stop_id || stop.id);
+        const isCustom = Boolean(stop.is_custom);
+        const isExtraPickup = Boolean(stop.is_extra_pickup || stop.has_reallocated_students || stop.is_reallocated);
+        const isNoPickups = (stop.is_no_pickups !== undefined) ? Boolean(stop.is_no_pickups) : (Number(stop.student_count || 0) === 0 && !isCustom && !isExtraPickup);
+        const sourceBusNumber = stop.source_bus_number;
 
-        const stopIcon = createStopMarkerIcon(index + 1, isPassed, isNext);
+        const stopIcon = createStopMarkerIcon(index + 1, isPassed, isNext, isCustom, isExtraPickup, isNoPickups);
 
         const isLastInTrip = (index === driverRouteStops.length - 1);
         const stopLabel = (isLastInTrip && activeTripType === "evening")
             ? `Stop ${index + 1} (Final Stop)`
             : `Stop ${index + 1}`;
 
-        const marker = L.marker([lat, lng], { icon: stopIcon, zIndexOffset: isNext ? 500 : 100 })
-            .bindPopup(`<strong>${stop.name}</strong><br>${stopLabel}${stop.student_count ? ` • ${stop.student_count} expected` : ''}`);
+        const tempBadgeHtml = isCustom ? ` <span style="display:inline-block; font-size:10px; font-weight:700; background:var(--warn-bg); color:var(--warn); border:1px solid rgba(138,95,10,0.3); padding:1px 5px; border-radius:4px; text-transform:uppercase; margin-left:4px;">Temp Stop</span>` : '';
+        const extraBadgeHtml = isExtraPickup ? ` <span style="display:inline-block; font-size:10px; font-weight:700; background:#FEF3C7; color:#92400E; border:1px solid #FCD34D; padding:1px 5px; border-radius:4px; margin-left:4px;">⚡ Extra Pickup${sourceBusNumber ? ` (Bus ${sourceBusNumber})` : ''}</span>` : '';
+        const noPickupsBadgeHtml = isNoPickups ? ` <span style="display:inline-block; font-size:10px; font-weight:700; background:#F1F5F9; color:#64748B; border:1px solid #CBD5E1; padding:1px 5px; border-radius:4px; margin-left:4px;">${t("no_pickups_badge")}</span>` : '';
+
+        const studentsListHtml = (stop.students && stop.students.length > 0)
+            ? `<div style="margin-top:4px;font-size:11px;color:#374151;">${stop.students.map(st => `• ${st.name}${st.is_reallocated ? ` <strong style="color:#B45309;">(From Bus ${st.source_bus_number || '?'})</strong>` : ''}`).join('<br>')}</div>`
+            : '';
+
+        const studentCountText = isNoPickups
+            ? ' • 0 expected (No pickups)'
+            : (stop.student_count ? ` • ${stop.student_count} expected` : '');
+
+        const marker = L.marker([lat, lng], {
+            icon: stopIcon,
+            zIndexOffset: isNext ? 500 : (isNoPickups ? 40 : (isExtraPickup ? 200 : (isCustom ? 150 : 100)))
+        }).bindPopup(`<strong>${stop.name}</strong>${tempBadgeHtml}${extraBadgeHtml}${noPickupsBadgeHtml}<br>${stopLabel}${studentCountText}${studentsListHtml}`);
 
         marker.stopData = stop;
         stopMarkersGroup.addLayer(marker);
@@ -2332,37 +2835,131 @@ function renderMapMarkers() {
     }
 }
 
-function createStopMarkerIcon(stopOrder, isPassed, isNext) {
+function createStopMarkerIcon(stopOrder, isPassed, isNext, isCustom = false, isExtraPickup = false, isNoPickups = false) {
     let bg = '#ffffff';
     let color = '#173541';
     let border = '3px solid #E3E8E8';
     let size = 26;
+    let shadow = '0 2px 6px rgba(0,0,0,0.15)';
 
-    if (isPassed) {
-        bg = '#52707A';
-        color = '#ffffff';
-        border = '2px solid #173541';
-    } else if (isNext) {
-        bg = '#4A6F79';
-        color = '#ffffff';
-        border = '3px solid #173541';
-        size = 30;
+    if (isExtraPickup) {
+        if (isPassed) {
+            bg = '#78350F';
+            color = '#ffffff';
+            border = '2px solid #D97706';
+            shadow = '0 1px 4px rgba(217, 119, 6, 0.2)';
+        } else if (isNext) {
+            bg = '#D97706';
+            color = '#ffffff';
+            border = '3px solid #78350F';
+            size = 32;
+            shadow = '0 0 0 4px rgba(217, 119, 6, 0.45), 0 3px 8px rgba(0,0,0,0.3)';
+        } else {
+            bg = '#FEF3C7';
+            color = '#92400E';
+            border = '3px solid #D97706';
+            size = 28;
+            shadow = '0 0 0 2px rgba(217, 119, 6, 0.25), 0 2px 6px rgba(0,0,0,0.15)';
+        }
+    } else if (isCustom) {
+        if (isPassed) {
+            bg = '#B59B7C';
+            color = '#ffffff';
+            border = '2px solid #8A5F0A';
+            shadow = '0 1px 4px rgba(138, 95, 10, 0.2)';
+        } else if (isNext) {
+            bg = '#E8B04A';
+            color = '#173541';
+            border = '3px solid #8A5F0A';
+            size = 30;
+            shadow = '0 0 0 4px rgba(232, 176, 74, 0.4), 0 3px 8px rgba(0,0,0,0.25)';
+        } else {
+            bg = '#FBF1DC';
+            color = '#8A5F0A';
+            border = '3px solid #E8B04A';
+            shadow = '0 2px 6px rgba(138, 95, 10, 0.25)';
+        }
+    } else if (isNoPickups) {
+        if (isPassed) {
+            bg = '#E2E8F0';
+            color = '#94A3B8';
+            border = '2px solid #CBD5E1';
+            size = 24;
+            shadow = 'none';
+        } else if (isNext) {
+            bg = '#64748B';
+            color = '#ffffff';
+            border = '3px dashed #334155';
+            size = 30;
+            shadow = '0 0 0 4px rgba(100, 116, 139, 0.25), 0 3px 8px rgba(0,0,0,0.15)';
+        } else {
+            bg = '#F1F5F9';
+            color = '#64748B';
+            border = '2px dashed #94A3B8';
+            size = 24;
+            shadow = '0 1px 3px rgba(0,0,0,0.06)';
+        }
+    } else {
+        if (isPassed) {
+            bg = '#52707A';
+            color = '#ffffff';
+            border = '2px solid #173541';
+        } else if (isNext) {
+            bg = '#4A6F79';
+            color = '#ffffff';
+            border = '3px solid #173541';
+            size = 30;
+            shadow = '0 0 0 4px rgba(79, 70, 229, 0.25), 0 3px 8px rgba(0,0,0,0.2)';
+        }
     }
+
+    const extraTagHtml = isExtraPickup && !isNoPickups ? `
+        <span style="
+            position: absolute; top: -7px; right: -10px;
+            background: #D97706; color: #ffffff;
+            font-size: 8px; font-weight: 900; font-family: IBM Plex Sans, sans-serif;
+            padding: 1px 4px; border-radius: 4px;
+            border: 1.5px solid #ffffff; line-height: 1.1;
+            letter-spacing: 0.5px; pointer-events: none;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        ">⚡ EXTRA</span>
+    ` : (isCustom && !isNoPickups ? `
+        <span style="
+            position: absolute; top: -5px; right: -8px;
+            background: #8A5F0A; color: #ffffff;
+            font-size: 8px; font-weight: 800; font-family: IBM Plex Sans, sans-serif;
+            padding: 1px 3px; border-radius: 4px;
+            border: 1px solid #ffffff; line-height: 1;
+            letter-spacing: 0.5px; pointer-events: none;
+        ">TEMP</span>
+    ` : (isNoPickups ? `
+        <span style="
+            position: absolute; top: -5px; right: -8px;
+            background: #64748B; color: #ffffff;
+            font-size: 8px; font-weight: 800; font-family: IBM Plex Sans, sans-serif;
+            padding: 1px 3px; border-radius: 4px;
+            border: 1px solid #ffffff; line-height: 1;
+            letter-spacing: 0.5px; pointer-events: none;
+        ">0</span>
+    ` : ''));
 
     return L.divIcon({
         className: "",
         html: `
-            <div style="
-                width: ${size}px; height: ${size}px;
-                border-radius: 50%;
-                background: ${bg};
-                color: ${color};
-                border: ${border};
-                display: flex; align-items: center; justify-content: center;
-                font-size: ${isNext ? '12px' : '11px'}; font-weight: 900;
-                box-shadow: ${isNext ? '0 0 0 4px rgba(79, 70, 229, 0.25), 0 3px 8px rgba(0,0,0,0.2)' : '0 2px 6px rgba(0,0,0,0.15)'};
-            ">
-                ${isPassed ? '•' : (stopOrder || '•')}
+            <div style="position: relative; width: ${size}px; height: ${size}px;">
+                <div style="
+                    width: ${size}px; height: ${size}px;
+                    border-radius: 50%;
+                    background: ${bg};
+                    color: ${color};
+                    border: ${border};
+                    display: flex; align-items: center; justify-content: center;
+                    font-size: ${isNext ? '12px' : '11px'}; font-weight: 900;
+                    box-shadow: ${shadow};
+                ">
+                    ${isPassed ? '•' : (stopOrder || '•')}
+                </div>
+                ${extraTagHtml}
             </div>
         `,
         iconSize: [size, size],
@@ -2378,11 +2975,14 @@ function updateStopMarkersAppearance() {
             const stop = layer.stopData;
             const isPassed = passedStopIds.has(stop.stop_id || stop.id);
             const isNext = currentNextStop && (currentNextStop.stop_id || currentNextStop.id) === (stop.stop_id || stop.id);
+            const isCustom = Boolean(stop.is_custom);
+            const isExtraPickup = Boolean(stop.is_extra_pickup || stop.has_reallocated_students || stop.is_reallocated);
+            const isNoPickups = (stop.is_no_pickups !== undefined) ? Boolean(stop.is_no_pickups) : (Number(stop.student_count || 0) === 0 && !isCustom && !isExtraPickup);
             const stopPosition = driverRouteStops.findIndex(
                 routeStop => (routeStop.stop_id || routeStop.id) === (stop.stop_id || stop.id)
             ) + 1;
-            layer.setIcon(createStopMarkerIcon(stopPosition, isPassed, isNext));
-            layer.setZIndexOffset(isNext ? 500 : (isPassed ? 50 : 100));
+            layer.setIcon(createStopMarkerIcon(stopPosition, isPassed, isNext, isCustom, isExtraPickup, isNoPickups));
+            layer.setZIndexOffset(isNext ? 500 : (isNoPickups ? 40 : (isExtraPickup ? 200 : (isCustom ? 150 : (isPassed ? 50 : 100)))));
         }
     });
 }
@@ -2826,11 +3426,13 @@ function renderDirectionArrows(mapInstance, arrowLayer, polylinePoints, color = 
 // WAIT REQUESTS: AUTO-ACCEPT BY DEFAULT & COUNTDOWN CONTROLLER
 // ========================================================================
 
+let isWaitPollInFlight = false;
+
 function startWaitRequestsPolling() {
     if (!hasDriverEntitlement("wait_request")) return;
     stopWaitRequestsPolling();
     loadActiveWaitRequests();
-    waitRequestPollTimer = setInterval(loadActiveWaitRequests, 4000);
+    waitRequestPollTimer = setInterval(loadActiveWaitRequests, 8000);
 }
 
 function stopWaitRequestsPolling() {
@@ -2838,15 +3440,17 @@ function stopWaitRequestsPolling() {
     if (waitCountdownInterval) clearInterval(waitCountdownInterval);
     waitRequestPollTimer = null;
     waitCountdownInterval = null;
+    isWaitPollInFlight = false;
 }
 
 async function loadActiveWaitRequests() {
-    if (!isTripActive) return;
+    if (!isTripActive || isWaitPollInFlight) return;
     if (!hasDriverEntitlement("wait_request")) return;
 
     const token = getToken();
     if (!token) return;
 
+    isWaitPollInFlight = true;
     try {
         const response = await fetch(`${API_BASE}/driver/wait-requests`, {
             headers: {
@@ -2866,6 +3470,8 @@ async function loadActiveWaitRequests() {
         }
     } catch (e) {
         console.warn("Wait requests poll error:", e);
+    } finally {
+        isWaitPollInFlight = false;
     }
 }
 
@@ -2978,11 +3584,8 @@ async function handleSkipActiveWait() {
     const firstStudentRequestId = activeWaitRequest.students?.[0]?.request_id;
     if (!firstStudentRequestId) return;
 
-    const skipBtn = document.getElementById("skipWaitBtn");
-    if (skipBtn) {
-        skipBtn.disabled = true;
-        skipBtn.innerHTML = `<svg class="w-3.5 h-3.5 animate-spin shrink-0" aria-hidden="true"><use href="icons.svg#icon-spinner"/></svg>`;
-    }
+    // Optimistic UI: Hide card immediately so button feels instantaneous
+    hideActiveWaitCard();
 
     const token = getToken();
 
@@ -3000,9 +3603,8 @@ async function handleSkipActiveWait() {
             KambusNotify.notify({
                 type: "warning",
                 title: t("toast_wait_skipped"),
-                message: t("toast_wait_skipped_msg", { stop: activeWaitRequest.stop_name || "" })
+                message: t("toast_wait_skipped_msg", { stop: activeWaitRequest?.stop_name || "" })
             });
-            hideActiveWaitCard();
             setTimeout(loadActiveWaitRequests, 500);
         } else {
             throw new Error(data.detail || t("toast_skip_failed_msg"));
@@ -3013,11 +3615,7 @@ async function handleSkipActiveWait() {
             title: t("toast_skip_failed"),
             message: e.message || t("toast_skip_failed_msg")
         });
-    } finally {
-        if (skipBtn) {
-            skipBtn.disabled = false;
-            skipBtn.innerHTML = `<svg class="w-3 h-3 shrink-0" aria-hidden="true"><use href="icons.svg#icon-forward-step"/></svg><span>${t("skip")}</span>`;
-        }
+        loadActiveWaitRequests();
     }
 }
 
@@ -3027,11 +3625,8 @@ async function handleCompleteActiveWait() {
     const firstStudentRequestId = activeWaitRequest.students?.[0]?.request_id;
     if (!firstStudentRequestId) return;
 
-    const completeBtn = document.getElementById("completeWaitBtn");
-    if (completeBtn) {
-        completeBtn.disabled = true;
-        completeBtn.innerHTML = `<svg class="w-3.5 h-3.5 animate-spin shrink-0" aria-hidden="true"><use href="icons.svg#icon-spinner"/></svg>`;
-    }
+    // Optimistic UI: Hide card immediately so button feels instantaneous
+    hideActiveWaitCard();
 
     const token = getToken();
 
@@ -3051,7 +3646,6 @@ async function handleCompleteActiveWait() {
                 title: t("toast_student_boarded"),
                 message: t("toast_student_boarded_msg")
             });
-            hideActiveWaitCard();
             setTimeout(loadActiveWaitRequests, 500);
         } else {
             throw new Error(data.detail || t("toast_complete_wait_failed_msg"));
@@ -3062,11 +3656,7 @@ async function handleCompleteActiveWait() {
             title: t("toast_failed") || "Failed",
             message: e.message || t("toast_complete_wait_failed_msg")
         });
-    } finally {
-        if (completeBtn) {
-            completeBtn.disabled = false;
-            completeBtn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg><span>${t("wait_continue_now")}</span>`;
-        }
+        loadActiveWaitRequests();
     }
 }
 
@@ -3431,12 +4021,12 @@ async function handleManualPassLookup(event) {
         return;
     }
 
-    await verifyStudentPassBackend(rawQuery);
+    await verifyStudentPassBackend(rawQuery, true);
 }
 window.handleManualPassLookup = handleManualPassLookup;
 
 // REAL BACKEND PASS VERIFICATION
-async function verifyStudentPassBackend(queryStr) {
+async function verifyStudentPassBackend(queryStr, isManual = false) {
     queryStr = typeof queryStr === "string" ? queryStr.trim() : "";
     if (/^data:image\//i.test(queryStr)) {
         console.error("[PassScanner] refused image frame data as a verification query");
@@ -3461,20 +4051,27 @@ async function verifyStudentPassBackend(queryStr) {
 
     const token = getToken();
     try {
-        console.info("[PassScanner] scan-pass request query:", queryStr);
+        console.info("[PassScanner] scan-pass request query:", queryStr, "isManual:", isManual);
+        const isJwt = !isManual && (queryStr.match(/\./g) || []).length === 2;
+        const payload = {
+            latitude: lastPosition ? lastPosition.latitude : null,
+            longitude: lastPosition ? lastPosition.longitude : null
+        };
+        if (isJwt) {
+            payload.token = queryStr;
+            payload.query = queryStr;
+        } else {
+            payload.roll_number = queryStr;
+            payload.query = queryStr;
+        }
+
         const response = await fetch(`${API_BASE}/driver/scan-pass`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
                 "Authorization": `Bearer ${token}`
             },
-            body: JSON.stringify({
-                token: queryStr,
-                query: queryStr,
-                roll_number: queryStr,
-                latitude: lastPosition ? lastPosition.latitude : null,
-                longitude: lastPosition ? lastPosition.longitude : null
-            })
+            body: JSON.stringify(payload)
         });
 
         const data = await response.json();
@@ -3524,12 +4121,17 @@ async function verifyStudentPassBackend(queryStr) {
 
         } else {
             // FAILED / INVALID PASS
+            const detailMsg = (typeof data?.detail === "string" && data.detail.trim())
+                ? data.detail.trim()
+                : (Array.isArray(data?.detail) && data.detail[0]?.msg ? data.detail[0].msg : null);
+            const displayError = detailMsg || t("student_not_found_assigned");
+
             if (resultCard) resultCard.classList.add("hidden");
             if (errorCard) {
                 const errTitle = document.getElementById("passErrorTitle");
                 const errMsg = document.getElementById("passErrorMessage");
                 if (errTitle) errTitle.textContent = t("invalid_pass_title");
-                if (errMsg) errMsg.textContent = data.detail || t("student_not_found_assigned");
+                if (errMsg) errMsg.textContent = displayError;
                 errorCard.classList.remove("hidden");
             }
 
@@ -3538,7 +4140,7 @@ async function verifyStudentPassBackend(queryStr) {
             KambusNotify.notify({
                 type: "error",
                 title: t("toast_pass_invalid"),
-                message: data.detail || t("toast_pass_invalid_msg")
+                message: displayError
             });
         }
     } catch (err) {
