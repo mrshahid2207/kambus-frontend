@@ -4502,7 +4502,9 @@
             showToast("success", "Campus Updated", `Campus "${name}" properties updated successfully.`);
             document.getElementById("editCampusModal")?.classList.add("hidden");
             await loadCampuses();
-            await loadTopCampusSwitcher();
+            if (getSelectedCampusId() === parseInt(campusId, 10)) {
+                await loadAdminCampusEntitlements(parseInt(campusId, 10));
+            }
         } catch (e) {
             if (errDiv) {
                 errDiv.textContent = e.message || "Failed to update campus.";
