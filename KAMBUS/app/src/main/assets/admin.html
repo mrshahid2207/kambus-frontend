@@ -204,16 +204,25 @@
             background: var(--navy-700) !important;
             border: 1px solid rgba(255, 255, 255, 0.15) !important;
             border-radius: 8px !important;
+            position: relative;
+            z-index: 50;
         }
         .super-admin-select {
             background-color: var(--navy-900) !important;
             color: #FFFFFF !important;
             border: 1px solid rgba(255, 255, 255, 0.2) !important;
             border-radius: 6px !important;
+            position: relative;
+            z-index: 50;
+        }
+        .super-admin-select option {
+            background-color: var(--navy-900) !important;
+            color: #FFFFFF !important;
         }
         .super-admin-select:focus {
             border-color: var(--amber-500) !important;
             box-shadow: 0 0 0 2px rgba(245, 166, 35, 0.3) !important;
+            outline: none !important;
         }
 
         /* Sidebar */
@@ -731,7 +740,7 @@
     </header>
 
     <!-- Super-Admin Mobile Campus Sub-Bar (< lg) -->
-    <div id="superAdminMobileCampusBar" class="hidden lg:hidden px-4 py-2 items-center justify-between gap-2 shadow-2xs" style="background-color: var(--navy-700); border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
+    <div id="superAdminMobileCampusBar" class="hidden lg:hidden sticky top-[57px] z-30 px-4 py-2 items-center justify-between gap-2 shadow-2xs" style="background-color: var(--navy-700); border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
         <div class="flex items-center gap-1.5 text-xs font-semibold shrink-0" style="color: var(--amber-500);">
             <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M9 9h1M9 13h1M9 17h1M14 9h1M14 13h1M14 17h1"/></svg>
             <span class="font-bold text-white">Campus:</span>
@@ -839,13 +848,8 @@
 
             <!-- SECTION 1:  DASHBOARD -->
             <section id="section-dashboard" class="admin-section active space-y-6">
-                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                    <div>
-                        <h2 class="text-xl font-bold tracking-tight" style="color: var(--navy-900);">System Overview</h2>
-                        <p class="text-xs" style="color: var(--text-muted);">Real-time status of campus fleet, routes, and active trips.</p>
-                    </div>
-                    <div id="dashboardCampusContextBanner" class="hidden"></div>
-                </div>
+                <!-- Dashboard Campus Context Banner -->
+                <div id="dashboardCampusContextBanner" class="hidden"></div>
 
                 <!-- KPI Cards Grid -->
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-3.5">

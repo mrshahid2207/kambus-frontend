@@ -1148,17 +1148,23 @@ document.addEventListener("DOMContentLoaded", () => {
     // Initialize Driver Real-time WebSocket
     initDriverWebSocket();
 
-    // Live Entitlements auto-refresh on foreground / interval (mitigation for tier upgrades)
+    // Live Entitlements & Bus Assignment auto-refresh on foreground / interval (fast live-refresh path)
     document.addEventListener("visibilitychange", () => {
         if (document.visibilityState === "visible") {
             loadDriverCampusEntitlements();
+            loadDriverBus();
+            loadDriverRouteStops();
         }
     });
     window.addEventListener("focus", () => {
         loadDriverCampusEntitlements();
+        loadDriverBus();
+        loadDriverRouteStops();
     });
     setInterval(() => {
         loadDriverCampusEntitlements();
+        loadDriverBus();
+        loadDriverRouteStops();
     }, 60000);
 });
 
@@ -2188,6 +2194,18 @@ function initDriverWebSocket() {
                 const data = JSON.parse(event.data);
                 if (data.type === "entitlements_updated") {
                     loadDriverCampusEntitlements();
+                    return;
+                }
+                if (data.type === "bus_assignment_updated" || data.type === "bus_changed" || data.type === "passenger_update") {
+                    loadDriverBus();
+                    loadDriverRouteStops();
+                    if (data.message && typeof KambusNotify !== "undefined") {
+                        KambusNotify.notify({
+                            type: "info",
+                            title: data.title || "Bus Update",
+                            message: data.message
+                        });
+                    }
                     return;
                 }
                 if (data.type === "route_rerouted" || data.type === "route_update") {

@@ -1692,10 +1692,34 @@ if (wsReconnectTimer) {
                     loadCampusEntitlements();
                     return;
                 }
-                if (data.type === "alternative_bus_allotted") {
+                if (data.type === "bus_assignment_updated" || data.type === "bus_changed" || data.type === "alternative_bus_allotted") {
                     clearStudentAssignmentTracking();
                     loadStudentBus();
                     window.KambusNotificationCenter?.refresh();
+                    if (data.title || data.message) {
+                        if (typeof KambusNotify !== "undefined") {
+                            KambusNotify.notify({
+                                type: "info",
+                                title: data.title || "Bus Changed",
+                                message: data.message
+                            });
+                        }
+                    }
+                    return;
+                }
+                if (data.type === "announcement" && (data.bus_change_id || data.template_type === "bus_change" || data.bus_id)) {
+                    clearStudentAssignmentTracking();
+                    loadStudentBus();
+                    window.KambusNotificationCenter?.refresh();
+                    if (data.title || data.message) {
+                        if (typeof KambusNotify !== "undefined") {
+                            KambusNotify.notify({
+                                type: "info",
+                                title: data.title || "Bus Replacement",
+                                message: data.message
+                            });
+                        }
+                    }
                     return;
                 }
 
@@ -2996,17 +3020,20 @@ document.addEventListener("DOMContentLoaded", () => {
     setInterval(checkActiveDriverAlerts, 10000);
     protectWaitRequestFunctions();
 
-    // Live Entitlements auto-refresh on foreground / interval (mitigation for tier upgrades)
+    // Live Entitlements & Bus Assignment auto-refresh on foreground / interval (fast live-refresh path)
     document.addEventListener("visibilitychange", () => {
         if (document.visibilityState === "visible") {
             loadCampusEntitlements();
+            loadStudentBus();
         }
     });
     window.addEventListener("focus", () => {
         loadCampusEntitlements();
+        loadStudentBus();
     });
     setInterval(() => {
         loadCampusEntitlements();
+        loadStudentBus();
     }, 60000);
 });
 
